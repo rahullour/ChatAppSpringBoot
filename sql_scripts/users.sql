@@ -40,7 +40,6 @@ VALUES
 
 --
 -- Table structure for table `authorities`
---authorityuser_id
 
 CREATE TABLE `authorities` (
   `username` varchar(50) NOT NULL,
