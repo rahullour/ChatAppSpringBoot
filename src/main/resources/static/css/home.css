@@ -1,3 +1,30 @@
-.home-h{
-    color: orange;
+.hidden {
+    display: none;
+}
+.sidebar {
+    height: 100vh;
+    background-color: #f8f9fa;
+    padding: 20px;
+    padding-left: 30px;
+    border-right: 1px solid #dee2e6;
+}
+.chat-content {
+    flex-grow: 1;
+    padding: 20px;
+}
+.navbar-header{
+    border-bottom: 1px solid #d2d2d2;
+    .nav-tabs .nav-link {
+        border: none;
+        border-radius: 0;
+    }
+    .nav-tabs .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+    .nav-logo{
+        width: 280px;
+        display: flex;
+        gap: 15px;
+    }
 }
