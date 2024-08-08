@@ -13,37 +13,37 @@
 </head>
 
 <body>
-<nav class="navbar navbar-expand-lg bg-body-tertiary">
+<nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul class="navbar-nav me-auto mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span>Chat APP</span></a>
                 </li>
             </ul>
         </div>
         <div>
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul class="navbar-nav me-auto mb-lg-0">
                 <li>
                     <form class="d-flex" role="search">
                         <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
                         <button class="btn btn-outline-success" type="submit">Search</button>
                     </form>
                 </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span sec:authentication="principal.username"></span>
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <form th:action="@{/logout}" method="POST">
-                                <input type="submit" value="Logout" class="btn btn-small btn-danger" onclick="return confirm('Are you sure?')" />
-                            </form>
-                        </li>
-                    </ul>
+                <li class="nav-item p-2">
+<!--                    <span th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?-->
+<!--                                        #authentication.principal.attributes['name'] :-->
+<!--                                        #authentication.principal.username}"></span>-->
+                </li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="POST">
+                        <button type="submit" class="btn btn-small" onclick="return confirm('Are you sure?')">
+                            <img th:src="@{/images/logout.png}" alt="Logout" width="30px" height="30px"/>
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>

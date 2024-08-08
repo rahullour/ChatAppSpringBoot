@@ -1,3 +1,7 @@
 .login-error{
     color: Red;
 }
+body{
+    background-image: url("/images/login-back.png");
+    background-size: cover
+}

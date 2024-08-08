@@ -4,9 +4,22 @@
 .sidebar {
     height: 100vh;
     background-color: #f8f9fa;
-    padding: 20px;
-    padding-left: 30px;
+    padding-right: 0px !important;
     border-right: 1px solid #dee2e6;
+    .nav-tabs{
+        width: 100%;
+        .nav-link {
+            border: none;
+            border-radius: 0;
+        }
+        .nav-link.active {
+            background-color: #ffbf00;
+            color: white;
+        }
+        .nav-item{
+            width: 50%;
+        }
+    }
 }
 .chat-content {
     flex-grow: 1;
@@ -14,17 +27,23 @@
 }
 .navbar-header{
     border-bottom: 1px solid #d2d2d2;
-    .nav-tabs .nav-link {
-        border: none;
-        border-radius: 0;
-    }
-    .nav-tabs .nav-link.active {
-        background-color: #007bff;
-        color: white;
-    }
     .nav-logo{
-        width: 280px;
-        display: flex;
+       display: flex;
         gap: 15px;
+    }
+    .dropdown-menu[data-bs-popper] {
+      top: 100%;
+      justify-content: center;
+      display: flex;
+      left: -25px;
+      margin-top: var(--bs-dropdown-spacer);
+    }
+    .dropdown-menu{
+        li:nth-of-type(1){
+            width: 158px;
+            input{
+                width: 100%;
+            }
+        }
     }
 }

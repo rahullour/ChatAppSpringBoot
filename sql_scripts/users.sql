@@ -13,11 +13,12 @@ USE `chatAppDB`;
 -- Table structure for table `users`
 --
 
-CREATE TABLE `users` (
+CREATE TABLE `user` (
   `id` int AUTO_INCREMENT UNIQUE KEY,
   `username` varchar(50) NOT NULL,
   `password` char(68) NOT NULL,
   `enabled` tinyint NOT NULL,
+  `email` VARCHAR(255),
   PRIMARY KEY (username)
   ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -31,28 +32,28 @@ CREATE TABLE `users` (
 -- Default passwords here are: name@123--
 -- https://bcryptcalculator.com
 
-INSERT INTO `users`  (username, password, enabled)
+INSERT INTO `user`  (username, password, enabled)
 VALUES
-('john','{bcrypt}$2a$10$B3IffY.kkIaOpkhmKz.6YuAFeOvqclMNAUg0XT9Ao6Mdc1srTE1aC',1),
-('mary','{bcrypt}$2a$10$fb1UvXR8NBOSzOX9PfW70umhpr5wvjQVwTgdDnIqFnRUaPMPxK/uO',1),
-('rahul','{bcrypt}$2a$10$f1YUEL87NiJc9Dz7WejrNeMa8uy0qjrqSUVQPUFZQSwGPor290QPy',1);
+('john','{bcrypt}$2a$10$B3IffY.kkIaOpkhmKz.6YuAFeOvqclMNAUg0XT9Ao6Mdc1srTE1aC',1, "john@gmail.com"),
+('mary','{bcrypt}$2a$10$fb1UvXR8NBOSzOX9PfW70umhpr5wvjQVwTgdDnIqFnRUaPMPxK/uO',1, "mary@gmail.com"),
+('rahul','{bcrypt}$2a$10$f1YUEL87NiJc9Dz7WejrNeMa8uy0qjrqSUVQPUFZQSwGPor290QPy',1, "rahullour01@gmail.com");
 
 
 --
 -- Table structure for table `authorities`
 
-CREATE TABLE `authorities` (
+CREATE TABLE `authority` (
   `username` varchar(50) NOT NULL,
   `authority` varchar(50) NOT NULL,
   UNIQUE KEY `authorities4_idx_1` (`username`,`authority`),
-  CONSTRAINT `authorities4_ibfk_1` FOREIGN KEY (`username`) REFERENCES `users` (`username`)
+  CONSTRAINT `authorities4_ibfk_1` FOREIGN KEY (`username`) REFERENCES `user` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Inserting data for table `authorities`
 --
 
-INSERT INTO `authorities` 
+INSERT INTO `authority` 
 VALUES 
 ('john','ROLE_USER'),
 ('mary','ROLE_USER'),
