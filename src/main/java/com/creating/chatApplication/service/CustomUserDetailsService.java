@@ -1,5 +1,6 @@
 package com.creating.chatApplication.service;
 
+import com.creating.chatApplication.entity.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,18 +22,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         try (var connection = dataSource.getConnection();
-             var preparedStatement = connection.prepareStatement("SELECT username, password, enabled FROM user WHERE username = ? OR email = ?")) {
+             var preparedStatement = connection.prepareStatement("SELECT id, username, email, password, enabled FROM user WHERE username = ? OR email = ?")) {
             preparedStatement.setString(1, usernameOrEmail);
             preparedStatement.setString(2, usernameOrEmail);
             try (var resultSet = preparedStatement.executeQuery()) {
                 if (resultSet.next()) {
-                    String username = resultSet.getString("username");
-                    String password = resultSet.getString("password");
-                    boolean enabled = resultSet.getBoolean("enabled");
-                    return org.springframework.security.core.userdetails.User.withUsername(username)
-                            .password(password)
-                            .disabled(!enabled)
-                            .build();
+                    return new CustomUserDetails(extractUserFromResultSet(resultSet));
                 } else {
                     throw new UsernameNotFoundException("User not found: " + usernameOrEmail);
                 }
@@ -40,5 +35,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         } catch (SQLException e) {
             throw new RuntimeException("Error fetching user details", e);
         }
+    }
+
+    private User extractUserFromResultSet(ResultSet resultSet) throws SQLException {
+        User user = new User();
+        user.setId(resultSet.getInt("id"));
+        user.setUsername(resultSet.getString("username"));
+        user.setEmail(resultSet.getString("email"));
+        user.setPassword(resultSet.getString("password"));
+        user.setEnabled(resultSet.getBoolean("enabled") ? "1" : "0");
+        return user;
     }
 }
