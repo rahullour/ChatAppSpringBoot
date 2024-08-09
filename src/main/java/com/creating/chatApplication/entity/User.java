@@ -18,10 +18,11 @@ public class User {
 
     public User() {}
 
-    public User(String username, String password, String enabled) {
+    public User(String username, String password, String enabled, String email) {
         this.username = username;
         this.password = password;
         this.enabled = enabled;
+        this.email = email;
     }
 
     @Id

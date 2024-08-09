@@ -11,7 +11,7 @@ CREATE TABLE `user` (
   `username` varchar(50) NOT NULL,
   `password` char(68) NOT NULL,
   `enabled` tinyint NOT NULL,
-  `email` VARCHAR(255),
+  `email` VARCHAR(255) UNIQUE,
   PRIMARY KEY (username)
   ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
