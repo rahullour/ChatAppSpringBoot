@@ -1,11 +1,4 @@
--- Drop user first if they exist
-DROP USER if exists 'chatAppUser'@'%' ;
-
--- Now create user with prop privileges
-CREATE USER 'chatAppUser'@'%' IDENTIFIED BY 'admin';
-
-GRANT ALL PRIVILEGES ON * . * TO 'chatAppUser'@'%';
-
+DROP DATABASE chatAppDB;
 CREATE DATABASE chatAppDB;
 USE `chatAppDB`;
 
@@ -32,7 +25,7 @@ CREATE TABLE `user` (
 -- Default passwords here are: name@123--
 -- https://bcryptcalculator.com
 
-INSERT INTO `user`  (username, password, enabled)
+INSERT INTO `user`  (username, password, enabled, email)
 VALUES
 ('john','{bcrypt}$2a$10$B3IffY.kkIaOpkhmKz.6YuAFeOvqclMNAUg0XT9Ao6Mdc1srTE1aC',1, "john@gmail.com"),
 ('mary','{bcrypt}$2a$10$fb1UvXR8NBOSzOX9PfW70umhpr5wvjQVwTgdDnIqFnRUaPMPxK/uO',1, "mary@gmail.com"),
@@ -45,7 +38,6 @@ VALUES
 CREATE TABLE `authority` (
   `username` varchar(50) NOT NULL,
   `authority` varchar(50) NOT NULL,
-  UNIQUE KEY `authorities4_idx_1` (`username`,`authority`),
   CONSTRAINT `authorities4_ibfk_1` FOREIGN KEY (`username`) REFERENCES `user` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
