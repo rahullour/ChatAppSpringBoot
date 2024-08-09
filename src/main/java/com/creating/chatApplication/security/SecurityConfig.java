@@ -1,46 +1,99 @@
 package com.creating.chatApplication.security;
-
-import javax.sql.DataSource;
-
+import com.creating.chatApplication.service.CustomUserDetailsService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.provisioning.UserDetailsManager;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.security.config.Customizer;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+
+import javax.sql.DataSource;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final DataSource dataSource;
+
+    @Autowired
+    public SecurityConfig(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     @Bean
-    public UserDetailsManager userDetails(DataSource dataSource) {
-        JdbcUserDetailsManager jdbcUserDetailsManager = new JdbcUserDetailsManager(dataSource);
-        jdbcUserDetailsManager.setUsersByUsernameQuery("SELECT username, password, enabled FROM user WHERE username=? OR email=?");
-        jdbcUserDetailsManager.setAuthoritiesByUsernameQuery("SELECT username, authority FROM authority WHERE username=?");
-        return jdbcUserDetailsManager;
+    public UserDetailsService userDetailsService() {
+        return new CustomUserDetailsService(dataSource);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(); // Replace with your preferred encoder
+    }
+
+    @Bean
+    public AuthenticationFailureHandler customAuthenticationFailureHandler() {
+        return (request, response, exception) -> {
+            String errorMessage = "Invalid username or password";
+            if (exception instanceof BadCredentialsException) {
+                errorMessage = "Invalid username or password";
+            } else if (exception instanceof LockedException) {
+                errorMessage = "Account is locked";
+            } else if (exception instanceof DisabledException) {
+                errorMessage = "Account is disabled";
+            }
+            request.getSession().setAttribute("errorMessage", errorMessage);
+            response.sendRedirect("/loginPage?error");
+        };
+    }
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService());
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .authenticationProvider(authenticationProvider())  // Add this line
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/", "/loginPage").permitAll() // Allow access to login page and images
-                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll() // Allow access to all static resources
-                        .anyRequest().authenticated() // Require authentication for all other requests
+                        .requestMatchers("/loginPage").permitAll()
+                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/loginPage")
                         .loginProcessingUrl("/authenticateTheUser")
-                        .permitAll() // Allow all users to access the login page
+                        .failureHandler(customAuthenticationFailureHandler())
+                        .permitAll()
                 )
-                .exceptionHandling(configurer -> configurer.accessDeniedPage("/access-denied")) // Custom access denied page
-                .logout(logout -> logout.permitAll()) // Allow all users to access logout
+                .exceptionHandling(configurer -> configurer.accessDeniedPage("/access-denied"))
+                .logout(logout -> logout.permitAll())
                 .oauth2Login(Customizer.withDefaults());
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+                .userDetailsService(userDetailsService())
+                .passwordEncoder(passwordEncoder())
+                .and()
+                .build();
     }
 
 }

@@ -31,7 +31,6 @@ CREATE TABLE user_conversation (
     user_id INT NOT NULL,
     conversation_id INT NOT NULL,
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY `user_conversation_idx` (`user_id`, `conversation_id`),
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (conversation_id) REFERENCES conversation(id)
 );
