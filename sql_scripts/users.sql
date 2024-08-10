@@ -1,4 +1,3 @@
-DROP DATABASE chatAppDB;
 CREATE DATABASE chatAppDB;
 USE `chatAppDB`;
 
@@ -27,9 +26,9 @@ CREATE TABLE `user` (
 
 INSERT INTO `user`  (username, password, enabled, email)
 VALUES
-('john','{bcrypt}$2a$10$B3IffY.kkIaOpkhmKz.6YuAFeOvqclMNAUg0XT9Ao6Mdc1srTE1aC',1, "john@gmail.com"),
-('mary','{bcrypt}$2a$10$fb1UvXR8NBOSzOX9PfW70umhpr5wvjQVwTgdDnIqFnRUaPMPxK/uO',1, "mary@gmail.com"),
-('rahul','{bcrypt}$2a$10$f1YUEL87NiJc9Dz7WejrNeMa8uy0qjrqSUVQPUFZQSwGPor290QPy',1, "rahullour01@gmail.com");
+('john','$2a$10$B3IffY.kkIaOpkhmKz.6YuAFeOvqclMNAUg0XT9Ao6Mdc1srTE1aC',1, "john@gmail.com"),
+('mary','$2a$10$fb1UvXR8NBOSzOX9PfW70umhpr5wvjQVwTgdDnIqFnRUaPMPxK/uO',1, "mary@gmail.com"),
+('rahul','$2a$10$f1YUEL87NiJc9Dz7WejrNeMa8uy0qjrqSUVQPUFZQSwGPor290QPy',1, "rahullour01@gmail.com");
 
 
 --
