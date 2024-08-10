@@ -42,8 +42,8 @@ public class AuthenticationEvents {
             OAuth2LoginAuthenticationToken oauthToken = (OAuth2LoginAuthenticationToken) authentication;
             OAuth2User oauthUser = oauthToken.getPrincipal();
             String email = oauthUser.getAttribute("email");
-            logUserActivityByEmail(email, true);
             createUserIfNotPresent(email);
+            logUserActivityByEmail(email, true);
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             UsernamePasswordAuthenticationToken jdbcToken = (UsernamePasswordAuthenticationToken) authentication;
             Object principal = jdbcToken.getPrincipal();
@@ -82,8 +82,8 @@ public class AuthenticationEvents {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
             OAuth2User oauthUser = oauthToken.getPrincipal();
             String email = oauthUser.getAttribute("email");
-            logUserActivityByEmail(email, false);
             createUserIfNotPresent(email);
+            logUserActivityByEmail(email, false);
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
 
                 if (authentication == null) {
@@ -153,7 +153,7 @@ public class AuthenticationEvents {
 
             userService.saveUser(newUser);
 
-            String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password;
+            String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + " , please save it somewhere. ";
             notificationManager.sendFlashNotification(notificationMessage); // Use NotificationManager to handle flash messages
         }
     }

@@ -14,4 +14,9 @@ public class NotificationManager {
     public static String getNotification() {
         return notificationMessage;
     }
+
+    public static void clearNotification() {
+        notificationMessage = null;
+    }
+
 }

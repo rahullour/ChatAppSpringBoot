@@ -1,0 +1,23 @@
+.notification {
+    position: fixed; /* Use fixed positioning to float over the page */
+    top: 5px; /* Position from the top */
+    right: 0; /* Align to the right */
+    left: 0; /* Align to the left */
+    margin: 0 auto; /* Center the notification */
+    max-width: 80vw; /* Maximum width */
+    z-index: 9999; /* Ensure it appears above other elements */
+    opacity: 1; /* Fully visible */
+    transition: opacity 0.5s ease-in-out; /* Smooth transition for opacity */
+    display: flex; /* Use flexbox for alignment */
+    justify-content: center; /* Center content */
+    pointer-events: none; /* Prevent interaction */
+}
+
+.notification.show {
+    pointer-events: auto; /* Allow interaction when shown */
+}
+
+.notification.hide {
+    opacity: 0; /* Fade out effect */
+    transition: opacity 0.5s ease-in-out; /* Smooth transition for opacity */
+}
