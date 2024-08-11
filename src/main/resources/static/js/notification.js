@@ -1,7 +1,7 @@
 $(document).ready(function() {
     $('.notification').each(function() {
         var notificationElement = $(this);
-        var timer = notificationElement.hasClass('short-notification') ? 1 : 10;
+        var timer = notificationElement.hasClass('short-notification') ? 1 : 10 ;
         var originalMessage = notificationElement.text();
 
         notificationElement.show();
