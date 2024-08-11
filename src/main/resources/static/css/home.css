@@ -1,27 +1,14 @@
-body {
-    padding-top: 60px; /* Add padding to the top of the body */
+body{
+    height: 100vh;
 }
+.navbar-header{
+    border-bottom: 1px solid #c2c2c2;
+    .nav-links{
+        border-top-radius: none;
 
-.notification {
-    position: fixed;
-    top: 0; /* Position at the very top */
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    max-width: 80vw;
-    z-index: 9999;
-    opacity: 0; /* Start with 0 opacity */
-    transition: opacity 0.5s ease-in-out;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-    height: 0; /* Start with 0 height */
-    overflow: hidden; /* Hide overflow */
+    }
 }
-
-.notification.show {
-    opacity: 1;
-    pointer-events: auto;
-    height: auto; /* Allow height to adjust to content */
-    padding: 10px; /* Add padding when shown */
+.sidebar{
+    border-right: 1px solid #b7b7b7;
+    padding-right: 0px !important;
 }
