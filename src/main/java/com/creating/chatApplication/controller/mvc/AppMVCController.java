@@ -1,10 +1,9 @@
 package com.creating.chatApplication.controller.mvc;
 
+import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.User;
-import com.creating.chatApplication.service.EmailService;
-import com.creating.chatApplication.service.InviteService;
-import com.creating.chatApplication.service.NotificationManager;
-import com.creating.chatApplication.service.UserService;
+import com.creating.chatApplication.service.*;
+import com.creating.chatApplication.service.user_room.UserRoomService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +13,13 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Controller
 public class AppMVCController {
 
+    @Autowired
     private NotificationManager notificationManager;
 
     @Autowired
@@ -30,19 +31,19 @@ public class AppMVCController {
     @Autowired
     private InviteService inviteService;
 
+    private TokenGenerationService tokenGenerationService;
+
+
     @GetMapping("/")
-    public String home(Model model){
-        String notificationMessage = notificationManager.getNotification();
-        String notificationType = notificationManager.getNotificationType();
-        model.addAttribute("notificationMessage", notificationMessage);
-        model.addAttribute("notificationType", notificationType);
-        notificationManager.clearNotification();
+    public String home(Model model) {
+        List<com.creating.chatApplication.entity.Notification> notifications = notificationManager.getNotifications();
+        model.addAttribute("notifications", notifications);
         return "home";
     }
 
     @GetMapping("/loginPage")
     public String login(){
-        notificationManager.clearNotification();
+        notificationManager.clearNotifications();
         return "login";
     }
 
@@ -62,31 +63,23 @@ public class AppMVCController {
         user.setProfilePictureUrl(profilePictureBase64);
         user.setEnabled(false);
         // Save the user to the database
-        String token = generateVerificationToken(user);
-        String verificationLink = "http://www.localhost:8080/verify?token=" + token;
+        String token = tokenGenerationService.generateVerificationToken(user);
+        String verificationLink = "http://www.localhost:8080/verifyEmail?user_id=" + user.getId() +"?token=" + token;
 
         emailService.sendVerificationEmail(user.getEmail(), verificationLink);
 
         String notificationMessage = "We have sent an email, please verify your email id, link valid for 5 minutes !";
-        notificationManager.sendFlashNotification(notificationMessage, "long-noty");
-        return "redirect:/login"; // Redirect to login or another page
-    }
-    public String generateVerificationToken(User user) {
-        String token = UUID.randomUUID().toString(); // Generate a unique token
-        // Save the token in the database associated with the user
-        user.setVerificationToken(token);
-        user.setTokenExpiration(LocalDateTime.now().plusMinutes(5)); // Set expiration time
-        userService.saveUser(user);
-        return token;
+        notificationManager.sendFlashNotification(notificationMessage, "medium-noty");
+        return "redirect:/signup-form";
     }
 
 
-    @PatchMapping("/verify")
-    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
-        User user = userService.findByVerificationToken(token); // Find user by token
+    @PatchMapping("/verifyEmail")
+    public ResponseEntity<String> verifyEmail(@RequestParam int user_id, @RequestParam String token) {
+        User user = userService.findByVerificationTokenAndUserId(user_id, token);
 
         if (user == null) {
-            return ResponseEntity.badRequest().body("Invalid verification token.");
+            return ResponseEntity.badRequest().body("Invalid verification token/user_id.");
         }
 
         if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
@@ -94,8 +87,27 @@ public class AppMVCController {
         }
 
         user.setEnabled(true);
-        generateVerificationToken(user);
+        tokenGenerationService.generateVerificationToken(user);
         return ResponseEntity.ok("Email verified successfully.");
+    }
+
+    @PatchMapping("/verifyInviteUser")
+    public ResponseEntity<String> verifyChatJoin(@RequestParam int user_id, @RequestParam String token) {
+        User user = userService.findByVerificationTokenAndUserId(user_id, token);
+
+        if (user == null) {
+            return ResponseEntity.badRequest().body("Invalid verification token/user_id.");
+        }
+
+        if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Verification token has expired.");
+        }
+        List<Invite> invites = inviteService.getInvitesForReciever(user.getEmail());
+        for(Invite i:invites){
+            i.setAccepted(true);
+        }
+        tokenGenerationService.generateVerificationToken(user);
+        return ResponseEntity.ok("You have joined successfully.");
     }
 
     @GetMapping("/access-denied")

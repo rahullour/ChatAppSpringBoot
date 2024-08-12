@@ -15,13 +15,17 @@
 </head>
 
 <body>
-<div class="alert alert-danger notification short-notification" role="alert" th:if="${param.error != null}" th:text="${session.errorMessage}" style="display: none;"></div>
-<div class="alert alert-success notification short-notification" role="alert" th:if="${param.logout != null}" th:text="#{logout.message}" style="display: none;"></div>
+<div id="notification-container">
+    <div class="alert alert-danger notification short-noty" role="alert" th:if="${param.error != null}" th:text="${session.errorMessage}"></div>
+    <div class="alert alert-success notification short-noty" role="alert" th:if="${param.logout != null}" th:text="#{logout.message}"></div>
+    <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type}" th:text="${notification.message}"></div>
+</div>
+
 
 <div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="card" style="width: 100%; max-width: 400px;">
+    <div class="card login-card">
         <div class="card-body">
-            <h4 class="card-title mb-4 text-center">Welcome to ChatApp</h4>
+            <h4 class="card-title mb-4 text-center">Welcome to <span class="app-color"> WeChat</span></h4>
             <form th:action="@{/authenticateTheUser}" method="POST">
                 <div class="mb-3">
                     <label for="username" class="form-label">Username/Email</label>

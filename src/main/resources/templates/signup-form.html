@@ -10,57 +10,58 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-<div class="container mt-5">
-    <div class="alert alert-danger notification short-notification" role="alert" th:if="${param.error != null}" th:text="${session.errorMessage}" style="display: none;"></div>
-    <h2 class="text-center mb-4">Sign Up</h2>
+<div id="notification-container">
+    <div class="alert alert-danger notification short-noty" role="alert" th:if="${param.error != null}" th:text="${session.errorMessage}" style="display: none;"></div>
+</div>
+<div class="container mt-5 signup-container">
+    <h4 class="text-center mb-4 form-heading app-color">Sign Up</h4>
     <form id="signupForm" action="#" th:action="@{/signup}" method="post" th:object="${user}" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" th:field="*{username}" class="form-control" required />
-            <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="text-danger"></div>
+        <div class="d-flex gap-4">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" th:field="*{username}" class="form-control" required />
+                    <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="text-danger"></div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" th:field="*{password}" class="form-control" required />
+                    <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="text-danger"></div>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" th:field="*{email}" class="form-control" required />
+                    <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="justify-content-center d-flex mb-2">
+                        <label for="profilePictureUrl">Profile Picture</label>
+                    </div>
+                    <!-- Image preview container -->
+                    <div id="imagePreview" style="margin-bottom: 10px;" class="justify-content-center d-flex mb-3">
+                        <img id="previewImage" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 160px; height: 158px; object-fit: cover;" />
+                    </div>
+                    <input type="file" id="profilePictureUrl" accept="image/*" class="form-control" onchange="convertToBase64(event)" />
+                    <input type="hidden" th:field="*{profilePictureUrl}" id="profilePictureBase64" />
+                    <div th:if="${#fields.hasErrors('profilePictureUrl')}" th:errors="*{profilePictureUrl}" class="text-danger"></div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" th:field="*{password}" class="form-control" required />
-            <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="text-danger"></div>
+        <div class="d-flex justify-content-center mt-5">
+            <button type="submit" class="btn btn-primary btn-block w-25">Create Account</button>
         </div>
-        <div class="form-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" th:field="*{email}" class="form-control" required />
-            <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger"></div>
-        </div>
-        <div class="form-group">
-            <label for="profilePictureUrl">Profile Picture</label>
-            <input type="file" id="profilePictureUrl" accept="image/*" class="form-control" onchange="convertToBase64(event)" />
-            <input type="hidden" th:field="*{profilePictureUrl}" id="profilePictureBase64" />
-            <div th:if="${#fields.hasErrors('profilePictureUrl')}" th:errors="*{profilePictureUrl}" class="text-danger"></div>
-        </div>
-        <div class="form-group">
-            <label for="fcmToken">FCM Token</label>
-            <input type="text" id="fcmToken" th:field="*{fcmToken}" class="form-control" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
     </form>
     <div class="login-link text-center mt-3">
-        <p>Already have an account? <a href="/login">Login here</a></p>
+        <p>Already have an account? <a href="/loginPage">Login here</a></p>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script>
-    function convertToBase64(event) {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = function() {
-            document.getElementById('profilePictureBase64').value = reader.result; // Set the Base64 string to the hidden input
-        }
-        if (file) {
-            reader.readAsDataURL(file); // Convert the image file to Base64
-        }
-    }
-</script>
+<script th:src="@{/js/signup.js}"></script>
 <script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

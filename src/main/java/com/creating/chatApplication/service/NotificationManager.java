@@ -15,38 +15,33 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class NotificationManager {
 
     @Autowired
-    private static UserService userService;
+    private UserService userService; // Remove static modifier
 
     @Autowired
     private JavaMailSender mailSender; // Inject JavaMailSender
 
-    private static String notificationMessage;
-    private static String notificationType;
+    private List<com.creating.chatApplication.entity.Notification> notifications = new ArrayList<>();
 
-    public static void sendFlashNotification(String message, String type) {
-        notificationMessage = message;
-        notificationType = type;
+    public void sendFlashNotification(String message, String type) {
+        notifications.add(new com.creating.chatApplication.entity.Notification(message, type));
     }
 
-    public static String getNotification() {
-        return notificationMessage;
+    public List<com.creating.chatApplication.entity.Notification> getNotifications() {
+        return notifications; // Return the list of notifications
     }
 
-    public static String getNotificationType() {
-        return notificationType;
+    public void clearNotifications() {
+        notifications.clear(); // Clear the list of notifications
     }
 
-    public static void clearNotification() {
-        notificationMessage = null;
-        notificationType = null;
-    }
-
-    public void sendInviteNotification(String recipientEmail, String token) {
+    public void sendEmailInviteNotification(String recipientEmail, String token) {
         User currentUser = userService.getCurrentUser();
         if (currentUser != null) {
             String senderUsername = currentUser.getUsername();
@@ -89,8 +84,8 @@ public class NotificationManager {
         return template;
     }
 
-    public void sendInviteNotification(String title, String body, String token) {
-        // Firebase notification logic (unchanged)
+    public void sendFirebaseInviteNotification(String title, String body, String token) {
+        // Firebase notification logic
         Notification notification = Notification.builder()
                 .setTitle(title)
                 .setBody(body)

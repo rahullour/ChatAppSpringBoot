@@ -1,7 +1,13 @@
-.login-error{
-    color: Red;
-}
 body{
     background-image: url("/images/login-back.png");
     background-size: cover
+}
+.login-card{
+    width: 100%; max-width: 400px; border-radius: 15px !important;
+}
+.card-body{
+    padding: 30px !important;
+}
+.app-color{
+    color: #ff6c00;
 }
