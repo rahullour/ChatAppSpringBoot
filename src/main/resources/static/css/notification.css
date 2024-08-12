@@ -1,6 +1,5 @@
 .notification {
     position: fixed !important;
-    top: 5px;
     right: 0;
     left: 0;
     margin: 0 auto;
@@ -20,4 +19,9 @@
 .notification.hide {
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
+}
+
+/* Additional styles for stacking notifications */
+.notification {
+    margin-top: 10px; /* Space between notifications */
 }

@@ -2,6 +2,8 @@ package com.creating.chatApplication.events;
 
 import com.creating.chatApplication.service.CustomUserDetails;
 import com.creating.chatApplication.service.NotificationManager;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
@@ -17,7 +19,10 @@ import org.springframework.stereotype.Component;
 import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.service.UserDataService;
 import com.creating.chatApplication.service.UserService;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -44,6 +49,8 @@ public class AuthenticationEvents {
             String email = oauthUser.getAttribute("email");
             createUserIfNotPresent(email);
             logUserActivityByEmail(email, true);
+            String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
+            notificationManager.sendFlashNotification(notificationMessage, "short-noty");
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             UsernamePasswordAuthenticationToken jdbcToken = (UsernamePasswordAuthenticationToken) authentication;
             Object principal = jdbcToken.getPrincipal();
@@ -55,6 +62,9 @@ public class AuthenticationEvents {
                 if (email != null) {
                     System.out.println("Email retrieved: " + email);
                     logUserActivityByEmail(email, true);
+                    handleUserAuthentication(email);
+                    String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
+                    notificationManager.sendFlashNotification(notificationMessage, "short-noty");
                 } else {
                     System.out.println("Email is null in CustomUserDetails");
                 }
@@ -66,6 +76,28 @@ public class AuthenticationEvents {
         }
     }
 
+    private void handleUserAuthentication(String email) {
+        User user = userService.getUserByEmail(email);
+        if (user != null) {
+            if (!user.isEnabled()) {
+                // Log out the user and notify them
+                System.out.println("User account is disabled. Logging out.");
+                String notificationMessage = "Your account is disabled for now, please contact admin support @rahullour01@gmail.com.";
+                notificationManager.sendFlashNotification(notificationMessage, "short-noty");
+                HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getResponse();
+
+                try {
+                    // Perform logout by redirecting to the logout URL
+                    response.sendRedirect(request.getContextPath() + "/logout");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            System.out.println("User not found for email: " + email);
+        }
+    }
 
     @EventListener
     public void onLogoutSuccess(LogoutSuccessEvent event) {
@@ -149,12 +181,12 @@ public class AuthenticationEvents {
             newUser.setUsername(username);
             newUser.setEmail(email);
             newUser.setPassword(new BCryptPasswordEncoder().encode(password));
-            newUser.setEnabled("1");
+            newUser.setEnabled(true);
 
             userService.saveUser(newUser);
 
             String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + " , please save it somewhere. ";
-            notificationManager.sendFlashNotification(notificationMessage); // Use NotificationManager to handle flash messages
+            notificationManager.sendFlashNotification(notificationMessage, "long-noty"); // Use NotificationManager to handle flash messages
         }
     }
 

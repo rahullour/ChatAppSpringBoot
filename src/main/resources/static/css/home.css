@@ -12,3 +12,28 @@ body{
     border-right: 1px solid #b7b7b7;
     padding-right: 0px !important;
 }
+
+
+.message-container {
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 5px;
+}
+
+.message.sent {
+    background-color: #007bff; /* Bootstrap primary color */
+    color: white;
+    text-align: right;
+}
+
+.message.received {
+    background-color: #e9ecef; /* Light gray color */
+    color: black;
+    text-align: left;
+}

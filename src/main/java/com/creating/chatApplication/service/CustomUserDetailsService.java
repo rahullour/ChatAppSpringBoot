@@ -43,7 +43,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         user.setUsername(resultSet.getString("username"));
         user.setEmail(resultSet.getString("email"));
         user.setPassword(resultSet.getString("password"));
-        user.setEnabled(resultSet.getBoolean("enabled") ? "1" : "0");
+        user.setEnabled(resultSet.getBoolean("enabled") ? true : false);
         return user;
     }
 }
