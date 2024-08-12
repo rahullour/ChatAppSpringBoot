@@ -9,10 +9,15 @@ CREATE TABLE `user` (
   `id` int AUTO_INCREMENT UNIQUE KEY,
   `username` varchar(50) NOT NULL,
   `password` char(68) NOT NULL,
-  `enabled` tinyint NOT NULL,
+  `enabled` boolean NOT NULL default false,
   `email` VARCHAR(255) UNIQUE,
-  PRIMARY KEY (username)
-  ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `fcm_token` VARCHAR(255),
+  `profile_picture_url` TEXT,
+  `verification_token` VARCHAR(255),
+  `token_expiration` DATETIME,
+  PRIMARY KEY (username),
+  INDEX idx_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Inserting data for table `users`

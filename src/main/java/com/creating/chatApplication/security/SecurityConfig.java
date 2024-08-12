@@ -78,7 +78,7 @@ public class SecurityConfig {
         http
                 .authenticationProvider(authenticationProvider())  // Add this line
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/loginPage").permitAll()
+                        .requestMatchers("/loginPage", "signup-form", "signup").permitAll()
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         .anyRequest().authenticated()
                 )
