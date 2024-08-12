@@ -60,11 +60,13 @@ public class User {
     public User() {}
 
     // Constructor with fields
-    public User(String username, String password, boolean enabled, String email) {
+    public User(String username, String email, String password, boolean enabled, String verificationToken, LocalDateTime tokenExpiration) {
         this.username = username;
         this.password = password;
         this.enabled = enabled;
         this.email = email;
+        this.tokenExpiration = tokenExpiration;
+        this.verificationToken = verificationToken;
     }
 
     // Getters and Setters

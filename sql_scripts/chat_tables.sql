@@ -1,11 +1,13 @@
-use chatappdb;
+use chatAppDB;
 CREATE TABLE `invite` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sender_email VARCHAR(255) NOT NULL,
     recipient_email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     accepted BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (sender_email) REFERENCES user(email)
+    type varchar(20),
+    FOREIGN KEY (sender_email) REFERENCES user(email),
+    FOREIGN KEY (recipient_email) REFERENCES user(email)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE status (

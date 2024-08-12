@@ -1,9 +1,7 @@
 package com.creating.chatApplication.controller.rest;
 
-import com.creating.chatApplication.service.EmailService;
-import com.creating.chatApplication.service.InviteService;
-import com.creating.chatApplication.service.NotificationManager;
-import com.creating.chatApplication.service.UserService;
+import com.creating.chatApplication.entity.User;
+import com.creating.chatApplication.service.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +28,9 @@ public class InviteController {
     @Autowired
     private InviteService inviteService;
 
+    private TokenGenerationService tokenGenerationService;
+
+
     @PostMapping("/invites")
     public ResponseEntity<Void> sendInvite(@RequestParam String senderEmail, @RequestParam String emails) {
         // Parse the JSON string back to a List
@@ -42,10 +43,20 @@ public class InviteController {
         }
 
         for (String emailAddress : recieverEmails) {
-            inviteService.sendInvite(senderEmail, emailAddress);
-            String notificationMessage = "Users will be added to the conversation after signup/login with the same email!";
-            notificationManager.sendFlashNotification(notificationMessage, "short-noty");
-            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080");
+            User user = userService.getUserByEmail("emailAddress");
+            if(user != null && !user.getEmail().equals(senderEmail)){
+                inviteService.sendInvite(senderEmail, emailAddress);
+                String token = tokenGenerationService.generateVerificationToken(user);
+                String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() +"?token=" + token;
+                String notificationMessage = "Chat with" + emailAddress + " will be enabled after verification!";
+                notificationManager.sendFlashNotification(notificationMessage, "short-noty");
+                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink);
+            }
+            else{
+                String notificationMessage = "User with emailid: " + emailAddress + " not registered!, sending join link!";
+                notificationManager.sendFlashNotification(notificationMessage, "medium-noty");
+                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form");
+            }
         }
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", "/")

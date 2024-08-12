@@ -64,4 +64,11 @@ public class UserServiceImpl implements UserService{
         return userRepository.findByVerificationToken(token);
     }
 
+    @Override
+    public User findByVerificationTokenAndUserId(int user_id, String token) {
+        User userbytoken = userRepository.findByVerificationToken(token);
+        User userbyid = userRepository.findById(user_id).orElse(null);;
+        return  userbytoken != null && userbyid != null ? userbyid : null;
+    }
+
 }

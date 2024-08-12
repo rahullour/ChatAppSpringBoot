@@ -9,11 +9,6 @@
     transition: opacity 0.5s ease-in-out;
     display: flex;
     justify-content: center;
-    pointer-events: none;
-}
-
-.notification.show {
-    pointer-events: auto;
 }
 
 .notification.hide {
@@ -21,7 +16,6 @@
     transition: opacity 0.5s ease-in-out;
 }
 
-/* Additional styles for stacking notifications */
 .notification {
     margin-top: 10px; /* Space between notifications */
 }

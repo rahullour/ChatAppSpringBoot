@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="_csrf" content="${_csrf.token}"/>
     <meta name="_csrf_header" content="${_csrf.headerName}"/>
-
+    <title> WeChat </title>
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" th:href="@{/css/home.css}" />
     <link rel="stylesheet" th:href="@{/css/notification.css}" />
@@ -16,8 +16,9 @@
 </head>
 
 <body>
-<div class="alert alert-success notification short-notification" role="alert" th:if="${notificationMessage != null and notificationType == 'short-noty'}" th:text="${notificationMessage}" style="display: none;"></div>
-<div class="alert alert-success notification long-notification" role="alert" th:if="${notificationMessage != null and notificationType == 'long-noty'}" th:text="${notificationMessage}" style="display: none;"></div>
+<div id="notification-container">
+    <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type}" th:text="${notification.message}"></div>
+</div>
 
 <nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
@@ -27,7 +28,7 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span>Chat APP</span></a>
+                    <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span>WeChat</span></a>
                 </li>
             </ul>
         </div>

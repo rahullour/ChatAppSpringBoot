@@ -1,7 +1,6 @@
 package com.creating.chatApplication.events;
 
-import com.creating.chatApplication.service.CustomUserDetails;
-import com.creating.chatApplication.service.NotificationManager;
+import com.creating.chatApplication.service.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,13 +16,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
 
 import com.creating.chatApplication.entity.User;
-import com.creating.chatApplication.service.UserDataService;
-import com.creating.chatApplication.service.UserService;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Base64;
 
 @Component
@@ -37,6 +35,7 @@ public class AuthenticationEvents {
 
     @Autowired
     private NotificationManager notificationManager;
+    private TokenGenerationService tokenGenerationService;
 
 
     @EventListener
@@ -49,6 +48,7 @@ public class AuthenticationEvents {
             String email = oauthUser.getAttribute("email");
             createUserIfNotPresent(email);
             logUserActivityByEmail(email, true);
+            handleUserAuthentication(email);
             String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
             notificationManager.sendFlashNotification(notificationMessage, "short-noty");
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
@@ -83,7 +83,7 @@ public class AuthenticationEvents {
                 // Log out the user and notify them
                 System.out.println("User account is disabled. Logging out.");
                 String notificationMessage = "Your account is disabled for now, please contact admin support @rahullour01@gmail.com.";
-                notificationManager.sendFlashNotification(notificationMessage, "short-noty");
+                notificationManager.sendFlashNotification(notificationMessage, "medium-noty");
                 HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
                 HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getResponse();
 
@@ -177,16 +177,11 @@ public class AuthenticationEvents {
             String username = email.split("@")[0];
             String password = generateRandomPassword();
 
-            User newUser = new User();
-            newUser.setUsername(username);
-            newUser.setEmail(email);
-            newUser.setPassword(new BCryptPasswordEncoder().encode(password));
-            newUser.setEnabled(true);
-
+            User newUser = new User(username, email, new BCryptPasswordEncoder().encode(password), true, "aeseud", LocalDateTime.now());
             userService.saveUser(newUser);
 
             String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + " , please save it somewhere. ";
-            notificationManager.sendFlashNotification(notificationMessage, "long-noty"); // Use NotificationManager to handle flash messages
+            notificationManager.sendFlashNotification(notificationMessage, "long-noty");
         }
     }
 

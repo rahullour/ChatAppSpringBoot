@@ -40,7 +40,7 @@ public class InviteServiceImpl implements InviteService {
     }
 
     @Override
-    public List<Invite> getInvitesForUser(String email) {
+    public List<Invite> getInvitesForReciever(String email) {
         return inviteRepository.findByRecipientEmail(email);
     }
 

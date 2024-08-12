@@ -14,7 +14,7 @@ public class FirebaseConfig {
 
     @Bean
     public Firestore firestore() throws IOException {
-        FileInputStream serviceAccount = new FileInputStream("C:\\Users\\Rahul\\Desktop\\wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json");
+        FileInputStream serviceAccount = new FileInputStream("/home/rahullour/Documents/ChatAppSpringBoot/wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json");
 
         // Initialize Firestore with the service account credentials
         FirestoreOptions options = FirestoreOptions.getDefaultInstance()
