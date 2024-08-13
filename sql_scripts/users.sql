@@ -12,7 +12,7 @@ CREATE TABLE `user` (
   `enabled` boolean NOT NULL default false,
   `email` VARCHAR(255) UNIQUE,
   `fcm_token` VARCHAR(255),
-  `profile_picture_url` TEXT,
+  `profile_picture_url` LONGTEXT,
   `verification_token` VARCHAR(255),
   `token_expiration` DATETIME,
   PRIMARY KEY (username),
@@ -40,20 +40,21 @@ VALUES
 -- Table structure for table `authorities`
 
 CREATE TABLE `authority` (
-  `username` varchar(50) NOT NULL,
+  `id` int AUTO_INCREMENT UNIQUE KEY,
+  `user_id` int,
   `authority` varchar(50) NOT NULL,
-  CONSTRAINT `authorities4_ibfk_1` FOREIGN KEY (`username`) REFERENCES `user` (`username`)
+  PRIMARY KEY (id),
+  CONSTRAINT `authorities4_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Inserting data for table `authorities`
 --
 
-INSERT INTO `authority` 
-VALUES 
-('john','ROLE_USER'),
-('mary','ROLE_USER'),
-('mary','ROLE_ADMIN'),
-('rahul','ROLE_USER'),
-('rahul','ROLE_ADMIN'),
-('rahul','ROLE_SU_ADMIN');
+INSERT INTO `authority` (user_id, authority) VALUES 
+(1,'ROLE_USER'),
+(2,'ROLE_USER'),
+(2,'ROLE_ADMIN'),
+(3,'ROLE_USER'),
+(3,'ROLE_ADMIN'),
+(3,'ROLE_SU_ADMIN');

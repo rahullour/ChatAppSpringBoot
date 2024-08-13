@@ -17,7 +17,7 @@
 
 <body>
 <div id="notification-container">
-    <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type}" th:text="${notification.message}"></div>
+    <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
 
 <nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary">
@@ -174,9 +174,9 @@
     };
 
     // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const firestore = firebase.firestore();
-    const analytics = getAnalytics(app);
+    // const app = firebase.initializeApp(firebaseConfig);
+    // const firestore = firebase.firestore();
+    // const analytics = getAnalytics(app);
 
     // WebSocket and FCM logic will go here
 </script>

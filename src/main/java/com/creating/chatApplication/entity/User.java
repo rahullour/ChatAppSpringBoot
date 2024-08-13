@@ -19,7 +19,7 @@ public class User {
 
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    @Column(name = "username", unique = true, nullable = false)
+    @Column(name = "username", nullable = false)
     private String username;
 
     @NotBlank(message = "Password is required")
@@ -38,7 +38,7 @@ public class User {
     @Column(name = "fcm_token")
     private String fcmToken;
 
-    @Column(name = "profile_picture_url")
+    @Column(name = "profile_picture_url", columnDefinition = "LONGTEXT")
     private String profilePictureUrl;
 
     @Column(name = "verification_token", nullable = false)
@@ -55,6 +55,9 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserRoom> userRooms;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Authority> authorities;
 
     // Default constructor
     public User() {}
@@ -164,6 +167,14 @@ public class User {
 
     public void setTokenExpiration(LocalDateTime tokenExpiration) {
         this.tokenExpiration = tokenExpiration;
+    }
+
+    public List<Authority> getAuthorities() {
+        return authorities;
+    }
+
+    public void setAuthorities(List<Authority> authorities) {
+        this.authorities = authorities;
     }
 
     @Override

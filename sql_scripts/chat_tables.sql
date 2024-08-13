@@ -1,4 +1,4 @@
-use chatAppDB;
+USE `chatAppDB`;
 CREATE TABLE `invite` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     sender_email VARCHAR(255) NOT NULL,

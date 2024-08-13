@@ -49,7 +49,7 @@ public class SecurityConfig {
             } else if (exception instanceof LockedException) {
                 errorMessage = "Account is locked";
             } else if (exception instanceof DisabledException) {
-                errorMessage = "Account is disabled";
+                errorMessage = "Your account is disabled for now, please contact admin support @rahullour01@gmail.com";
             }
             request.getSession().setAttribute("errorMessage", errorMessage);
             response.sendRedirect("/loginPage?error");
@@ -76,9 +76,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .authenticationProvider(authenticationProvider())  // Add this line
+                .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/loginPage", "/signup-form", "/signup").permitAll()
+                        .requestMatchers("/loginPage", "/signup-form", "/signup", "verifyEmail").permitAll()
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         .anyRequest().authenticated()
                 )
