@@ -49,12 +49,12 @@ public class InviteController {
                 String token = tokenGenerationService.generateVerificationToken(user);
                 String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() +"?token=" + token;
                 String notificationMessage = "Chat with" + emailAddress + " will be enabled after verification!";
-                notificationManager.sendFlashNotification(notificationMessage, "short-noty");
+                notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
                 emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink);
             }
             else{
                 String notificationMessage = "User with emailid: " + emailAddress + " not registered!, sending join link!";
-                notificationManager.sendFlashNotification(notificationMessage, "medium-noty");
+                notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
                 emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form");
             }
         }

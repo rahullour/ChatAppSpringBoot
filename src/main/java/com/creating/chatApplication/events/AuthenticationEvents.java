@@ -48,9 +48,8 @@ public class AuthenticationEvents {
             String email = oauthUser.getAttribute("email");
             createUserIfNotPresent(email);
             logUserActivityByEmail(email, true);
-            handleUserAuthentication(email);
             String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
-            notificationManager.sendFlashNotification(notificationMessage, "short-noty");
+            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             UsernamePasswordAuthenticationToken jdbcToken = (UsernamePasswordAuthenticationToken) authentication;
             Object principal = jdbcToken.getPrincipal();
@@ -62,9 +61,8 @@ public class AuthenticationEvents {
                 if (email != null) {
                     System.out.println("Email retrieved: " + email);
                     logUserActivityByEmail(email, true);
-                    handleUserAuthentication(email);
                     String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
-                    notificationManager.sendFlashNotification(notificationMessage, "short-noty");
+                    notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
                 } else {
                     System.out.println("Email is null in CustomUserDetails");
                 }
@@ -73,29 +71,6 @@ public class AuthenticationEvents {
             }
         } else {
             System.out.println("Unsupported authentication type: " + authentication.getClass().getName());
-        }
-    }
-
-    private void handleUserAuthentication(String email) {
-        User user = userService.getUserByEmail(email);
-        if (user != null) {
-            if (!user.isEnabled()) {
-                // Log out the user and notify them
-                System.out.println("User account is disabled. Logging out.");
-                String notificationMessage = "Your account is disabled for now, please contact admin support @rahullour01@gmail.com.";
-                notificationManager.sendFlashNotification(notificationMessage, "medium-noty");
-                HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-                HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getResponse();
-
-                try {
-                    // Perform logout by redirecting to the logout URL
-                    response.sendRedirect(request.getContextPath() + "/logout");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        } else {
-            System.out.println("User not found for email: " + email);
         }
     }
 
@@ -181,7 +156,7 @@ public class AuthenticationEvents {
             userService.saveUser(newUser);
 
             String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + " , please save it somewhere. ";
-            notificationManager.sendFlashNotification(notificationMessage, "long-noty");
+            notificationManager.sendFlashNotification(notificationMessage,"alert-success", "long-noty");
         }
     }
 

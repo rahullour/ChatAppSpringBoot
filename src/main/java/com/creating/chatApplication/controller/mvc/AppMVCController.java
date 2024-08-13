@@ -1,20 +1,30 @@
 package com.creating.chatApplication.controller.mvc;
 
+import com.creating.chatApplication.entity.Authority;
 import com.creating.chatApplication.entity.Invite;
+import com.creating.chatApplication.entity.FlashNotification;
 import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.service.*;
-import com.creating.chatApplication.service.user_room.UserRoomService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Controller
 public class AppMVCController {
@@ -31,19 +41,49 @@ public class AppMVCController {
     @Autowired
     private InviteService inviteService;
 
+    @Autowired
     private TokenGenerationService tokenGenerationService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
 
     @GetMapping("/")
-    public String home(Model model) {
-        List<com.creating.chatApplication.entity.Notification> notifications = notificationManager.getNotifications();
+    public String home(Model model, HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // Initialize user details
+        String email = null;
+        Boolean isEnabled = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            if (authentication.getPrincipal() instanceof CustomUserDetails) {
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+                isEnabled = userDetails.isEnabled();
+            } else if (authentication.getPrincipal() instanceof OAuth2User) {
+                OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+                email = oauthUser.getAttribute("email");
+                User user = userService.getUserByEmail(email);
+                isEnabled = user.isEnabled();
+            }
+        }
+
+        if(!isEnabled){
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+            notificationManager.clearNotifications();
+            notificationManager.sendFlashNotification("Your account is disabled for now, please contact admin support @rahullour01@gmail.com.","alert-danger", "medium-noty");
+            return "redirect:/loginPage";
+        }
+
+        List<FlashNotification> notifications = notificationManager.getNotifications();
+        notificationManager.clearNotifications();
         model.addAttribute("notifications", notifications);
+        notificationManager.clearNotifications();
         return "home";
     }
 
     @GetMapping("/loginPage")
-    public String login(){
-        notificationManager.clearNotifications();
+    public String loginPage(HttpServletRequest request, Model model) {
+        model.addAttribute("notifications", notificationManager.getNotifications());
         return "login";
     }
 
@@ -54,27 +94,35 @@ public class AppMVCController {
     }
 
     @PostMapping("/signup")
-    public String signup(@Valid @ModelAttribute User user, BindingResult bindingResult, @RequestParam("profilePictureUrl") String profilePictureBase64) {
+    public String signup(@Valid  User user, BindingResult bindingResult, Model model, @RequestParam("profilePictureUrl") String profilePictureBase64) {
         if (bindingResult.hasErrors()) {
-            return "signup-form"; // Return to the signup page if there are validation errors
+            for (FieldError error : bindingResult.getFieldErrors()) {
+                notificationManager.sendFlashNotification(error.getDefaultMessage(), "alert-danger", "medium-noty");
+            }
+            List<FlashNotification> notifications = notificationManager.getNotifications();
+            model.addAttribute("notifications", notifications);
+            notificationManager.clearNotifications();
+            return "signup-form";
         }
-
-        // Set the Base64 string to the user object
+        String hashedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(hashedPassword);
         user.setProfilePictureUrl(profilePictureBase64);
         user.setEnabled(false);
-        // Save the user to the database
+        Authority userAuthority = new Authority("USER_ROLE");
+        List<Authority> authorities = new ArrayList<>();
+        authorities.add(userAuthority);
+        user.setAuthorities(authorities);
         String token = tokenGenerationService.generateVerificationToken(user);
         String verificationLink = "http://www.localhost:8080/verifyEmail?user_id=" + user.getId() +"?token=" + token;
-
         emailService.sendVerificationEmail(user.getEmail(), verificationLink);
-
         String notificationMessage = "We have sent an email, please verify your email id, link valid for 5 minutes !";
-        notificationManager.sendFlashNotification(notificationMessage, "medium-noty");
-        return "redirect:/signup-form";
+        notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
+        notificationManager.sendFlashNotification("Registration successful!", "alert-success", "short-noty");
+        return "redirect:/loginPage";
     }
 
 
-    @PatchMapping("/verifyEmail")
+    @GetMapping("/verifyEmail")
     public ResponseEntity<String> verifyEmail(@RequestParam int user_id, @RequestParam String token) {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
 

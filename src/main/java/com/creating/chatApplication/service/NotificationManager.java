@@ -5,6 +5,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
+import com.creating.chatApplication.entity.FlashNotification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -27,14 +28,18 @@ public class NotificationManager {
     @Autowired
     private JavaMailSender mailSender; // Inject JavaMailSender
 
-    private List<com.creating.chatApplication.entity.Notification> notifications = new ArrayList<>();
+    private List<FlashNotification> notifications = new ArrayList<>();
 
-    public void sendFlashNotification(String message, String type) {
-        notifications.add(new com.creating.chatApplication.entity.Notification(message, type));
+    public void sendFlashNotification(String message, String type, String duration_type) {
+        notifications.add(new FlashNotification(message, type, duration_type));
     }
 
-    public List<com.creating.chatApplication.entity.Notification> getNotifications() {
-        return notifications; // Return the list of notifications
+    public List<FlashNotification> getNotifications() {
+        List<FlashNotification> deepCopy = new ArrayList<>();
+        for (FlashNotification FlashNotification : notifications) {
+            deepCopy.add(new FlashNotification(FlashNotification));
+        }
+        return deepCopy;
     }
 
     public void clearNotifications() {

@@ -11,27 +11,25 @@
 </head>
 <body>
 <div id="notification-container">
-    <div class="alert alert-danger notification short-noty" role="alert" th:if="${param.error != null}" th:text="${session.errorMessage}" style="display: none;"></div>
+    <div th:each="notification : ${notifications}" th:class="${'alert alert-danger notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
+
 <div class="container mt-5 signup-container">
     <h4 class="text-center mb-4 form-heading app-color">Sign Up</h4>
-    <form id="signupForm" action="#" th:action="@{/signup}" method="post" th:object="${user}" enctype="multipart/form-data">
+    <form id="signupForm" th:action="@{/signup}" method="post" th:object="${user}" enctype="multipart/form-data">
         <div class="d-flex gap-4">
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" th:field="*{username}" class="form-control" required />
-                    <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="text-danger"></div>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" th:field="*{password}" class="form-control" required />
-                    <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="text-danger"></div>
                 </div>
                 <div class="form-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" th:field="*{email}" class="form-control" required />
-                    <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger"></div>
                 </div>
             </div>
             <div class="col-md-6">
@@ -39,13 +37,11 @@
                     <div class="justify-content-center d-flex mb-2">
                         <label for="profilePictureUrl">Profile Picture</label>
                     </div>
-                    <!-- Image preview container -->
                     <div id="imagePreview" style="margin-bottom: 10px;" class="justify-content-center d-flex mb-3">
                         <img id="previewImage" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 160px; height: 158px; object-fit: cover;" />
                     </div>
                     <input type="file" id="profilePictureUrl" accept="image/*" class="form-control" onchange="convertToBase64(event)" />
                     <input type="hidden" th:field="*{profilePictureUrl}" id="profilePictureBase64" />
-                    <div th:if="${#fields.hasErrors('profilePictureUrl')}" th:errors="*{profilePictureUrl}" class="text-danger"></div>
                 </div>
             </div>
         </div>
