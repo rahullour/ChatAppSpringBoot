@@ -89,7 +89,6 @@ public class AuthenticationEvents {
             OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
             OAuth2User oauthUser = oauthToken.getPrincipal();
             String email = oauthUser.getAttribute("email");
-            createUserIfNotPresent(email);
             logUserActivityByEmail(email, false);
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
 
@@ -155,7 +154,7 @@ public class AuthenticationEvents {
             User newUser = new User(username, email, new BCryptPasswordEncoder().encode(password), true, "aeseud", LocalDateTime.now());
             userService.saveUser(newUser);
 
-            String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + " , please save it somewhere. ";
+            String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + ", please save it somewhere. ";
             notificationManager.sendFlashNotification(notificationMessage,"alert-success", "long-noty");
         }
     }

@@ -15,7 +15,7 @@ CREATE TABLE `user` (
   `profile_picture_url` LONGTEXT,
   `verification_token` VARCHAR(255),
   `token_expiration` DATETIME,
-  PRIMARY KEY (username),
+  PRIMARY KEY (email),
   INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

@@ -71,4 +71,9 @@ public class UserServiceImpl implements UserService{
         return  userbytoken != null && userbyid != null ? userbyid : null;
     }
 
+    @Override
+    public void DeleteUserById(int id) {
+        userRepository.deleteById(id);
+    }
+
 }
