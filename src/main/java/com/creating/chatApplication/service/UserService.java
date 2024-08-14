@@ -12,4 +12,5 @@ public interface UserService {
     void saveFCMToken(String email, String token);
     User findByVerificationToken(String token);
     User findByVerificationTokenAndUserId(int user_id, String token);
+    void DeleteUserById(int id);
 }

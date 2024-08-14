@@ -47,7 +47,7 @@ public class InviteController {
             if(user != null && !user.getEmail().equals(senderEmail)){
                 inviteService.sendInvite(senderEmail, emailAddress);
                 String token = tokenGenerationService.generateVerificationToken(user);
-                String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() +"?token=" + token;
+                String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() +"&token=" + token;
                 String notificationMessage = "Chat with" + emailAddress + " will be enabled after verification!";
                 notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
                 emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink);

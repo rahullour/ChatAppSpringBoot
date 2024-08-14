@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,9 +22,14 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 @Controller
@@ -47,7 +53,6 @@ public class AppMVCController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-
     @GetMapping("/")
     public String home(Model model, HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -70,7 +75,7 @@ public class AppMVCController {
         if(!isEnabled){
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             notificationManager.clearNotifications();
-            notificationManager.sendFlashNotification("Your account is disabled for now, please contact admin support @rahullour01@gmail.com.","alert-danger", "medium-noty");
+            notificationManager.sendFlashNotification("Your account is disabled for now, have you verified your email via the link we sent you?, else please contact admin support @rahullour01@gmail.com.","alert-danger", "medium-noty");
             return "redirect:/loginPage";
         }
 
@@ -84,17 +89,21 @@ public class AppMVCController {
     @GetMapping("/loginPage")
     public String loginPage(HttpServletRequest request, Model model) {
         model.addAttribute("notifications", notificationManager.getNotifications());
+        notificationManager.clearNotifications();
         return "login";
     }
 
     @GetMapping("/signup-form")
     public String login(Model model){
         model.addAttribute("user", new User());
+        model.addAttribute("notifications", notificationManager.getNotifications());
+        notificationManager.clearNotifications();
         return "signup-form";
     }
 
+
     @PostMapping("/signup")
-    public String signup(@Valid  User user, BindingResult bindingResult, Model model, @RequestParam("profilePictureUrl") String profilePictureBase64) {
+    public String signup(@Valid @ModelAttribute("user") User user, BindingResult bindingResult, Model model, @RequestParam("profilePicture") MultipartFile profilePicture) {
         if (bindingResult.hasErrors()) {
             for (FieldError error : bindingResult.getFieldErrors()) {
                 notificationManager.sendFlashNotification(error.getDefaultMessage(), "alert-danger", "medium-noty");
@@ -106,14 +115,21 @@ public class AppMVCController {
         }
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
-        user.setProfilePictureUrl(profilePictureBase64);
+        try {
+            byte[] imageBytes = profilePicture.getBytes();
+            String profilePictureBase64 = Base64.getEncoder().encodeToString(imageBytes);
+            user.setProfilePictureUrl(profilePictureBase64);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         user.setEnabled(false);
         Authority userAuthority = new Authority("USER_ROLE");
+        userAuthority.setUser(user);
         List<Authority> authorities = new ArrayList<>();
         authorities.add(userAuthority);
         user.setAuthorities(authorities);
         String token = tokenGenerationService.generateVerificationToken(user);
-        String verificationLink = "http://www.localhost:8080/verifyEmail?user_id=" + user.getId() +"?token=" + token;
+        String verificationLink = "http://www.localhost:8080/verifyEmail?user_id=" + user.getId() +"&token=" + token;
         emailService.sendVerificationEmail(user.getEmail(), verificationLink);
         String notificationMessage = "We have sent an email, please verify your email id, link valid for 5 minutes !";
         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
@@ -121,22 +137,24 @@ public class AppMVCController {
         return "redirect:/loginPage";
     }
 
-
     @GetMapping("/verifyEmail")
-    public ResponseEntity<String> verifyEmail(@RequestParam int user_id, @RequestParam String token) {
+    public String verifyEmail(@RequestParam int user_id, @RequestParam String token) {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
-
         if (user == null) {
-            return ResponseEntity.badRequest().body("Invalid verification token/user_id.");
+            notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
+            return "/loginPage";
         }
 
         if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body("Verification token has expired.");
+            notificationManager.sendFlashNotification("Verification token has expired, please re-signup !", "alert-danger", "short-noty");
+            userService.DeleteUserById(user_id);
+            return "/signup-form";
         }
 
         user.setEnabled(true);
         tokenGenerationService.generateVerificationToken(user);
-        return ResponseEntity.ok("Email verified successfully.");
+        notificationManager.sendFlashNotification("Your account is now verified, please login .", "alert-success", "short-noty");
+        return "/loginPage";
     }
 
     @PatchMapping("/verifyInviteUser")

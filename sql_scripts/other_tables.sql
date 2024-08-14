@@ -34,9 +34,3 @@ CREATE TABLE user_conversation (
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (conversation_id) REFERENCES conversation(id)
 );
-
--- Indexes for better performance
-CREATE INDEX idx_message_conversation_id ON message(conversation_id);
-CREATE INDEX idx_message_user_id ON message(user_id);
-CREATE INDEX idx_user_conversation_user_id ON user_conversation(user_id);
-CREATE INDEX idx_user_conversation_conversation_id ON user_conversation(conversation_id);
