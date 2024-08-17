@@ -5,6 +5,8 @@ import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.FlashNotification;
 import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.service.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -75,7 +77,7 @@ public class AppMVCController {
         if(!isEnabled){
             new SecurityContextLogoutHandler().logout(request, response, authentication);
             notificationManager.clearNotifications();
-            notificationManager.sendFlashNotification("Your account is disabled for now, have you verified your email via the link we sent you?, else please contact admin support @rahullour01@gmail.com.","alert-danger", "medium-noty");
+            notificationManager.sendFlashNotification("Your account is disabled for now, have you verified your email via the link we sent you?, else please contact admin support wechatcorporations@gmail.com.","alert-danger", "medium-noty");
             return "redirect:/loginPage";
         }
 
@@ -113,6 +115,13 @@ public class AppMVCController {
             notificationManager.clearNotifications();
             return "signup-form";
         }
+        if (userService.getUserByEmail(user.getEmail()) != null) {
+            notificationManager.sendFlashNotification("Username already exists !", "alert-danger", "short-noty");
+            List<FlashNotification> notifications = notificationManager.getNotifications();
+            model.addAttribute("notifications", notifications);
+            notificationManager.clearNotifications();
+            return "signup-form";
+        }
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
         try {
@@ -134,6 +143,83 @@ public class AppMVCController {
         String notificationMessage = "We have sent an email, please verify your email id, link valid for 5 minutes !";
         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
         notificationManager.sendFlashNotification("Registration successful!", "alert-success", "short-noty");
+        return "redirect:/loginPage";
+    }
+
+    @GetMapping("/verifyResetEmail")
+    public String verifyResetEmail(@RequestParam String email) {
+        User user = userService.getUserByEmail(email);
+        if (user == null) {
+            notificationManager.sendFlashNotification("Invalid email !", "alert-danger", "short-noty");
+            return "redirect:/loginPage";
+        }
+        else {
+            String token = tokenGenerationService.generateVerificationToken(user);
+            String verificationLink = "http://www.localhost:8080/resetPassword?user_id=" + user.getId() +"&token=" + token;
+            emailService.sendPasswordResetEmail(user.getEmail(), verificationLink);
+            String notificationMessage = "We have sent an email, please verify yourself, link valid for 5 minutes !";
+            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
+        }
+        return "redirect:/loginPage";
+    }
+
+    @GetMapping("/resetPassword")
+    public String resetPassword(@RequestParam int user_id, @RequestParam String token, RedirectAttributes redirectAttributes, Model model) {
+        User user = userService.findByVerificationTokenAndUserId(user_id, token);
+        if (user == null) {
+            notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
+            return "redirect:/loginPage";
+        }
+        else if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
+            notificationManager.sendFlashNotification("Verification token has expired, please re-create reset password request !", "alert-danger", "short-noty");
+            return "redirect:/loginPage";
+        }
+
+        notificationManager.sendFlashNotification("Please enter new password details !", "alert-success", "short-noty");
+        model.addAttribute("user_id", user_id);
+        model.addAttribute("token", token);
+        model.addAttribute("notifications", notificationManager.getNotifications());
+        model.addAttribute("user", user);
+        notificationManager.clearNotifications();
+        return "forgot-password-form";
+    }
+
+    @PostMapping("/passwordResetFormSubmit")
+    public String passwordResetFormSubmit(@Valid @ModelAttribute("user") User user, BindingResult bindingResult, Model model, @RequestParam int user_id, @RequestParam String token, HttpServletResponse response) throws IOException {
+        boolean errors = false;
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            notificationManager.sendFlashNotification("Password is required", "alert-danger", "medium-noty");
+            errors = true;
+        } else if (user.getPassword().length() < 6 || user.getPassword().length() > 100) {
+            notificationManager.sendFlashNotification("Password must be between 6 and 100 characters", "alert-danger", "medium-noty");
+            errors = true;
+        }
+
+        if (errors) {
+            model.addAttribute("notifications", notificationManager.getNotifications());
+            response.sendRedirect("http://www.localhost:8080/resetPassword?user_id=" + user_id + "&token=" + token);
+            return null;
+        }
+
+        User sent_user = userService.findByVerificationTokenAndUserId(user_id, token);
+        if (sent_user == null) {
+            notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
+            model.addAttribute("notifications", notificationManager.getNotifications());
+            notificationManager.clearNotifications();
+            return "redirect:/loginPage";
+        }
+        else if (sent_user.getTokenExpiration().isBefore(LocalDateTime.now())) {
+            notificationManager.sendFlashNotification("Verification token has expired, please re-create reset password request !", "alert-danger", "short-noty");
+            model.addAttribute("notifications", notificationManager.getNotifications());
+            notificationManager.clearNotifications();
+            return "redirect:/loginPage";
+        }
+        String hashedPassword = passwordEncoder.encode(user.getPassword());
+        sent_user.setPassword(hashedPassword);
+        userService.saveUser(sent_user);
+        tokenGenerationService.generateVerificationToken(sent_user);
+        notificationManager.sendFlashNotification("Your password has been reset !", "alert-success", "short-noty");
+        model.addAttribute("notifications", notificationManager.getNotifications());
         return "redirect:/loginPage";
     }
 

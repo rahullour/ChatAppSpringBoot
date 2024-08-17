@@ -72,7 +72,7 @@ public class SecurityConfig {
                 errorMessage = "Account is locked";
             } else if (exception instanceof DisabledException) {
                 notificationDuration = "medium-noty";
-                errorMessage = "Your account is disabled for now, have you verified your email via the link we sent you?, else please contact admin support @rahullour01@gmail.com.";
+                errorMessage = "Your account is disabled for now, have you verified your email via the link we sent you?, else please contact admin support wechatcorporations@gmail.com.";
             }
             notificationManager.sendFlashNotification(errorMessage, notificationType, notificationDuration);
             response.sendRedirect("/loginPage");
@@ -92,7 +92,7 @@ public class SecurityConfig {
         http
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/loginPage", "/signup-form", "/signup", "/verifyEmail").permitAll()
+                        .requestMatchers("/loginPage", "/signup-form", "/signup", "/verifyEmail", "/verifyInviteUser", "/verifyResetEmail", "/resetPassword", "/passwordResetFormSubmit").permitAll()
                         .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
                         .anyRequest().authenticated()
                 )
