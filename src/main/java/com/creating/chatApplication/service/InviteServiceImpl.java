@@ -24,11 +24,11 @@ public class InviteServiceImpl implements InviteService {
     private UserService userService;
 
     @Override
-    public void sendInvite(String senderEmail, String recipientEmail) {
+    public Invite createInvite(String senderEmail, String recipientEmail, int type) {
         Invite invite = new Invite();
         invite.setsenderEmail(senderEmail);
         invite.setRecipientEmail(recipientEmail);
-        inviteRepository.save(invite);
+        invite.setType(type);
 
         // Get the recipient's FCM token (you need to implement this method)
         String recipientToken = userService.getFCMTokenByEmail(recipientEmail);
@@ -36,7 +36,12 @@ public class InviteServiceImpl implements InviteService {
         // Send notification via FCM
         String notificationTitle = "New Chat Invitation";
         String notificationBody = senderEmail + " has invited you to chat.";
-//        notificationManager.sendInviteNotification(notificationTitle, notificationBody, recipientToken);
+        return inviteRepository.save(invite);
+    }
+
+    @Override
+    public List<Invite> getInvites(String s_email, String r_email) {
+        return inviteRepository.findBySenderAndRecipientEmail(s_email, r_email);
     }
 
     @Override
@@ -64,7 +69,7 @@ public class InviteServiceImpl implements InviteService {
     }
 
     @Override
-    public void rejectInvite(int inviteId, String username) {
+    public void rejectInvite(int inviteId) {
         Invite invite = inviteRepository.findById(inviteId).orElse(null);
         if (invite != null) {
             inviteRepository.delete(invite);

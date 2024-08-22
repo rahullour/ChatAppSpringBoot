@@ -16,24 +16,21 @@
 
 <div class="container mt-5 signup-container">
     <h4 class="text-center mb-4 form-heading app-color">Sign Up</h4>
-    <form id="signupForm" th:action="@{/signup(${_csrf.parameterName}=${_csrf.token})}" method="post" th:object="${user}" enctype="multipart/form-data" onsubmit="return validatePasswords()">
+    <form id="signupForm" th:action="@{/signup(${_csrf.parameterName}=${_csrf.token})}" method="post" th:object="${user}" enctype="multipart/form-data" onsubmit="return validateForm()">
         <div class="d-flex gap-4">
             <div class="col-md-6">
                 <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" th:field="*{username}" class="form-control" required />
+                    <input type="text" id="username" th:field="*{username}" placeholder="Username" class="form-control" required />
                 </div>
                 <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" th:field="*{password}" class="form-control" required />
+                    <input type="password" id="password" th:field="*{password}" placeholder="Password" class="form-control" required />
                 </div>
                 <div class="form-group">
-                    <label for="confirmPassword">Confirm Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required />
+                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-control" required />
                 </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" th:field="*{email}" class="form-control" required />
+                <div class="input-group">
+                    <input type="text" id="email" th:field="*{email}" placeholder="Email" class="form-control" aria-label="email" aria-describedby="basic-addon2" required />
+                    <span class="input-group-text" id="basic-addon2">@gmail.com</span>
                 </div>
             </div>
             <div class="col-md-6">
@@ -42,7 +39,7 @@
                         <label for="profilePictureFile">Profile Picture</label>
                     </div>
                     <div id="imagePreview" style="margin-bottom: 10px; display: none;" class="justify-content-center d-flex mb-3">
-                        <img id="previewImage" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 160px; height: 158px; object-fit: cover;" />
+                        <img id="previewImage" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 135px; height: 135px; object-fit: cover;" />
                     </div>
                     <input type="file" id="profilePictureFile" name="profilePicture" accept="image/*" class="form-control" onchange="previewProfileImage(event)" />
                 </div>

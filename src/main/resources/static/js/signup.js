@@ -7,7 +7,12 @@
     };
     reader.readAsDataURL(event.target.files[0]);
 }
-
+function validateForm() {
+    if(validatePasswords()){
+        const emailInput = document.getElementById('email');
+        emailInput.value = emailInput.value.trim() + '@gmail.com';
+    }
+}
 function validatePasswords() {
     var password = document.getElementById("password").value;
     var confirmPassword = document.getElementById("confirmPassword").value;

@@ -5,7 +5,11 @@ import com.creating.chatApplication.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -52,11 +56,20 @@ public class UserServiceImpl implements UserService{
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
-            String username = authentication.getName(); // Get the username of the authenticated user
-            return getUserByUsername(username); // Retrieve the User entity by username
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof DefaultOAuth2User) {
+                DefaultOAuth2User oauth2User = (DefaultOAuth2User) principal;
+                String email = oauth2User.getAttribute("email");
+                return getUserByEmail(email);
+            } else if(principal instanceof CustomUserDetails) {
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+                String email = userDetails.getEmail();
+                return getUserByEmail(email);
+            }
         }
-        return null; // Return null if no user is authenticated
+        return null;
     }
+
 
     @Override
     public User findByVerificationToken(String token) {
@@ -74,5 +87,9 @@ public class UserServiceImpl implements UserService{
     @Override
     public void DeleteUserById(int id) {
         userRepository.deleteById(id);
+    }
+
+    public List<String> findEmailsByQuery(String query) {
+        return userRepository.findEmailsByQuery(query);
     }
 }

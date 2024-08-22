@@ -228,38 +228,39 @@ public class AppMVCController {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
         if (user == null) {
             notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
-            return "/loginPage";
+            return "redirect:/loginPage";
         }
 
         if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
             notificationManager.sendFlashNotification("Verification token has expired, please re-signup !", "alert-danger", "short-noty");
             userService.DeleteUserById(user_id);
-            return "/signup-form";
+            return "signup-form";
         }
 
         user.setEnabled(true);
         tokenGenerationService.generateVerificationToken(user);
         notificationManager.sendFlashNotification("Your account is now verified, please login .", "alert-success", "short-noty");
-        return "/loginPage";
+        return "redirect:/loginPage";
     }
 
-    @PatchMapping("/verifyInviteUser")
-    public ResponseEntity<String> verifyChatJoin(@RequestParam int user_id, @RequestParam String token) {
+    @GetMapping("/verifyInviteUser")
+    public String verifyChatJoin(@RequestParam int user_id, @RequestParam String token) {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
 
         if (user == null) {
-            return ResponseEntity.badRequest().body("Invalid verification token/user_id.");
+            notificationManager.sendFlashNotification("Invalid verification token/user_id.", "alert-danger", "short-noty");
         }
-
-        if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body("Verification token has expired.");
+        else if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
+            notificationManager.sendFlashNotification("Verification token has expired.", "alert-danger", "short-noty");
         }
-        List<Invite> invites = inviteService.getInvitesForReciever(user.getEmail());
-        for(Invite i:invites){
-            i.setAccepted(true);
+        else{
+            List<Invite> invites = inviteService.getInvitesForReciever(user.getEmail());
+            for(Invite i:invites){
+                i.setAccepted(true);
+            }
+            tokenGenerationService.generateVerificationToken(user);
         }
-        tokenGenerationService.generateVerificationToken(user);
-        return ResponseEntity.ok("You have joined successfully.");
+        return "redirect:/loginPage";
     }
 
     @GetMapping("/access-denied")
