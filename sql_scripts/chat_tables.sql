@@ -5,9 +5,24 @@ CREATE TABLE `invite` (
     recipient_email VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     accepted BOOLEAN DEFAULT FALSE,
-    type varchar(20),
+    type INT,
     FOREIGN KEY (sender_email) REFERENCES user(email),
     FOREIGN KEY (recipient_email) REFERENCES user(email)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `user_group` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `invite_group` (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    invite_id INT NOT NULL,
+    group_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (invite_id) REFERENCES invite(id),
+    FOREIGN KEY (group_id) REFERENCES user_group(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE status (

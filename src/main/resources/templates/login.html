@@ -27,15 +27,13 @@
             <h4 class="card-title mb-4 text-center">Welcome to <span class="app-color"> WeChat</span></h4>
             <form th:action="@{/authenticateTheUser}" method="POST">
                 <div class="mb-3">
-                    <label for="username" class="form-label">Username/Email</label>
-                    <input name="username" id="username" class="form-control" type="text" required>
+                    <input name="username" id="username" placeholder="Username/Email" class="form-control" type="text" required>
                 </div>
                 <div class="mb-3">
-                    <label for="password" class="form-label">Password</label>
-                    <input name="password" id="password" class="form-control" type="password" required>
+                    <input name="password" id="password" placeholder="Password" class="form-control" type="password" required>
                     <a href="#" class="mt-2 float-end" id="forgotPasswordLink">Forgot Password?</a>
                 </div>
-                <div class="justify-content-center d-flex gap-5 mt-5">
+                <div class="justify-content-center d-flex gap-5 mt-5 p-3">
                     <a href="/oauth2/authorization/google"><img th:src="@{/images/google.png}" width="50px" height="50px"></a>
                     <a class="ml-4" href="/oauth2/authorization/github"><img th:src="@{/images/github.png}" width="50px" height="50px"></a>
                 </div>

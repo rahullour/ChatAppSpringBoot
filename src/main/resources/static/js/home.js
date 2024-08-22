@@ -39,18 +39,6 @@ $(document).ready(function() {
     });
 
 
-    // Real-Time Messaging Logic
-    function connect() {
-        const socket = new SockJS('/chat');
-        stompClient = Stomp.over(socket);
-        stompClient.connect({}, function (frame) {
-            console.log('Connected: ' + frame);
-            stompClient.subscribe('/topic/messages', function (message) {
-                showMessage(JSON.parse(message.body));
-            });
-        });
-    }
-
     function sendMessage() {
         const message = {
             from: 'YourUsername', // Replace with actual username
@@ -77,42 +65,48 @@ $(document).ready(function() {
         messageContainer.scrollTop(messageContainer[0].scrollHeight); // Scroll to the bottom
     }
 
-    // Initialize WebSocket connection and message sending
-    connect();
-    $('#sendMessage').click(function() {
-        sendMessage();
+    $('#inviteForm').on('submit', function(event) {
+        event.preventDefault();
+        const selectedOptions = Array.from(document.getElementById('emailInput').selectedOptions);
+        const emails = selectedOptions.map(option => option.value.trim());
+        document.getElementById('emailList').value = JSON.stringify(emails);
+        this.submit();
     });
-    $('#messageInput').keypress(function (e) {
-        if (e.which === 13) {
-            sendMessage();
+    document.getElementById('group_type').addEventListener('change', function() {
+        const groupNameInput = document.getElementById('group_name');
+
+        if (this.checked) {
+            groupNameInput.disabled = false; // Enable input
+            groupNameInput.classList.remove('disabled'); // Remove disabled class if needed
+        } else {
+            groupNameInput.disabled = true; // Disable input
+            groupNameInput.classList.add('disabled'); // Add disabled class if needed
         }
     });
-
-    // Handle FCM Token Registration
-    messaging.requestPermission()
-        .then(() => {
-            return messaging.getToken();
-        })
-        .then((token) => {
-            // Send the token to your server
-            $.ajax({
-                url: '/api/users/fcm-token', // Define your API endpoint for saving the FCM token
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ email: 'user@example.com', token: token }), // Replace with actual user email
-                beforeSend: function(xhr) {
-                    // Set the CSRF token in the request header
-                    xhr.setRequestHeader(csrfHeader, csrfToken);
-                },
-                success: function(response) {
-                    console.log('FCM token saved successfully!');
-                },
-                error: function(error) {
-                    console.error('Error saving FCM token:', error);
-                }
-            });
-        })
-        .catch((err) => {
-            console.error('Unable to get permission to notify.', err);
-        });
+    $('#emailInput').select2({
+        placeholder: "Enter email addresses",
+        tags: true, // Allow users to add new emails
+        ajax: {
+            url: '/api/getUserEmails', // Endpoint to fetch existing emails
+            dataType: 'json',
+            delay: 250,
+            data: function (params) {
+                return {
+                    q: params.term // Search term
+                };
+            },
+            processResults: function (data) {
+                return {
+                    results: data.map(email => ({
+                        id: email,
+                        text: email
+                    }))
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 1
+    });
 });
+
+

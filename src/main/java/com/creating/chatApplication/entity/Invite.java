@@ -21,7 +21,50 @@ public class Invite {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "accepted")
     private boolean accepted;
+
+    @Column(name = "type")
+    private int type;
+
+    public Invite() {
+    }
+
+    public Invite(String senderEmail, String recipientEmail, LocalDateTime createdAt, boolean accepted, int type, InviteGroup inviteGroup) {
+        this.senderEmail = senderEmail;
+        this.recipientEmail = recipientEmail;
+        this.createdAt = createdAt;
+        this.accepted = accepted;
+        this.type = type;
+        this.inviteGroup = inviteGroup;
+    }
+
+    @OneToOne(mappedBy = "invite", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private InviteGroup inviteGroup;
+
+    public InviteGroup getInviteGroup() {
+        return inviteGroup;
+    }
+
+    public void setInviteGroup(InviteGroup inviteGroup) {
+        this.inviteGroup = inviteGroup;
+    }
+
+    public String getSenderEmail() {
+        return senderEmail;
+    }
+
+    public void setSenderEmail(String senderEmail) {
+        this.senderEmail = senderEmail;
+    }
+
+    public int isType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
+    }
 
     public int getId() {
         return id;
@@ -71,6 +114,8 @@ public class Invite {
                 ", recipientEmail='" + recipientEmail + '\'' +
                 ", createdAt=" + createdAt +
                 ", accepted=" + accepted +
+                ", type=" + type +
+                ", inviteGroup=" + inviteGroup +
                 '}';
     }
 }

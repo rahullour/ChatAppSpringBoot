@@ -37,3 +37,13 @@ body{
     color: black;
     text-align: left;
 }
+.select2-container{
+    width: 100% !important;
+}
+.select2-container .select2-search--inline .select2-search__field{
+    width: 100% !important;
+    height: 15vh !important;
+}
+.select2-container{
+    z-index: 1055;
+}
