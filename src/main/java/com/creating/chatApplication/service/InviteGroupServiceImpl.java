@@ -13,8 +13,7 @@ public class InviteGroupServiceImpl implements InviteGroupService{
     private InviteGroupRepository inviteGroupRepository;
 
     @Override
-    public InviteGroup createInviteGroup(UserGroup user_group, Invite invite) {
-        InviteGroup ig = new InviteGroup(user_group, invite);
-        return inviteGroupRepository.save(ig);
+    public InviteGroup saveInviteGroup(InviteGroup inviteGroup) {
+        return inviteGroupRepository.save(inviteGroup);
     }
 }

@@ -109,4 +109,64 @@ $(document).ready(function() {
     });
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch single invites
+    fetchInvites('api/invites/single')
+        .then(singleInvites => {
+            if (singleInvites.length > 0) {
+                displayInvites(singleInvites, 'single');
+            } else {
+                // If no single invites, fetch group invites
+                fetchInvites('api/invites/group')
+                    .then(groupInvites => {
+                        if (groupInvites.length > 0) {
+                            displayInvites(groupInvites, 'group');
+                        } else {
+                            // Show the "Invite Users" button if no invites are found
+                            showInviteButton();
+                        }
+                    })
+                    .catch(error => console.error('Error fetching group invites:', error));
+            }
+        })
+        .catch(error => console.error('Error fetching single invites:', error));
+});
 
+function fetchInvites(endpoint) {
+    return fetch(endpoint)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => data)
+        .catch(error => {
+            console.error('Error fetching invites:', error);
+            throw error;
+        });
+}
+
+function displayInvites(invites, type) {
+    const listId = type === 'single' ? 'single-list' : 'group-list';
+    const inviteList = document.getElementById(listId);
+    inviteList.innerHTML = ''; // Clear previous invites
+
+    invites.forEach(invite => {
+        const inviteItem = document.createElement('li');
+        inviteItem.classList.add('invite-item');
+
+        if (type === 'single') {
+            inviteItem.textContent = `Invite from: ${invite.senderEmail}`; // Display sender email for single invites
+        } else {
+            inviteItem.textContent = `Group invite: ${invite.inviteGroup.userGroup.name}`; // Display group name for group invites
+        }
+
+        inviteList.appendChild(inviteItem); // Append the invite item to the respective list
+    });
+}
+
+function showInviteButton() {
+    const inviteButton = document.querySelector('.invite-btn');
+    inviteButton.style.display = 'block'; // Show the invite button
+}

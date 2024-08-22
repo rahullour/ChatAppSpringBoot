@@ -244,7 +244,7 @@ public class AppMVCController {
     }
 
     @GetMapping("/verifyInviteUser")
-    public String verifyChatJoin(@RequestParam int user_id, @RequestParam String token) {
+    public String verifyChatJoin(@RequestParam int user_id, @RequestParam String token, @RequestParam int type, @RequestParam int sender_id) {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
 
         if (user == null) {
@@ -254,11 +254,12 @@ public class AppMVCController {
             notificationManager.sendFlashNotification("Verification token has expired.", "alert-danger", "short-noty");
         }
         else{
-            List<Invite> invites = inviteService.getInvitesForReciever(user.getEmail());
+            List<Invite> invites = inviteService.getInvites(userService.getUserById(sender_id).getEmail(), user.getEmail(), type);
             for(Invite i:invites){
                 i.setAccepted(true);
             }
             tokenGenerationService.generateVerificationToken(user);
+            notificationManager.sendFlashNotification("Chat join complete, please login!", "alert-success", "short-noty");
         }
         return "redirect:/loginPage";
     }

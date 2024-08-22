@@ -18,9 +18,6 @@ public class Invite {
     @Column(name = "recipient_email")
     private String recipientEmail;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
     @Column(name = "accepted")
     private boolean accepted;
 
@@ -30,10 +27,9 @@ public class Invite {
     public Invite() {
     }
 
-    public Invite(String senderEmail, String recipientEmail, LocalDateTime createdAt, boolean accepted, int type, InviteGroup inviteGroup) {
+    public Invite(String senderEmail, String recipientEmail, boolean accepted, int type, InviteGroup inviteGroup) {
         this.senderEmail = senderEmail;
         this.recipientEmail = recipientEmail;
-        this.createdAt = createdAt;
         this.accepted = accepted;
         this.type = type;
         this.inviteGroup = inviteGroup;
@@ -58,10 +54,6 @@ public class Invite {
         this.senderEmail = senderEmail;
     }
 
-    public int isType() {
-        return type;
-    }
-
     public void setType(int type) {
         this.type = type;
     }
@@ -74,28 +66,12 @@ public class Invite {
         this.id = id;
     }
 
-    public String getsenderEmail() {
-        return senderEmail;
-    }
-
-    public void setsenderEmail(String senderEmail) {
-        this.senderEmail = senderEmail;
-    }
-
     public String getRecipientEmail() {
         return recipientEmail;
     }
 
     public void setRecipientEmail(String recipientEmail) {
         this.recipientEmail = recipientEmail;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 
     public boolean isAccepted() {
@@ -112,7 +88,6 @@ public class Invite {
                 "id=" + id +
                 ", senderEmail='" + senderEmail + '\'' +
                 ", recipientEmail='" + recipientEmail + '\'' +
-                ", createdAt=" + createdAt +
                 ", accepted=" + accepted +
                 ", type=" + type +
                 ", inviteGroup=" + inviteGroup +

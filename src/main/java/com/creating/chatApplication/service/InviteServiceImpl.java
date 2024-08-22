@@ -2,6 +2,7 @@ package com.creating.chatApplication.service;
 
 import com.creating.chatApplication.entity.Conversation;
 import com.creating.chatApplication.entity.Invite;
+import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.repository.InviteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +25,12 @@ public class InviteServiceImpl implements InviteService {
     private UserService userService;
 
     @Override
-    public Invite createInvite(String senderEmail, String recipientEmail, int type) {
+    public Invite createInvite(String senderEmail, String recipientEmail, int type, InviteGroup inviteGroup) {
         Invite invite = new Invite();
-        invite.setsenderEmail(senderEmail);
+        invite.setSenderEmail(senderEmail);
         invite.setRecipientEmail(recipientEmail);
         invite.setType(type);
+        invite.setInviteGroup(inviteGroup);
 
         // Get the recipient's FCM token (you need to implement this method)
         String recipientToken = userService.getFCMTokenByEmail(recipientEmail);
@@ -40,13 +42,18 @@ public class InviteServiceImpl implements InviteService {
     }
 
     @Override
-    public List<Invite> getInvites(String s_email, String r_email) {
-        return inviteRepository.findBySenderAndRecipientEmail(s_email, r_email);
+    public List<Invite> getInvites(String s_email, String r_email, int type) {
+        return inviteRepository.findBySenderRecipientEmailAndType(s_email, r_email, type);
     }
 
     @Override
-    public List<Invite> getInvitesForReciever(String email) {
-        return inviteRepository.findByRecipientEmail(email);
+    public List<Invite> getInvitesBySenderEmail(String s_email, int type) {
+        return inviteRepository.findBySenderEmailAndType(s_email, type);
+    }
+
+    @Override
+    public List<Invite> getInvitesBySenderEmailAccepted(String s_email, int type) {
+        return inviteRepository.findBySenderEmailAndTypeAccepted(s_email, type);
     }
 
     @Override
@@ -55,9 +62,9 @@ public class InviteServiceImpl implements InviteService {
         if (invite != null) {
             // Create a new conversation
             Conversation conversation = new Conversation();
-            conversation.setName(invite.getsenderEmail() + ", " + username);
+            conversation.setName(invite.getSenderEmail() + ", " + username);
             conversation.setGroupChat(false);
-            Conversation createdConversation = conversationService.createConversation(conversation, userService.getUserByUsername(invite.getsenderEmail()));
+            Conversation createdConversation = conversationService.createConversation(conversation, userService.getUserByUsername(invite.getSenderEmail()));
 
             // Add the recipient to the conversation
             User recipient = userService.getUserByUsername(username);
@@ -74,5 +81,10 @@ public class InviteServiceImpl implements InviteService {
         if (invite != null) {
             inviteRepository.delete(invite);
         }
+    }
+
+    @Override
+    public Invite saveInvite(Invite invite) {
+        return inviteRepository.save(invite);
     }
 }
