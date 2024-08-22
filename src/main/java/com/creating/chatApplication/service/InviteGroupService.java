@@ -5,5 +5,5 @@ import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.UserGroup;
 
 public interface InviteGroupService {
-    InviteGroup createInviteGroup(UserGroup user_group, Invite invite);
+    InviteGroup saveInviteGroup(InviteGroup inviteGroup);
 }

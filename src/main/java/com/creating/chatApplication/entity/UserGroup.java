@@ -1,8 +1,6 @@
 package com.creating.chatApplication.entity;
 
 import jakarta.persistence.*;
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -15,8 +13,8 @@ public class UserGroup {
     @Column(name = "name")
     private String name;
 
-    @OneToMany(mappedBy = "user_group", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InviteGroup> invite_groups;
+    @OneToMany(mappedBy = "userGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<InviteGroup> inviteGroups;
 
     public UserGroup() {}
 
@@ -40,12 +38,12 @@ public class UserGroup {
         this.name = name;
     }
 
-    public List<InviteGroup> getInvite_groups() {
-        return invite_groups;
+    public List<InviteGroup> getInviteGroups() {
+        return inviteGroups;
     }
 
-    public void setInvite_groups(List<InviteGroup> invite_groups) {
-        this.invite_groups = invite_groups;
+    public void setInviteGroups(List<InviteGroup> inviteGroups) {
+        this.inviteGroups = inviteGroups;
     }
 
     @Override
@@ -53,7 +51,7 @@ public class UserGroup {
         return "UserGroup{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", invite_groups=" + invite_groups +
+                ", inviteGroups=" + inviteGroups +
                 '}';
     }
 }

@@ -10,7 +10,7 @@ CREATE TABLE `invite` (
     FOREIGN KEY (recipient_email) REFERENCES user(email)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE `user_group` (
+CREATE TABLE `userGroup` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -22,7 +22,7 @@ CREATE TABLE `invite_group` (
     group_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (invite_id) REFERENCES invite(id),
-    FOREIGN KEY (group_id) REFERENCES user_group(id)
+    FOREIGN KEY (group_id) REFERENCES userGroup(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 CREATE TABLE status (

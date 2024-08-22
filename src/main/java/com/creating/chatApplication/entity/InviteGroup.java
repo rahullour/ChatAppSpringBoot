@@ -11,23 +11,15 @@ public class InviteGroup {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
-    private UserGroup user_group;
+    private UserGroup userGroup;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "invite_id")
     private Invite invite;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
     public InviteGroup() {
-    }
-
-    public InviteGroup(UserGroup user_group, Invite invite) {
-        this.user_group = user_group;
-        this.invite = invite;
     }
 
     public int getId() {
@@ -38,14 +30,6 @@ public class InviteGroup {
         this.id = id;
     }
 
-    public UserGroup getUser_group() {
-        return user_group;
-    }
-
-    public void setUser_group(UserGroup user_group) {
-        this.user_group = user_group;
-    }
-
     public Invite getInvite() {
         return invite;
     }
@@ -54,21 +38,20 @@ public class InviteGroup {
         this.invite = invite;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public UserGroup getUserGroup() {
+        return userGroup;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setUserGroup(UserGroup userGroup) {
+        this.userGroup = userGroup;
     }
 
     @Override
     public String toString() {
         return "InviteGroup{" +
                 "id=" + id +
-                ", user_group=" + user_group +
+                ", userGroup=" + userGroup +
                 ", invite=" + invite +
-                ", createdAt=" + createdAt +
                 '}';
     }
 }

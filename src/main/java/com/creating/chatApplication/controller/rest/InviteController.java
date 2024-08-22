@@ -1,16 +1,20 @@
 package com.creating.chatApplication.controller.rest;
 
 import com.creating.chatApplication.entity.Invite;
+import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.entity.UserGroup;
 import com.creating.chatApplication.service.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailSendException;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
@@ -52,7 +56,7 @@ public class InviteController {
     }
 
     @PostMapping("/invites")
-    public ResponseEntity<Void> sendInvite(@RequestParam String senderEmail, @RequestParam String emails, @RequestParam Boolean type, @RequestParam String groupName) {
+    public ResponseEntity<Void> sendInvite(@RequestParam String senderEmail, @RequestParam String emails, @RequestParam(required = false) boolean type, @RequestParam(required = false) String groupName) {
         ObjectMapper objectMapper = new ObjectMapper();
         List<String> receiverEmails = null;
         try {
@@ -62,7 +66,7 @@ public class InviteController {
                 try {
                     if(isValidEmail(emailAddress)) {
                         if (user != null && !user.getEmail().equals(senderEmail)) {
-                            List<Invite> connections = inviteService.getInvites(senderEmail, emailAddress);
+                            List<Invite> connections = inviteService.getInvites(senderEmail, emailAddress, type ? 1 : 0);
                             if (!connections.isEmpty() && connections.getLast().isAccepted()) {
                                 notificationManager.sendFlashNotification(emailAddress + " is connected already !", "alert-success", "short-noty");
                                 return ResponseEntity.status(HttpStatus.FOUND)
@@ -72,13 +76,45 @@ public class InviteController {
                             for(Invite i: connections){
                                 inviteService.rejectInvite(i.getId());
                             }
-                            Invite invite = inviteService.createInvite(senderEmail, emailAddress, type ? 1 : 0);
                             if(type){
-                                UserGroup user_group = userGroupService.createUserGroup(groupName);
-                                inviteGroupService.createInviteGroup(user_group, invite);
+                                // Create the invite
+                                Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null); // Initially pass null for inviteGroup
+
+// Create a new InviteGroup
+                                InviteGroup inviteGroup = new InviteGroup();
+                                inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
+
+// Check if the UserGroup already exists
+                                UserGroup existingUserGroup = userGroupService.findUserGroupByName(groupName); // Implement this method to find UserGroup by name
+
+                                if (existingUserGroup != null) {
+                                    // If the UserGroup exists, add the new InviteGroup to its list
+                                    existingUserGroup.getInviteGroups().add(inviteGroup);
+                                    inviteGroup.setUserGroup(existingUserGroup); // Set the UserGroup for the InviteGroup
+
+                                    // Save the InviteGroup
+                                    inviteGroupService.saveInviteGroup(inviteGroup);
+                                } else {
+                                    // If the UserGroup does not exist, create a new one
+                                    UserGroup newUserGroup = new UserGroup();
+                                    newUserGroup.setName(groupName); // Set the name of the new UserGroup
+                                    List<InviteGroup> inviteGroups = new ArrayList<>();
+                                    inviteGroups.add(inviteGroup); // Add the new InviteGroup to the list
+                                    newUserGroup.setInviteGroups(inviteGroups); // Set the list of InviteGroups
+                                    inviteGroup.setUserGroup(newUserGroup); // Set the UserGroup for the InviteGroup
+
+                                    // Save the new UserGroup
+                                    userGroupService.saveUserGroup(newUserGroup);
+
+                                    // Save the InviteGroup
+                                    inviteGroupService.saveInviteGroup(inviteGroup);
+                                }
+                            }else{
+                                inviteService.createInvite(senderEmail, emailAddress, 0, null);
                             }
+
                             String token = tokenGenerationService.generateVerificationToken(user);
-                            String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token;
+                            String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId();
                             String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
                             emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink);
@@ -106,6 +142,14 @@ public class InviteController {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", "/")
                 .build();
+    }
+    @GetMapping("/invites/single")
+    public List<Invite> getSingleInvites(){
+        return inviteService.getInvitesBySenderEmailAccepted(userService.getCurrentUser().getEmail(),  0);
+    }
+    @GetMapping("/invites/group")
+    public List<Invite> getGroupInvites(){
+        return inviteService.getInvitesBySenderEmailAccepted(userService.getCurrentUser().getEmail(), 1);
     }
 }
 
