@@ -7,7 +7,6 @@ import com.creating.chatApplication.entity.UserGroup;
 import com.creating.chatApplication.service.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,44 +72,51 @@ public class InviteController {
                                         .header("Location", "/")
                                         .build();
                             }
+                            connections.addAll(inviteService.getInvites(emailAddress, senderEmail, type ? 1 : 0));
                             for(Invite i: connections){
                                 inviteService.rejectInvite(i.getId());
                             }
                             if(type){
                                 // Create the invite
                                 Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null); // Initially pass null for inviteGroup
-
+                                Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null);
 // Create a new InviteGroup
                                 InviteGroup inviteGroup = new InviteGroup();
                                 inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
+
+                                InviteGroup inviteGroupOther = new InviteGroup();
+                                inviteGroupOther.setInvite(invite_other);
 
 // Check if the UserGroup already exists
                                 UserGroup existingUserGroup = userGroupService.findUserGroupByName(groupName); // Implement this method to find UserGroup by name
 
                                 if (existingUserGroup != null) {
                                     // If the UserGroup exists, add the new InviteGroup to its list
-                                    existingUserGroup.getInviteGroups().add(inviteGroup);
                                     inviteGroup.setUserGroup(existingUserGroup); // Set the UserGroup for the InviteGroup
+                                    inviteGroupOther.setUserGroup(existingUserGroup);
 
                                     // Save the InviteGroup
                                     inviteGroupService.saveInviteGroup(inviteGroup);
+                                    inviteGroupService.saveInviteGroup(inviteGroupOther);
                                 } else {
                                     // If the UserGroup does not exist, create a new one
                                     UserGroup newUserGroup = new UserGroup();
                                     newUserGroup.setName(groupName); // Set the name of the new UserGroup
                                     List<InviteGroup> inviteGroups = new ArrayList<>();
                                     inviteGroups.add(inviteGroup); // Add the new InviteGroup to the list
-                                    newUserGroup.setInviteGroups(inviteGroups); // Set the list of InviteGroups
+                                    inviteGroups.add(inviteGroupOther);
                                     inviteGroup.setUserGroup(newUserGroup); // Set the UserGroup for the InviteGroup
-
+                                    inviteGroupOther.setUserGroup(newUserGroup);
                                     // Save the new UserGroup
                                     userGroupService.saveUserGroup(newUserGroup);
 
                                     // Save the InviteGroup
                                     inviteGroupService.saveInviteGroup(inviteGroup);
+                                    inviteGroupService.saveInviteGroup(inviteGroupOther);
                                 }
                             }else{
                                 inviteService.createInvite(senderEmail, emailAddress, 0, null);
+                                inviteService.createInvite(emailAddress, senderEmail, 0, null);
                             }
 
                             String token = tokenGenerationService.generateVerificationToken(user);
@@ -118,6 +124,7 @@ public class InviteController {
                             String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
                             emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink);
+
                         }
                         else{
                             String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! PLease resend invite later!";
@@ -150,6 +157,14 @@ public class InviteController {
     @GetMapping("/invites/group")
     public List<Invite> getGroupInvites(){
         return inviteService.getInvitesBySenderEmailAccepted(userService.getCurrentUser().getEmail(), 1);
+    }
+    @GetMapping("/user_groups")
+    public UserGroup getUserGroups(@RequestParam int groupId){
+        return userGroupService.findUserGroupById(groupId);
+    }
+    @GetMapping("/invite_groups")
+    public InviteGroup getInviteGroups(@RequestParam int inviteId) {
+        return inviteGroupService.findInviteGroupByInviteId(inviteId);
     }
 }
 

@@ -16,4 +16,9 @@ public class InviteGroupServiceImpl implements InviteGroupService{
     public InviteGroup saveInviteGroup(InviteGroup inviteGroup) {
         return inviteGroupRepository.save(inviteGroup);
     }
+
+    @Override
+    public InviteGroup findInviteGroupByInviteId(int igId) {
+        return inviteGroupRepository.findByInviteId(igId);
+    }
 }

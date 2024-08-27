@@ -110,26 +110,25 @@ $(document).ready(function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch single invites
-    fetchInvites('api/invites/single')
-        .then(singleInvites => {
-            if (singleInvites.length > 0) {
-                displayInvites(singleInvites, 'single');
-            } else {
-                // If no single invites, fetch group invites
-                fetchInvites('api/invites/group')
-                    .then(groupInvites => {
-                        if (groupInvites.length > 0) {
-                            displayInvites(groupInvites, 'group');
-                        } else {
-                            // Show the "Invite Users" button if no invites are found
-                            showInviteButton();
-                        }
-                    })
-                    .catch(error => console.error('Error fetching group invites:', error));
-            }
-        })
-        .catch(error => console.error('Error fetching single invites:', error));
+    // Fetch both single and group invites simultaneously
+    Promise.all([
+        fetchInvites('api/invites/single'),
+        fetchInvites('api/invites/group')
+    ])
+    .then(([singleInvites, groupInvites]) => {
+        // Display single invites if available
+        if (singleInvites.length > 0) {
+            displayInvites(singleInvites, 'single');
+        }
+
+        // Display group invites if available
+        if (groupInvites.length > 0) {
+            displayInvites(groupInvites, 'group');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching invites:', error);
+    });
 });
 
 function fetchInvites(endpoint) {
@@ -140,7 +139,6 @@ function fetchInvites(endpoint) {
             }
             return response.json();
         })
-        .then(data => data)
         .catch(error => {
             console.error('Error fetching invites:', error);
             throw error;
@@ -150,23 +148,22 @@ function fetchInvites(endpoint) {
 function displayInvites(invites, type) {
     const listId = type === 'single' ? 'single-list' : 'group-list';
     const inviteList = document.getElementById(listId);
-    inviteList.innerHTML = ''; // Clear previous invites
+    inviteList.innerHTML = '';
 
     invites.forEach(invite => {
         const inviteItem = document.createElement('li');
         inviteItem.classList.add('invite-item');
-
         if (type === 'single') {
-            inviteItem.textContent = `Invite from: ${invite.senderEmail}`; // Display sender email for single invites
+            inviteItem.textContent = `${invite.recipientEmail}`;
         } else {
-            inviteItem.textContent = `Group invite: ${invite.inviteGroup.userGroup.name}`; // Display group name for group invites
+            fetch(`api/invite_groups?inviteId=${invite.id}`)
+                .then(response => response.json())
+                .then(inviteGroup => {
+                    inviteItem.textContent = `${inviteGroup.userGroup.name}`;
+                })
+                .catch(error => console.error('Error fetching group data:', error));
         }
 
-        inviteList.appendChild(inviteItem); // Append the invite item to the respective list
+        inviteList.appendChild(inviteItem);
     });
-}
-
-function showInviteButton() {
-    const inviteButton = document.querySelector('.invite-btn');
-    inviteButton.style.display = 'block'; // Show the invite button
 }

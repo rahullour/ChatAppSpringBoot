@@ -32,18 +32,6 @@ public class Invite {
         this.recipientEmail = recipientEmail;
         this.accepted = accepted;
         this.type = type;
-        this.inviteGroup = inviteGroup;
-    }
-
-    @OneToOne(mappedBy = "invite", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private InviteGroup inviteGroup;
-
-    public InviteGroup getInviteGroup() {
-        return inviteGroup;
-    }
-
-    public void setInviteGroup(InviteGroup inviteGroup) {
-        this.inviteGroup = inviteGroup;
     }
 
     public String getSenderEmail() {
@@ -90,7 +78,6 @@ public class Invite {
                 ", recipientEmail='" + recipientEmail + '\'' +
                 ", accepted=" + accepted +
                 ", type=" + type +
-                ", inviteGroup=" + inviteGroup +
                 '}';
     }
 }

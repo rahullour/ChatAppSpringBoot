@@ -7,6 +7,11 @@ import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.service.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -30,9 +35,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 
 @Controller
 public class AppMVCController {
@@ -258,11 +261,95 @@ public class AppMVCController {
             for(Invite i:invites){
                 i.setAccepted(true);
             }
+            List<Invite> invites_other = inviteService.getInvites(user.getEmail(), userService.getUserById(sender_id).getEmail(), type);
+            for(Invite i:invites_other){
+                i.setAccepted(true);
+            }
             tokenGenerationService.generateVerificationToken(user);
             notificationManager.sendFlashNotification("Chat join complete, please login!", "alert-success", "short-noty");
+
+            // firestore
+            // Check if user already exists in Firestore
+            Firestore db = FirestoreClient.getFirestore();
+            DocumentReference userRef = db.collection("Users").document(user.getEmail());
+            ApiFuture<DocumentSnapshot> future = userRef.get();
+
+            try {
+                DocumentSnapshot document = future.get();
+                if (document.exists()) {
+                    // User already exists in Firestore
+                    System.out.println("User already exists in Firestore.");
+                } else {
+                    // Create a new user record in Firestore
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("email", user.getEmail());
+                    userData.put("profilePictureUrl", user.getProfilePictureUrl());
+                    userData.put("createdAt", LocalDateTime.now().toString());
+
+                    // Add user to Firestore
+                    userRef.set(userData);
+                    System.out.println("New user created in Firestore.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // Proceed to create or check rooms
+            createOrCheckRoom(type, sender_id, user.getEmail());
+            return "User verification and room handling completed.";
         }
         return "redirect:/loginPage";
     }
+
+    private void createOrCheckRoom(int type, int senderId, String recipientEmail) {
+        Firestore db = FirestoreClient.getFirestore();
+        String roomId;
+
+        if (type == 1) { // Single chat
+            roomId = "single_" + senderId + "_" + recipientEmail; // Unique ID for single chat
+            DocumentReference roomRef = db.collection("Rooms").document(roomId);
+            ApiFuture<DocumentSnapshot> roomDocument = roomRef.get();
+
+            try {
+                DocumentSnapshot document = roomDocument.get();
+                if (!document.exists()) {
+                    // Create new room
+                    Map<String, Object> roomData = new HashMap<>();
+                    roomData.put("members", Arrays.asList(recipientEmail));
+                    roomData.put("name", ""); // No name for single chat
+                    roomRef.set(roomData);
+                    System.out.println("Single room created.");
+                } else {
+                    System.out.println("Single room already exists.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (type == 2) { // Group chat
+            // Assume groupName is passed as a parameter or retrieved from somewhere
+            String groupName = "Group Chat"; // Replace with actual group name logic
+            roomId = "group_" + groupName; // Unique ID for group chat
+            DocumentReference roomRef = db.collection("Rooms").document(roomId);
+            ApiFuture<DocumentSnapshot> roomDocument = roomRef.get();
+
+            try {
+                DocumentSnapshot document = roomDocument.get();
+                if (!document.exists()) {
+                    // Create new group room
+                    Map<String, Object> roomData = new HashMap<>();
+                    roomData.put("members", Arrays.asList(recipientEmail)); // Add recipient email
+                    roomData.put("name", groupName);
+                    roomRef.set(roomData);
+                    System.out.println("Group room created.");
+                } else {
+                    System.out.println("Group room already exists.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     @GetMapping("/access-denied")
     public String deniedAccess(){

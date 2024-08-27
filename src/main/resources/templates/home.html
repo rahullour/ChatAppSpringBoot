@@ -27,14 +27,39 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span>WeChat</span></a>
+            <ul class="navbar-nav me-auto mb-lg-0 gap-2">
+                <li class="nav-item d-flex">
+                    <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span>WeChat </span></a>
+                </li>
+                <li>
+                    <div class="user-status d-flex gap-1"><img th:src="@{/images/status.png}" width="20px" height="20px"><p id="myStatus"></p></div>
                 </li>
             </ul>
         </div>
         <div>
-            <ul class="navbar-nav me-auto mb-lg-0">
+            <ul class="navbar-nav me-auto mb-lg-0 gap-1">
+                <li>
+                    <form action="#" th:action="@{/api/status}" method="post" id="statusForm">
+                        <div class="status-section gap-1 d-flex">
+                            <select id="statusSelect" name="statusSelect" class="form-control" required>
+                                <option value="">Select Status</option>
+                                <option value="Available">Available</option>
+                                <option value="Busy">Busy</option>
+                                <option value="Away">Away</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                            <input type="text" name="customStatus" id="customStatus" class="form-control" placeholder="Enter custom status" style="display:none;" />
+                            <button type="submit" class="btn btn-primary" id="setStatus">Set Status</button>
+                        </div>
+                    </form>
+                </li>
+                <li>
+                    <div class="invite-btn">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteModal">
+                            Invite Users
+                        </button>
+                    </div>
+                </li>
                 <li>
                     <form class="d-flex" role="search">
                         <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
@@ -83,12 +108,12 @@
                                 </div>
                             </div>
                             <input type="hidden" name="senderEmail" th:value="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
-                                #authentication.principal.attributes['email'] :
-                                #authentication.principal.email}"/>
-                                <select id="emailInput" class="form-control" multiple="multiple" required>
-                                    <!-- Options will be populated dynamically -->
-                                </select>
-                                <input type="hidden" name="emails" id="emailList" /> <!-- Hidden input to hold the processed email addresses -->
+                                    #authentication.principal.attributes['email'] :
+                                    #authentication.principal.email}"/>
+                            <select id="emailInput" class="form-control" multiple="multiple" required>
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                            <input type="hidden" name="emails" id="emailList" /> <!-- Hidden input to hold the processed email addresses -->
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -108,20 +133,14 @@
             </li>
         </ul>
         <div class="chat-content">
-            <div class="invite-btn mt-5 justify-content-center d-flex">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteModal">
-                    Invite Users
-                </button>
-            </div>
             <div class="tab-content" id="myTabContent">
                 <div class="tab-pane fade show active" id="one-to-one" role="tabpanel" aria-labelledby="one-to-one-tab">
-                    <!-- Invite Users Button and Modal -->
-                    <ul id="single-list" style="list-style-type:block;">
+                    <ul id="single-list" style="list-style-type:none;">
                         <!-- Dynamic list of single chats will be populated here -->
                     </ul>
                 </div>
                 <div class="tab-pane fade" id="group-chats" role="tabpanel" aria-labelledby="group-chats-tab">
-                    <ul id="group-list" style="list-style-type:block;">
+                    <ul id="group-list" style="list-style-type:none;">
                         <!-- Dynamic list of group chats will be populated here -->
                     </ul>
                 </div>
@@ -130,19 +149,6 @@
     </div>
 
     <div class="chat-messages col-md-10">
-        <div class="status-section">
-            <h5>Your Status</h5>
-            <select id="statusSelect" class="form-control">
-                <option value="">Select Status</option>
-                <option value="Available">Available</option>
-                <option value="Busy">Busy</option>
-                <option value="Away">Away</option>
-                <option value="Custom">Custom</option>
-            </select>
-            <input type="text" id="customStatus" class="form-control mt-2" placeholder="Enter custom status" style="display:none;" />
-            <button class="btn btn-primary mt-2" id="setStatus">Set Status</button>
-        </div>
-
         <div id="messages" class="message-container" style="height: 80vh; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
             <!-- Chat messages will appear here -->
         </div>
@@ -151,7 +157,6 @@
             <button class="btn btn-primary" id="sendMessage">Send</button>
         </div>
     </div>
-
 </div>
 <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js" integrity="sha512-tL4PIUsPy+Rks1go4kQG8M8/ItpRMvKnbBjQm4d2DQnFwgcBYRRN00QdyQnWSCwNMsoY/MfJY8nHp2CzlNdtZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -162,28 +167,6 @@
 <script th:src="@{/js/notification.js}"></script>
 <script th:src="@{/js/home.js}"></script>
 <script th:src="@{/js/status.js}"></script>
-<script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-    const firebaseConfig = {
-      apiKey: "AIzaSyBGhQf-pYZx3ed6FASGo55RkrcVYS_SrIk",
-      authDomain: "wechat-5e447.firebaseapp.com",
-      projectId: "wechat-5e447",
-      storageBucket: "wechat-5e447.appspot.com",
-      messagingSenderId: "97550275374",
-      appId: "1:97550275374:web:bae6cd2ecd5f77bad160bf",
-      measurementId: "G-WCTTEX1QHQ"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-</script>
+<script th:type="module" th:src="@{/js/chat.js}"></script>
 </body>
 </html>
