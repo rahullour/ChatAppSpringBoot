@@ -27,7 +27,7 @@ CREATE TABLE `user` (
 -- A generation tool is avail at: https://www.luv2code.com/generate-bcrypt-password
 --
 -- Default passwords here are: name@123--
--- https://bcryptcalculator.com
+-- https://bcrypt-generator.com/
 
 INSERT INTO `user`  (username, password, enabled, email)
 VALUES

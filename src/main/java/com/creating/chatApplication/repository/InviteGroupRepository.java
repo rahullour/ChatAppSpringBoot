@@ -5,4 +5,5 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InviteGroupRepository extends JpaRepository<InviteGroup, Integer> {
+    InviteGroup findByInviteId(int igId);
 }

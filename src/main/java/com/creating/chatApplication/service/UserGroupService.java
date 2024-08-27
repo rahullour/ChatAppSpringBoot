@@ -7,5 +7,6 @@ public interface UserGroupService {
     UserGroup saveUserGroup(UserGroup userGroup);
 
     UserGroup findUserGroupByName(String groupName);
+    UserGroup findUserGroupById(int groupId);
 }
 

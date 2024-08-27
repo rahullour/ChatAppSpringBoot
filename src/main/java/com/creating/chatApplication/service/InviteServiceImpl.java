@@ -30,7 +30,6 @@ public class InviteServiceImpl implements InviteService {
         invite.setSenderEmail(senderEmail);
         invite.setRecipientEmail(recipientEmail);
         invite.setType(type);
-        invite.setInviteGroup(inviteGroup);
 
         // Get the recipient's FCM token (you need to implement this method)
         String recipientToken = userService.getFCMTokenByEmail(recipientEmail);
@@ -54,6 +53,11 @@ public class InviteServiceImpl implements InviteService {
     @Override
     public List<Invite> getInvitesBySenderEmailAccepted(String s_email, int type) {
         return inviteRepository.findBySenderEmailAndTypeAccepted(s_email, type);
+    }
+
+    @Override
+    public List<Invite> getInvitesBySenderOrRecieverEmailAccepted(String email, int type) {
+        return inviteRepository.findBySenderOrRecieverEmailAndTypeAccepted(email, type);
     }
 
     @Override

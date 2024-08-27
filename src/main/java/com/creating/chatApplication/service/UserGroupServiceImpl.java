@@ -30,4 +30,9 @@ public class UserGroupServiceImpl implements UserGroupService{
     public UserGroup findUserGroupByName(String groupName) {
         return userGroupRepository.findByName(groupName);
     }
+
+    @Override
+    public UserGroup findUserGroupById(int groupId) {
+        return userGroupRepository.findById(groupId).orElse(null);
+    }
 }

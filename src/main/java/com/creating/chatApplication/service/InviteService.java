@@ -10,6 +10,7 @@ public interface InviteService {
     List<Invite> getInvites(String s_email, String r_email, int type);
     List<Invite> getInvitesBySenderEmail(String s_email, int type);
     List<Invite> getInvitesBySenderEmailAccepted(String s_email, int type);
+    List<Invite> getInvitesBySenderOrRecieverEmailAccepted(String email, int type);
     void acceptInvite(int inviteId, String username);
     void rejectInvite(int inviteId);
     Invite saveInvite(Invite invite);

@@ -13,9 +13,6 @@ public class UserGroup {
     @Column(name = "name")
     private String name;
 
-    @OneToMany(mappedBy = "userGroup", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<InviteGroup> inviteGroups;
-
     public UserGroup() {}
 
     public UserGroup(String name) {
@@ -38,20 +35,11 @@ public class UserGroup {
         this.name = name;
     }
 
-    public List<InviteGroup> getInviteGroups() {
-        return inviteGroups;
-    }
-
-    public void setInviteGroups(List<InviteGroup> inviteGroups) {
-        this.inviteGroups = inviteGroups;
-    }
-
     @Override
     public String toString() {
         return "UserGroup{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", inviteGroups=" + inviteGroups +
                 '}';
     }
 }

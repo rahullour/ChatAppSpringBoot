@@ -1,6 +1,4 @@
 $(document).ready(function() {
-    // Existing user invitation code...
-
     // Handle status selection
     $('#statusSelect').change(function() {
         if ($(this).val() === 'Custom') {
@@ -9,25 +7,31 @@ $(document).ready(function() {
             $('#customStatus').hide();
         }
     });
-
-    $('#setStatus').click(function() {
-        const status = $('#statusSelect').val() === 'Custom' ? $('#customStatus').val() : $('#statusSelect').val();
-
-        if (status) {
-            $.ajax({
-                url: '/api/status', // Define your API endpoint for setting status
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ statusMessage: status }),
-                success: function(response) {
-                    alert('Status updated successfully!');
-                },
-                error: function(error) {
-                    alert('Error updating status.');
-                }
-            });
-        } else {
-            alert('Please select a status.');
-        }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    Promise.all([
+        fetchStatus('api/myStatus'),
+    ])
+    .then(([userStatus]) => {
+        document.getElementById("myStatus").innerHTML = userStatus.statusValue;
+    })
+    .catch(error => {
+        console.error('Error fetching myStatus:');
     });
 });
+
+function fetchStatus(endpoint) {
+    return fetch(endpoint)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .catch(err => {
+            console.error('Error fetching status:');
+            throw err;
+        });
+}
+
+
