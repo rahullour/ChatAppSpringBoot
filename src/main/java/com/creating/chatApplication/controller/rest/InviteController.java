@@ -74,6 +74,7 @@ public class InviteController {
                             }
                             connections.addAll(inviteService.getInvites(emailAddress, senderEmail, type ? 1 : 0));
                             for(Invite i: connections){
+                                inviteGroupService.rejectInviteGroup(i.getId());
                                 inviteService.rejectInvite(i.getId());
                             }
                             if(type){
@@ -121,15 +122,15 @@ public class InviteController {
 
                             String token = tokenGenerationService.generateVerificationToken(user);
                             String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId();
-                            String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification!";
+                            String notificationMessage = "Chat with " + emailAddress + " will be enabled after email verification of joinee!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
-                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink);
+                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink, type);
 
                         }
                         else{
                             String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! PLease resend invite later!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form");
+                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form", type);
                         }
                     }
                     else{

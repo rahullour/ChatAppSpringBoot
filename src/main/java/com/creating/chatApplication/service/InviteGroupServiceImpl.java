@@ -21,4 +21,14 @@ public class InviteGroupServiceImpl implements InviteGroupService{
     public InviteGroup findInviteGroupByInviteId(int igId) {
         return inviteGroupRepository.findByInviteId(igId);
     }
+
+    @Override
+    public void rejectInviteGroup(int inviteId) {
+        InviteGroup inviteGroup = inviteGroupRepository.findByInviteId(inviteId);
+        if (inviteGroup != null) {
+            inviteGroup.setUserGroup(null);
+            inviteGroupRepository.save(inviteGroup);
+            inviteGroupRepository.delete(inviteGroup);
+        }
+    }
 }
