@@ -1,4 +1,113 @@
-// Import the functions you need from the SDKs you need
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fetch both single and group invites simultaneously
+        Promise.all([
+            fetchInvites('api/invites/single'),
+            fetchInvites('api/invites/group')
+        ])
+        .then(([singleInvites, groupInvites]) => {
+            // Display single invites if available
+            if (singleInvites.length > 0) {
+                displayInvites(singleInvites, 'single');
+            }
+
+            // Display group invites if available
+            if (groupInvites.length > 0) {
+                displayInvites(groupInvites, 'group');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching invites:', error);
+        });
+    });
+
+    function fetchInvites(endpoint) {
+        return fetch(endpoint)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error fetching invites:', error);
+                throw error;
+            });
+    }
+
+    function displayInvites(invites, type) {
+        const listId = type === 'single' ? 'single-list' : 'group-list';
+        const inviteList = document.getElementById(listId);
+        inviteList.innerHTML = '';
+
+        invites.forEach(invite => {
+            const inviteItem = document.createElement('li');
+            inviteItem.classList.add('invite-item');
+            inviteItem.style.cursor = 'pointer'; // Make it clear that the item is clickable
+            let senderIdVar = 0;
+            if (type === 'single') {
+                const senderEmail = invite.senderEmail;
+                const recipientEmail = invite.recipientEmail;
+
+                fetch(`api/users/getId?email=${senderEmail}`)
+                    .then(response => response.json())
+                    .then(senderId => {
+                        return fetch(`api/users/getId?email=${recipientEmail}`)
+                            .then(response => response.json())
+                            .then(recipientId => {
+                                const roomId = `single_${senderId}_${recipientId}`;
+                                inviteItem.textContent = `${recipientEmail}`;
+                                inviteItem.setAttribute('data-room-id', roomId);
+                                inviteItem.onclick = () => openChat(roomId);
+                            });
+                    })
+                    .catch(error => console.error('Error fetching user IDs:', error));
+           } else {
+                    fetch(`api/invite_groups?inviteId=${invite.id}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(inviteGroup => {
+                            return fetch(`api/user_groups?groupId=${inviteGroup.userGroup.id}`);
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(userGroup => {
+                            return fetch(`api/users/getId?email=${invite.senderEmail}`)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    return response.json();
+                                })
+                                .then(sender => {
+                                    const senderId = sender.id;
+                                    const roomId = `group_${senderId}`;
+                                    inviteItem.textContent = `${userGroup.name}`;
+                                    inviteItem.setAttribute('data-room-id', roomId);
+                                    inviteItem.onclick = () => openChat(roomId);
+                                });
+                        })
+                        .catch(error => console.error('Error fetching user IDs:', error));
+
+           }
+            inviteList.appendChild(inviteItem);
+        });
+    }
+
+    function openChat(roomId) {
+        // Logic to open chat messages screen based on roomId
+        console.log(`Opening chat for room ID: ${roomId}`);
+        // You can redirect to another page or open a modal with chat messages
+    }
+
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
       import { getFirestore, collection, getDocs, addDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
