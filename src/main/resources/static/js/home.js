@@ -87,7 +87,7 @@ $(document).ready(function() {
         placeholder: "Enter email addresses",
         tags: true, // Allow users to add new emails
         ajax: {
-            url: '/api/getUserEmails', // Endpoint to fetch existing emails
+            url: '/api/users/getUserEmails', // Endpoint to fetch existing emails
             dataType: 'json',
             delay: 250,
             data: function (params) {
@@ -108,62 +108,3 @@ $(document).ready(function() {
         minimumInputLength: 1
     });
 });
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Fetch both single and group invites simultaneously
-    Promise.all([
-        fetchInvites('api/invites/single'),
-        fetchInvites('api/invites/group')
-    ])
-    .then(([singleInvites, groupInvites]) => {
-        // Display single invites if available
-        if (singleInvites.length > 0) {
-            displayInvites(singleInvites, 'single');
-        }
-
-        // Display group invites if available
-        if (groupInvites.length > 0) {
-            displayInvites(groupInvites, 'group');
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching invites:', error);
-    });
-});
-
-function fetchInvites(endpoint) {
-    return fetch(endpoint)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .catch(error => {
-            console.error('Error fetching invites:', error);
-            throw error;
-        });
-}
-
-function displayInvites(invites, type) {
-    const listId = type === 'single' ? 'single-list' : 'group-list';
-    const inviteList = document.getElementById(listId);
-    inviteList.innerHTML = '';
-
-    invites.forEach(invite => {
-        const inviteItem = document.createElement('li');
-        inviteItem.classList.add('invite-item');
-        if (type === 'single') {
-            inviteItem.textContent = `${invite.recipientEmail}`;
-        } else {
-            fetch(`api/invite_groups?inviteId=${invite.id}`)
-                .then(response => response.json())
-                .then(inviteGroup => {
-                    inviteItem.textContent = `${inviteGroup.userGroup.name}`;
-                })
-                .catch(error => console.error('Error fetching group data:', error));
-        }
-
-        inviteList.appendChild(inviteItem);
-    });
-}

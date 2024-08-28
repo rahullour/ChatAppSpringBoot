@@ -82,79 +82,80 @@
         </div>
     </div>
 </nav>
-
-<div class="chat-screen row h-100">
-    <div class="sidebar col-md-2">
-        <div class="modal fade" id="inviteModal" tabindex="-1" aria-labelledby="inviteModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="inviteModalLabel">Invite Users</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form action="#" th:action="@{/api/invites}" method="post" id="inviteForm">
-                        <div class="modal-body">
-                            <div class="container row mb-3">
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="group_type" name="type">
-                                        <label class="form-check-label" for="group_type">Group Chat</label>
+<div class="container p-0 m-0 h-100">
+    <div class="chat-screen row h-100">
+        <div class="sidebar col-md-2">
+            <div class="modal fade" id="inviteModal" tabindex="-1" aria-labelledby="inviteModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="inviteModalLabel">Invite Users</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="#" th:action="@{/api/invites}" method="post" id="inviteForm">
+                            <div class="modal-body">
+                                <div class="container row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="group_type" name="type">
+                                            <label class="form-check-label" for="group_type">Group Chat</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <input type="text" id="group_name" name="groupName" placeholder="Group Name" class="form-control disabled" disabled required/>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <input type="text" id="group_name" name="groupName" placeholder="Group Name" class="form-control disabled" disabled required/>
-                                    </div>
-                                </div>
+                                <input type="hidden" name="senderEmail" th:value="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
+                                        #authentication.principal.attributes['email'] :
+                                        #authentication.principal.email}"/>
+                                <select id="emailInput" class="form-control" multiple="multiple" required>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                                <input type="hidden" name="emails" id="emailList" /> <!-- Hidden input to hold the processed email addresses -->
                             </div>
-                            <input type="hidden" name="senderEmail" th:value="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
-                                    #authentication.principal.attributes['email'] :
-                                    #authentication.principal.email}"/>
-                            <select id="emailInput" class="form-control" multiple="multiple" required>
-                                <!-- Options will be populated dynamically -->
-                            </select>
-                            <input type="hidden" name="emails" id="emailList" /> <!-- Hidden input to hold the processed email addresses -->
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-primary">Send Invite</button>
-                        </div>
-                    </form>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary">Send Invite</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Tabs for Conversations -->
+            <ul class="nav nav-tabs flex-row" id="myTab" role="tablist">
+                <li class="nav-item w-50">
+                    <a class="nav-link active" id="one-to-one-tab" data-bs-toggle="tab" href="#one-to-one" role="tab" aria-controls="one-to-one" aria-selected="true">Single</a>
+                </li>
+                <li class="nav-item w-50">
+                    <a class="nav-link" id="group-chats-tab" data-bs-toggle="tab" href="#group-chats" role="tab" aria-controls="group-chats" aria-selected="false">Group</a>
+                </li>
+            </ul>
+            <div class="chat-content">
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="one-to-one" role="tabpanel" aria-labelledby="one-to-one-tab">
+                        <ul id="single-list" style="list-style-type:none;">
+                            <!-- Dynamic list of single chats will be populated here -->
+                        </ul>
+                    </div>
+                    <div class="tab-pane fade" id="group-chats" role="tabpanel" aria-labelledby="group-chats-tab">
+                        <ul id="group-list" style="list-style-type:none;">
+                            <!-- Dynamic list of group chats will be populated here -->
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-        <!-- Tabs for Conversations -->
-        <ul class="nav nav-tabs flex-row" id="myTab" role="tablist">
-            <li class="nav-item w-50">
-                <a class="nav-link active" id="one-to-one-tab" data-bs-toggle="tab" href="#one-to-one" role="tab" aria-controls="one-to-one" aria-selected="true">Single</a>
-            </li>
-            <li class="nav-item w-50">
-                <a class="nav-link" id="group-chats-tab" data-bs-toggle="tab" href="#group-chats" role="tab" aria-controls="group-chats" aria-selected="false">Group</a>
-            </li>
-        </ul>
-        <div class="chat-content">
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade show active" id="one-to-one" role="tabpanel" aria-labelledby="one-to-one-tab">
-                    <ul id="single-list" style="list-style-type:none;">
-                        <!-- Dynamic list of single chats will be populated here -->
-                    </ul>
-                </div>
-                <div class="tab-pane fade" id="group-chats" role="tabpanel" aria-labelledby="group-chats-tab">
-                    <ul id="group-list" style="list-style-type:none;">
-                        <!-- Dynamic list of group chats will be populated here -->
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="chat-messages col-md-10">
-        <div id="messages" class="message-container" style="height: 80vh; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-            <!-- Chat messages will appear here -->
-        </div>
-        <div class="input-group mt-3">
-            <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." aria-label="Type a message..." />
-            <button class="btn btn-primary" id="sendMessage">Send</button>
+        <div class="chat-messages col-md-10">
+            <div id="messages" class="message-container" style="height: 80vh; overflow-y: auto; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                <!-- Chat messages will appear here -->
+            </div>
+            <div class="input-group mt-3">
+                <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." aria-label="Type a message..." />
+                <button class="btn btn-primary" id="sendMessage">Send</button>
+            </div>
         </div>
     </div>
 </div>
