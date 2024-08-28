@@ -13,9 +13,10 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void sendInviteEmail(String to, String senderUsername, String chatLink) {
+    public void sendInviteEmail(String to, String senderUsername, String chatLink, Boolean type) {
         String subject = "WeChat Invitation";
-        String body = buildInviteEmailBody(senderUsername, chatLink);
+        String convType = type == true ? "group" : "";
+        String body = buildInviteEmailBody(senderUsername, chatLink, convType);
 
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -31,7 +32,7 @@ public class EmailService {
         }
     }
 
-    private String buildInviteEmailBody(String senderUsername, String chatLink) {
+    private String buildInviteEmailBody(String senderUsername, String chatLink, String convType) {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
@@ -83,7 +84,7 @@ public class EmailService {
                 "    <div class=\"container\">\n" +
                 "        <h1>You're Invited to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
-                "        <p>You've been invited to join a conversation by <strong>" + senderUsername + "</strong>. We're excited to have you connect!</p>\n" +
+                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>. We're excited to have you connect!</p>\n" +
                 "        <p>To join the conversation, simply click the button below:</p>\n" +
                 "        <a href=\"" + chatLink + "\" class=\"button\">Join the Chat</a>\n" +
                 "        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>\n" +

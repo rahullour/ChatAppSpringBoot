@@ -7,4 +7,5 @@ import com.creating.chatApplication.entity.UserGroup;
 public interface InviteGroupService {
     InviteGroup saveInviteGroup(InviteGroup inviteGroup);
     InviteGroup findInviteGroupByInviteId(int igId);
+    void rejectInviteGroup(int igId);
 }

@@ -18,8 +18,8 @@ CREATE TABLE `userGroup` (
 
 CREATE TABLE `invite_group` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    invite_id INT NOT NULL,
-    group_id INT NOT NULL,
+    invite_id INT,
+    group_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (invite_id) REFERENCES invite(id),
     FOREIGN KEY (group_id) REFERENCES userGroup(id)
