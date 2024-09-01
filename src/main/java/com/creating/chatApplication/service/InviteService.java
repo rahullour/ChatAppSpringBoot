@@ -6,7 +6,7 @@ import com.creating.chatApplication.entity.InviteGroup;
 import java.util.List;
 
 public interface InviteService {
-    Invite createInvite(String senderUsername, String recipientEmail, int type, InviteGroup inviteGroup);
+    Invite createInvite(String senderUsername, String recipientEmail, int type, InviteGroup inviteGroup, String roomId);
     List<Invite> getInvites(String s_email, String r_email, int type);
     List<Invite> getInvitesBySenderEmail(String s_email, int type);
     List<Invite> getInvitesBySenderEmailAccepted(String s_email, int type);

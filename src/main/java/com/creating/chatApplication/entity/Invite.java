@@ -24,6 +24,9 @@ public class Invite {
     @Column(name = "type")
     private int type;
 
+    @Column(name = "room_id")
+    private String roomId;
+
     public Invite() {
     }
 
@@ -70,6 +73,18 @@ public class Invite {
         this.accepted = accepted;
     }
 
+    public int getType() {
+        return type;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
+    }
+
     @Override
     public String toString() {
         return "Invite{" +
@@ -78,6 +93,7 @@ public class Invite {
                 ", recipientEmail='" + recipientEmail + '\'' +
                 ", accepted=" + accepted +
                 ", type=" + type +
+                ", roomId='" + roomId + '\'' +
                 '}';
     }
 }

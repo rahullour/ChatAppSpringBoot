@@ -17,6 +17,10 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @GetMapping("currentUser/getId")
+    public ResponseEntity<Integer> getUserId(){
+        return ResponseEntity.ok(userService.getCurrentUser().getId());
+    }
     @GetMapping("/getId")
     public ResponseEntity<Integer> getUserId(@RequestParam String email){
         return ResponseEntity.ok(userService.getUserByEmail(email).getId());

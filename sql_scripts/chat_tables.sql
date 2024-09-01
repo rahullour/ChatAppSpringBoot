@@ -6,6 +6,7 @@ CREATE TABLE `invite` (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     accepted BOOLEAN DEFAULT FALSE,
     type INT,
+    room_id VARCHAR(50),
     FOREIGN KEY (sender_email) REFERENCES user(email),
     FOREIGN KEY (recipient_email) REFERENCES user(email)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
