@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Ignore application.properties
+/src/main/resources/application.properties
+
+# Ignore Firebase admin SDK JSON file
+/src/main/resources/wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json
