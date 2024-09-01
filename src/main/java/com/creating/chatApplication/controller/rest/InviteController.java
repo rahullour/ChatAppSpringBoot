@@ -79,8 +79,8 @@ public class InviteController {
                             }
                             if(type){
                                 // Create the invite
-                                Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null); // Initially pass null for inviteGroup
-                                Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null);
+                                Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId())); // Initially pass null for inviteGroup
+                                Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
 // Create a new InviteGroup
                                 InviteGroup inviteGroup = new InviteGroup();
                                 inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
@@ -116,12 +116,12 @@ public class InviteController {
                                     inviteGroupService.saveInviteGroup(inviteGroupOther);
                                 }
                             }else{
-                                inviteService.createInvite(senderEmail, emailAddress, 0, null);
-                                inviteService.createInvite(emailAddress, senderEmail, 0, null);
+                                inviteService.createInvite(senderEmail, emailAddress, 0, null, "group_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
+                                inviteService.createInvite(emailAddress, senderEmail, 0, null, "group_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
                             }
 
                             String token = tokenGenerationService.generateVerificationToken(user);
-                            String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId();
+                            String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&groupName=" + groupName;
                             String notificationMessage = "Chat with " + emailAddress + " will be enabled after email verification of joinee!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
                             emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink, type);

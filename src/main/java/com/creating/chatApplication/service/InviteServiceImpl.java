@@ -25,11 +25,12 @@ public class InviteServiceImpl implements InviteService {
     private UserService userService;
 
     @Override
-    public Invite createInvite(String senderEmail, String recipientEmail, int type, InviteGroup inviteGroup) {
+    public Invite createInvite(String senderEmail, String recipientEmail, int type, InviteGroup inviteGroup, String roomId) {
         Invite invite = new Invite();
         invite.setSenderEmail(senderEmail);
         invite.setRecipientEmail(recipientEmail);
         invite.setType(type);
+        invite.setRoomId(roomId);
 
         // Get the recipient's FCM token (you need to implement this method)
         String recipientToken = userService.getFCMTokenByEmail(recipientEmail);
