@@ -21,10 +21,24 @@ public class UserController {
     public ResponseEntity<Integer> getUserId(){
         return ResponseEntity.ok(userService.getCurrentUser().getId());
     }
+
     @GetMapping("/getId")
     public ResponseEntity<Integer> getUserId(@RequestParam String email){
         return ResponseEntity.ok(userService.getUserByEmail(email).getId());
     }
+
+    @GetMapping("/getProfilePic")
+    public ResponseEntity<String> getProfilePic(@RequestParam int id) {
+        String profilePictureUrl = userService.getUserById(id).getProfilePictureUrl();
+
+        if (profilePictureUrl != null) {
+            // Return the base64 string wrapped in a JSON object
+            return ResponseEntity.ok("{\"profilePicture\":\"" + profilePictureUrl + "\"}");
+        } else {
+            return ResponseEntity.notFound().build(); // Return 404 if the user or picture URL is not found
+        }
+    }
+
     @GetMapping("/getUserEmails")
     public ResponseEntity<List<String>> getUserEmails(@RequestParam String q) {
         List<String> emails = userService.findEmailsByQuery(q); // Implement this method in your UserService

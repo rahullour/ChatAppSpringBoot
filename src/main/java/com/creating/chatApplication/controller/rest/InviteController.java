@@ -79,8 +79,8 @@ public class InviteController {
                             }
                             if(type){
                                 // Create the invite
-                                Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId())); // Initially pass null for inviteGroup
-                                Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
+                                Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
+                                Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
 // Create a new InviteGroup
                                 InviteGroup inviteGroup = new InviteGroup();
                                 inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
@@ -116,8 +116,8 @@ public class InviteController {
                                     inviteGroupService.saveInviteGroup(inviteGroupOther);
                                 }
                             }else{
-                                inviteService.createInvite(senderEmail, emailAddress, 0, null, "group_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
-                                inviteService.createInvite(emailAddress, senderEmail, 0, null, "group_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
+                                inviteService.createInvite(senderEmail, emailAddress, 0, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
+                                inviteService.createInvite(emailAddress, senderEmail, 0, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
                             }
 
                             String token = tokenGenerationService.generateVerificationToken(user);

@@ -39,6 +39,7 @@ public class StatusServiceImpl implements StatusService {
     @Override
     public StatusDTO getStatusOnlyForUser(int userId) {
         Status status = statusRepository.getStatusByUserId(userId);
-        return new StatusDTO(status.getStatusMessage());
+        String status_message = status == null ? "Not Set" : status.getStatusMessage();
+        return new StatusDTO(status_message);
     }
 }
