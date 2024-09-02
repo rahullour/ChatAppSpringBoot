@@ -1,8 +1,6 @@
 package com.creating.chatApplication.events;
 
 import com.creating.chatApplication.service.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
@@ -14,15 +12,12 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.client.authentication.OAuth2LoginAuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Component;
-
 import com.creating.chatApplication.entity.User;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Base64;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Base64;
 
 @Component
 public class AuthenticationEvents {
@@ -145,17 +140,27 @@ public class AuthenticationEvents {
     }
 
 
+
     private void createUserIfNotPresent(String email) {
         User existingUser = userService.getUserByEmail(email);
         if (existingUser == null) {
             String username = email.split("@")[0];
             String password = generateRandomPassword();
-
-            User newUser = new User(username, email, new BCryptPasswordEncoder().encode(password), true, "aeseud", LocalDateTime.now());
+            String profileImageUrl = convertImageToBase64("src/main/resources/static/images/profile-image.png");
+            User newUser = new User(username, email, new BCryptPasswordEncoder().encode(password), true, "afio123deseud", LocalDateTime.now(), profileImageUrl);
             userService.saveUser(newUser);
+            String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + ", please save it somewhere.";
+            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "long-noty");
+        }
+    }
 
-            String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + ", please save it somewhere. ";
-            notificationManager.sendFlashNotification(notificationMessage,"alert-success", "long-noty");
+    private String convertImageToBase64(String imagePath) {
+        try {
+            byte[] imageBytes = Files.readAllBytes(Paths.get(imagePath));
+            return Base64.getEncoder().encodeToString(imageBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

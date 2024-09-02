@@ -63,13 +63,14 @@ public class User {
     public User() {}
 
     // Constructor with fields
-    public User(String username, String email, String password, boolean enabled, String verificationToken, LocalDateTime tokenExpiration) {
+    public User(String username, String email, String password, boolean enabled, String verificationToken, LocalDateTime tokenExpiration, String profilePictureUrl) {
         this.username = username;
         this.password = password;
         this.enabled = enabled;
         this.email = email;
         this.tokenExpiration = tokenExpiration;
         this.verificationToken = verificationToken;
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     // Getters and Setters

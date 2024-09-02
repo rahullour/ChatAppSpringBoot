@@ -66,3 +66,40 @@ body{
     padding: 20px;
     padding-right: 0px !important;
 }
+
+.message-wrapper {
+    display: flex;
+    align-items: flex-start;
+    margin: 10px 0;
+}
+
+.current-user {
+    justify-content: flex-end; /* Align current user's messages to the right */
+}
+
+.other-user {
+    justify-content: flex-start; /* Align other users' messages to the left */
+}
+
+.message-content {
+    max-width: 70%; /* Limit message width */
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f1f1f1;
+    position: relative;
+}
+
+.message-date {
+    position: absolute;
+    top: -16px; /* Adjust position as needed */
+    right: 0; /* Align to the right */
+    font-size: 0.8em; /* Smaller font for the date */
+    color: #888; /* Lighter color for the date */
+}
+
+.profile-pic {
+    width: 30px; /* Adjust size as needed */
+    height: 30px;
+    border-radius: 50%; /* Make it circular */
+    margin-right: 10px; /* Space between image and message */
+}
