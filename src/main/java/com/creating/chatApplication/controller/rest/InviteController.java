@@ -103,14 +103,10 @@ public class InviteController {
                                     // If the UserGroup does not exist, create a new one
                                     UserGroup newUserGroup = new UserGroup();
                                     newUserGroup.setName(groupName); // Set the name of the new UserGroup
+                                    userGroupService.saveUserGroup(newUserGroup);
                                     List<InviteGroup> inviteGroups = new ArrayList<>();
-                                    inviteGroups.add(inviteGroup); // Add the new InviteGroup to the list
-                                    inviteGroups.add(inviteGroupOther);
                                     inviteGroup.setUserGroup(newUserGroup); // Set the UserGroup for the InviteGroup
                                     inviteGroupOther.setUserGroup(newUserGroup);
-                                    // Save the new UserGroup
-                                    userGroupService.saveUserGroup(newUserGroup);
-
                                     // Save the InviteGroup
                                     inviteGroupService.saveInviteGroup(inviteGroup);
                                     inviteGroupService.saveInviteGroup(inviteGroupOther);

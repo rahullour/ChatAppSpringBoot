@@ -137,7 +137,7 @@ public class AppMVCController {
             e.printStackTrace();
         }
         user.setEnabled(false);
-        Authority userAuthority = new Authority("USER_ROLE");
+        Authority userAuthority = new Authority("ROLE_USER");
         userAuthority.setUser(user);
         List<Authority> authorities = new ArrayList<>();
         authorities.add(userAuthority);

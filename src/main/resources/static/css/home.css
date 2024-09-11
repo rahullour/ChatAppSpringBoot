@@ -94,6 +94,7 @@ body{
     right: 0; /* Align to the right */
     font-size: 0.8em; /* Smaller font for the date */
     color: #888; /* Lighter color for the date */
+    width: max-content;
 }
 .profile-pic {
     width: 40px;
