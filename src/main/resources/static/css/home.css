@@ -56,10 +56,9 @@ body{
     }
 }
 .user-status{
-    padding-top: 10px;
+    padding-top: 3px;
     img{
-        background: deepskyblue;
-        border-radius: 50%;
+        border-radius: 15%;
     }
 }
 .chat-messages{
@@ -96,10 +95,11 @@ body{
     font-size: 0.8em; /* Smaller font for the date */
     color: #888; /* Lighter color for the date */
 }
-
 .profile-pic {
-    width: 30px; /* Adjust size as needed */
-    height: 30px;
-    border-radius: 50%; /* Make it circular */
-    margin-right: 10px; /* Space between image and message */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 0px 10px;
+    object-fit: cover; /* Ensures the image covers the container */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }

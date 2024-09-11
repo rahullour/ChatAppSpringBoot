@@ -235,15 +235,12 @@
         }
     }
 
-
-
-
     // Function to fetch the current user ID
     async function fetchCurrentUserId() {
         try {
             const response = await fetch(`/api/users/currentUser/getId`);
             const userId = await response.json();
-            return userId;
+            return userId; // Assuming userId is returned as an object, extract the ID if necessary
         } catch (error) {
             console.error('Error fetching current user ID:', error);
             return -1; // Return a default value in case of an error
@@ -251,20 +248,40 @@
     }
 
     // Function to fetch the profile picture URL
-    async function fetchProfilePicture(senderId) {
+    async function getProfilePic(senderId) {
         try {
             const response = await fetch(`/api/users/getProfilePic?id=${senderId}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-            const data = await response.json(); // Parse the JSON response
-            return data.profilePicture; // Return the base64 string from the JSON object
+            const data = await response.json();
+            return data.profilePicture;
         } catch (error) {
             console.error('Error fetching profile picture:', error);
-            return ''; // Return an empty string in case of an error
+            return '';
         }
     }
 
+    // Function to update the profile picture
+    async function updateProfilePic() {
+        const userId = await fetchCurrentUserId();
+        if (userId !== -1) { // Check if userId is valid
+            const profilePicBase64 = await getProfilePic(userId);
+
+            // Check if the base64 string is not empty
+            if (profilePicBase64) {
+                // Set the image source with the correct format
+                document.getElementById('profilePic').src = `data:image/png;base64,${profilePicBase64}`;
+            } else {
+                console.error('Profile picture data is empty');
+            }
+        } else {
+            console.error('Invalid user ID');
+        }
+    }
+
+    // Call the function to update the profile picture
+    updateProfilePic();
 
     async function fetchLastMessage(roomId) {
          try {

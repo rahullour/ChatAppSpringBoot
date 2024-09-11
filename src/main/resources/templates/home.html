@@ -29,10 +29,12 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-lg-0 gap-2">
                 <li class="nav-item d-flex">
-                    <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span>WeChat </span></a>
+                    <div>
+                        <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span style="padding-top: 2px;">WeChat </span></a>
+                    </div>
                 </li>
                 <li>
-                    <div class="user-status d-flex gap-1"><img th:src="@{/images/status.png}" width="20px" height="20px"><p id="myStatus"></p></div>
+                    <div class="user-status d-flex mt-2 gap-1"><img th:src="@{/images/status.png}" width="20px" height="20px"><p style="line-height: 17px;" id="myStatus"></p></div>
                 </li>
             </ul>
         </div>
@@ -66,8 +68,9 @@
                         <button class="btn btn-outline-success" type="submit">Search</button>
                     </form>
                 </li>
-                <li class="nav-item p-2">
-                        <span th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
+                <li class="nav-item d-flex">
+                    <img id="profilePic" class="profile-pic" src="" alt="No Profile Picture">
+                    <span style="margin: auto;" th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
                                             #authentication.principal.attributes['name'] :
                                             #authentication.principal.username}"></span>
                 </li>

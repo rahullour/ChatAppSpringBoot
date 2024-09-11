@@ -30,13 +30,7 @@ public class UserController {
     @GetMapping("/getProfilePic")
     public ResponseEntity<String> getProfilePic(@RequestParam int id) {
         String profilePictureUrl = userService.getUserById(id).getProfilePictureUrl();
-
-        if (profilePictureUrl != null) {
-            // Return the base64 string wrapped in a JSON object
-            return ResponseEntity.ok("{\"profilePicture\":\"" + profilePictureUrl + "\"}");
-        } else {
-            return ResponseEntity.notFound().build(); // Return 404 if the user or picture URL is not found
-        }
+        return ResponseEntity.ok("{\"profilePicture\":\"" + profilePictureUrl + "\"}");
     }
 
     @GetMapping("/getUserEmails")

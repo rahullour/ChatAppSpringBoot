@@ -69,6 +69,7 @@ public class AuthenticationEvents {
         }
     }
 
+
     @EventListener
     public void onLogoutSuccess(LogoutSuccessEvent event) {
         Authentication authentication = event.getAuthentication();
