@@ -128,7 +128,7 @@ public class InviteController {
 
                         }
                         else{
-                            String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! PLease resend invite later!";
+                            String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
                             emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form", type);
                         }
