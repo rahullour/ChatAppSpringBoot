@@ -1,5 +1,6 @@
 package com.creating.chatApplication.events;
 
+import com.creating.chatApplication.entity.Authority;
 import com.creating.chatApplication.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
@@ -15,9 +16,11 @@ import org.springframework.stereotype.Component;
 import com.creating.chatApplication.entity.User;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 public class AuthenticationEvents {
@@ -149,6 +152,11 @@ public class AuthenticationEvents {
             String password = generateRandomPassword();
             String profileImageUrl = convertImageToBase64("src/main/resources/static/images/profile-image.png");
             User newUser = new User(username, email, new BCryptPasswordEncoder().encode(password), true, "afio123deseud", LocalDateTime.now(), profileImageUrl);
+            Authority userAuthority = new Authority("ROLE_USER");
+            userAuthority.setUser(newUser);
+            List<Authority> authorities = new ArrayList<>();
+            authorities.add(userAuthority);
+            newUser.setAuthorities(authorities);
             userService.saveUser(newUser);
             String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + ", please save it somewhere.";
             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "long-noty");

@@ -86,7 +86,7 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-      import { getFirestore, collection, getDocs, addDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, addDoc, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     // TODO: Add SDKs for Firebase products that you want to use
     // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -135,9 +135,6 @@
 
             console.log("Document written with ID: ", docRef.id);
             messageInput.value = ""; // Clear the input field
-
-            // Fetch and display all messages
-            await displayMessages(roomId);
 
             // Fetch and append the last message
             await fetchLastMessage(roomId);
@@ -220,7 +217,7 @@
 
                 // Append profile picture for non-current users
                 if (!isCurrentUser) {
-                    const profilePicBase64 = await fetchProfilePicture(data.senderId);
+                    const profilePicBase64 = await getProfilePic(data.senderId);
                     const imgElement = document.createElement("img");
                     imgElement.src = `data:image/png;base64,${profilePicBase64}`;
                     imgElement.classList.add("profile-pic");
@@ -284,58 +281,72 @@
     updateProfilePic();
 
     async function fetchLastMessage(roomId) {
-         try {
-             // Get a reference to the Messages collection, order by timestamp, and limit to the last message
-             const lastMessageQuery = query(
-                 collection(db, "Messages"),
-                 where("roomId", "==", roomId),
-                 orderBy("timestamp", "desc"),
-                 limit(1) // Limit to the last message
-             );
+        try {
+            // Get a reference to the Messages collection, order by timestamp, and limit to the last message
+            const lastMessageQuery = query(
+                collection(db, "Messages"),
+                where("roomId", "==", roomId),
+                orderBy("timestamp", "desc"),
+                limit(1) // Limit to the last message
+            );
 
-             const querySnapshot = await getDocs(lastMessageQuery);
+            const querySnapshot = await getDocs(lastMessageQuery);
 
-             querySnapshot.forEach((doc) => {
-                 const data = doc.data();
-                 const messageElement = document.createElement("div");
-                 messageElement.classList.add("message");
+            // Append last message directly without clearing previous messages
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const messageElement = document.createElement("div");
+                // Create a wrapper for the message
+                const messageWrapper = document.createElement("div");
+                messageWrapper.classList.add("message-wrapper", "current-user");
 
-                 // Format the date
-                 const messageDate = new Date(data.timestamp.toDate());
-                 const now = new Date();
-                 const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
-                 let dateDisplay;
+                // Create the message content
+                const messageContent = document.createElement("div");
+                messageContent.classList.add("message-content");
 
-                 // Check conditions for displaying date and time
-                 const isSameMonth = messageDate.getMonth() === now.getMonth() && messageDate.getFullYear() === now.getFullYear();
-                 const isSameDate = messageDate.getDate() === now.getDate() && isSameMonth;
+                // Format the date
+                const messageDate = new Date(data.timestamp.toDate());
+                const now = new Date();
+                const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
+                let dateDisplay;
 
-                 if (isSameDate) {
-                     // Show only time (12-hour format)
-                     dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-                 } else if (isSameMonth) {
-                     // Show date and time (12-hour format)
-                     dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                 } else {
-                     // Show date, month, and time (12-hour format)
-                     const month = messageDate.toLocaleString('default', { month: 'long' });
-                     dateDisplay = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                 }
+                // Check conditions for displaying date and time
+                const isSameMonth = messageDate.getMonth() === now.getMonth() && messageDate.getFullYear() === now.getFullYear();
+                const isSameDate = messageDate.getDate() === now.getDate() && isSameMonth;
 
-                 // Add the formatted date to the message
-                 messageElement.innerHTML = `
-                     <span>${data.text}</span><br>
-                     <small>${dateDisplay}</small>
-                     <hr>
-                 `;
+                if (isSameDate) {
+                    // Show only time (12-hour format)
+                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+                } else if (isSameMonth) {
+                    // Show date and time (12-hour format)
+                    dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                } else {
+                    // Show date, month, and time (12-hour format)
+                    const month = messageDate.toLocaleString('default', { month: 'long' });
+                    dateDisplay = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                }
 
-                 const messagesContainer = document.getElementById("messages");
-                 messagesContainer.appendChild(messageElement);
-             });
-         } catch (e) {
-             console.error("Error fetching last message: ", e);
-         }
-     }
+                // Add date to the message content
+                const dateElement = document.createElement("div");
+                dateElement.classList.add("message-date");
+                dateElement.textContent = dateDisplay; // Show formatted date
+                messageContent.appendChild(dateElement);
+
+                // Add message text
+                const textElement = document.createElement("span");
+                textElement.textContent = data.text;
+                messageContent.appendChild(textElement);
+
+                messageWrapper.appendChild(messageContent);
+
+                // Append the last message to the last message container
+                const lastMessageContainer = document.getElementById("messages");
+                lastMessageContainer.appendChild(messageWrapper);
+            });
+        } catch (e) {
+            console.error("Error fetching last message: ", e);
+        }
+    }
 
     localStorage.setItem("roomId", 0);
     document.getElementById("sendMessage").addEventListener("click", () => sendMessage(localStorage.getItem("roomId")));
