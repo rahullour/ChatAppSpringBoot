@@ -1,24 +1,40 @@
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
         // Fetch both single and group invites simultaneously
-        Promise.all([
+        const [singleInvites, groupInvites] = await Promise.all([
             fetchInvites('api/invites/single'),
             fetchInvites('api/invites/group')
-        ])
-        .then(([singleInvites, groupInvites]) => {
-            // Display single invites if available
-            if (singleInvites.length > 0) {
-                displayInvites(singleInvites, 'single');
-            }
+        ]);
 
-            // Display group invites if available
-            if (groupInvites.length > 0) {
-                displayInvites(groupInvites, 'group');
+        // Display single invites if available
+        if (singleInvites.length > 0) {
+            await displayInvites(singleInvites, 'single');
+            const singleListItems = document.querySelectorAll('#single-list li');
+            if (singleListItems.length > 0) {
+                singleListItems[0].click(); // Automatically click the first single invite
             }
-        })
-        .catch(error => {
-            console.error('Error fetching invites:', error);
-        });
-    });
+        }
+
+        // Display group invites if available
+        if (groupInvites.length > 0) {
+            await displayInvites(groupInvites, 'group');
+            const groupListItems = document.querySelectorAll('#group-list li');
+            if (groupListItems.length > 0 && singleInvites.length === 0) {
+                groupListItems[0].click(); // Automatically click the first group invite if no single invites
+            }
+        }
+
+        // Handle case when no invites are available
+        if (singleInvites.length === 0 && groupInvites.length === 0) {
+            const chatMessagesBox = document.querySelector('.chat-messages');
+            if (chatMessagesBox) {
+                chatMessagesBox.innerText = "You don't have any conversation, invite someone!";
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching invites:', error);
+    }
+});
 
     function fetchInvites(endpoint) {
         return fetch(endpoint)
@@ -34,59 +50,91 @@
             });
     }
 
-    function displayInvites(invites, type) {
+    async function displayInvites(invites, type) {
         const listId = type === 'single' ? 'single-list' : 'group-list';
         const inviteList = document.getElementById(listId);
         inviteList.innerHTML = '';
 
-        invites.forEach(invite => {
+        for (const invite of invites) {
             const inviteItem = document.createElement('li');
             inviteItem.classList.add('invite-item');
             inviteItem.style.cursor = 'pointer';
-            if(type == "single"){
-               inviteItem.textContent = `${invite.username}`;
-               inviteItem.setAttribute('data-room-id', `${invite.roomId}`);
-               inviteItem.onclick = () => openChat(`${invite.roomId}`);
-           }
-           else{
-               fetch(`api/invite_groups?inviteId=${invite.id}`)
-                   .then(response => {
-                       if (!response.ok) {
-                           throw new Error('Network response was not ok');
-                       }
-                       return response.json();
-                   })
-                   .then(inviteGroup => {
-                       return fetch(`api/user_groups?groupId=${inviteGroup.userGroup.id}`);
-                   })
-                   .then(response => {
-                       if (!response.ok) {
-                           throw new Error('Network response was not ok');
-                       }
-                       return response.json();
-                   })
-                   .then(userGroup => {
-                      inviteItem.textContent = `${userGroup.name}`;
-                      inviteItem.setAttribute('data-room-id', `${invite.roomId}`);
-                      inviteItem.onclick = () => openChat(`${invite.roomId}`);
-                   })
-                   .catch(error => console.error('Error fetching group data:', error));
-              }
+
+            if (type === "single") {
+                try {
+                    // Fetch user ID based on email
+                    const userIdResponse = await fetch(`api/users/getId?email=${invite.recipientEmail}`);
+                    if (!userIdResponse.ok) {
+                        throw new Error('getUserIdByEmail response was not ok');
+                    }
+                    const userId = await userIdResponse.json();
+
+                    // Create a wrapper for the invite item
+                    const inviteWrapper = document.createElement('div');
+                    inviteWrapper.classList.add('invite-wrapper');
+
+                    if (userId) {
+                        const profilePicBase64 = await getProfilePic(userId);
+                        const imgElement = document.createElement("img");
+                        imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                        imgElement.classList.add("profile-pic");
+                        inviteWrapper.appendChild(imgElement);
+                    }
+
+                    const usernameResponse = await fetch(`api/users/getUserNameByEmail?email=${invite.recipientEmail}`);
+                    if (!usernameResponse.ok) {
+                        throw new Error('getUserNameByEmail response was not ok');
+                    }
+                    const username = await usernameResponse.text();
+
+                    // Create a span for the username
+                    const usernameElement = document.createElement("span");
+                    usernameElement.textContent = username;
+                    usernameElement.classList.add("username");
+
+                    inviteWrapper.appendChild(usernameElement);
+                    inviteItem.appendChild(inviteWrapper); // Append the wrapper to the invite item
+
+                    inviteItem.setAttribute('data-room-id', `${invite.roomId}`);
+                    inviteItem.onclick = () => openChat(`${invite.roomId}`);
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                }
+            } else {
+                // Handle group invites
+                try {
+                    const groupResponse = await fetch(`api/invite_groups?inviteId=${invite.id}`);
+                    if (!groupResponse.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const inviteGroup = await groupResponse.json();
+                    const userGroupResponse = await fetch(`api/user_groups?groupId=${inviteGroup.userGroup.id}`);
+                    if (!userGroupResponse.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const userGroup = await userGroupResponse.json();
+                    inviteItem.textContent = `${userGroup.name}`;
+                    inviteItem.setAttribute('data-room-id', `${invite.roomId}`);
+                    inviteItem.onclick = () => openChat(`${invite.roomId}`);
+                } catch (error) {
+                    console.error('Error fetching group data:', error);
+                }
+            }
+
             inviteList.appendChild(inviteItem);
-        });
+        }
     }
 
     function openChat(roomId) {
         // Logic to open chat messages screen based on roomId
         localStorage.setItem("roomId", roomId);
-        displayMessages(roomId);
         console.log(`Opening chat for room ID: ${roomId}`);
     }
 
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-      import { getFirestore, collection, getDocs, addDoc, query, orderBy, where, limit } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, addDoc, query, orderBy, where, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     // TODO: Add SDKs for Firebase products that you want to use
     // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -106,6 +154,27 @@
     const app = initializeApp(firebaseConfig);
     // const analytics = getAnalytics(app);
     const db = getFirestore(app);
+
+    let lastMessageCount = 0; // Variable to track the number of messages displayed
+
+    const messagesQuery = query(
+        collection(db, "Messages"),
+        where("roomId", "==", localStorage.getItem("roomId")),
+        orderBy("timestamp", "asc") // Order messages by timestamp ascending
+    );
+
+    // Set up the Firestore listener for real-time updates
+    onSnapshot(messagesQuery, (snapshot) => {
+        // Check how many messages are in the snapshot
+        const newMessageCount = snapshot.docChanges().filter(change => change.type === "added").length;
+
+        // Only call displayMessages if there are new messages and the count has changed
+        if (newMessageCount > 0 && newMessageCount !== lastMessageCount) {
+            lastMessageCount = newMessageCount; // Update the last message count
+            displayMessages(localStorage.getItem("roomId")); // Call displayMessages once
+        }
+    });
+
     // Function to send a message
     async function sendMessage(roomId) {
         const messageInput = document.getElementById("messageInput");
@@ -137,7 +206,7 @@
             messageInput.value = ""; // Clear the input field
 
             // Fetch and append the last message
-            await fetchLastMessage(roomId);
+//            await fetchLastMessage(roomId);
 
         } catch (e) {
             console.error("Error adding document: ", e);
@@ -230,6 +299,8 @@
         } catch (e) {
             console.error("Error fetching messages: ", e);
         }
+        const chatMessagesBox = document.querySelector('.message-container');
+        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
     }
 
     // Function to fetch the current user ID
@@ -346,7 +417,20 @@
         } catch (e) {
             console.error("Error fetching last message: ", e);
         }
+        const chatMessagesBox = document.querySelector('.message-container');
+        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
     }
 
     localStorage.setItem("roomId", 0);
     document.getElementById("sendMessage").addEventListener("click", () => sendMessage(localStorage.getItem("roomId")));
+
+    messageInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default action (like adding a new line)
+            const messageText = messageInput.value.trim();
+            if (messageText) {
+                document.getElementById("sendMessage").click();
+            }
+        }
+    });
+

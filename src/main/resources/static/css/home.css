@@ -41,9 +41,9 @@ body{
     #one-to-one, #group-chats ul{
         list-style-type: none;
         margin: 0px;
-        background: #d0ffc6;
+        background: #cbfff1;
         li{
-            padding: 15px;
+            padding: 10px;
         }
     }
     height: 100vh;
@@ -62,14 +62,14 @@ body{
     }
 }
 .chat-messages{
-    padding: 20px;
-    padding-right: 0px !important;
+    padding: 10px !important;
 }
 
 .message-wrapper {
     display: flex;
     align-items: flex-start;
     margin: 10px 0;
+    padding: 7px 0px;
 }
 
 .current-user {
@@ -82,7 +82,7 @@ body{
 
 .message-content {
     max-width: 70%; /* Limit message width */
-    padding: 10px;
+    padding: 7px;
     border-radius: 5px;
     background-color: #f1f1f1;
     position: relative;
@@ -97,10 +97,21 @@ body{
     width: max-content;
 }
 .profile-pic {
-    width: 40px;
-    height: 40px;
+    width: 37px;
+    height: 37px;
     border-radius: 50%;
-    margin: 0px 10px;
+    margin: 0px 8px;
     object-fit: cover; /* Ensures the image covers the container */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
+
+
+create multiple groups with same user new usegroup will be created each time
+add group image in usergroup
+show status of each user just below in list
+add each room setting , give edit room name and pic to room admin, show room users,set room admin,
+create setting modal , put themes for app , put status and theme setting in that
+add seen by for each message
+move search to each room, add elastic search for searching of messages
+add docker
+clean extra tables
