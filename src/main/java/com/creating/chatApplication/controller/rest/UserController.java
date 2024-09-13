@@ -35,9 +35,15 @@ public class UserController {
 
     @GetMapping("/getUserEmails")
     public ResponseEntity<List<String>> getUserEmails(@RequestParam String q) {
-        List<String> emails = userService.findEmailsByQuery(q); // Implement this method in your UserService
+        List<String> emails = userService.findEmailsByQuery(q);
         emails.remove(userService.getCurrentUser().getEmail());
         return ResponseEntity.ok(emails);
+    }
+
+    @GetMapping("/getUserNameByEmail")
+    public ResponseEntity<String> getUserNameByEmail(@RequestParam String email) {
+        String uName = userService.getUserByEmail(email).getUsername();
+        return ResponseEntity.ok(uName);
     }
 
 }
