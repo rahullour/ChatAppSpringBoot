@@ -5,13 +5,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             fetchInvites('api/invites/single'),
             fetchInvites('api/invites/group')
         ]);
-
         // Display single invites if available
         if (singleInvites.length > 0) {
             await displayInvites(singleInvites, 'single');
             const singleListItems = document.querySelectorAll('#single-list li');
             if (singleListItems.length > 0) {
-                singleListItems[0].click(); // Automatically click the first single invite
+                document.querySelector('#one-to-one-tab').click();
+                singleListItems[0].click();
             }
         }
 
@@ -20,15 +20,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             await displayInvites(groupInvites, 'group');
             const groupListItems = document.querySelectorAll('#group-list li');
             if (groupListItems.length > 0 && singleInvites.length === 0) {
-                groupListItems[0].click(); // Automatically click the first group invite if no single invites
+                document.querySelector('#group-chats-tab').click();
+                groupListItems[0].click();
             }
         }
 
         // Handle case when no invites are available
         if (singleInvites.length === 0 && groupInvites.length === 0) {
             const chatMessagesBox = document.querySelector('.chat-messages');
+            $('.chat-screen').parent().css('height', '92%');
             if (chatMessagesBox) {
                 chatMessagesBox.innerText = "You don't have any conversation, invite someone!";
+                chatMessagesBox.style.verticalAlign = 'middle';
+                chatMessagesBox.style.textAlign = 'center';
+                chatMessagesBox.style.margin = 'auto';
             }
         }
     } catch (error) {
@@ -163,15 +168,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         orderBy("timestamp", "asc") // Order messages by timestamp ascending
     );
 
-    // Set up the Firestore listener for real-time updates
+    let timeoutId;
     onSnapshot(messagesQuery, (snapshot) => {
-        // Check how many messages are in the snapshot
         const newMessageCount = snapshot.docChanges().filter(change => change.type === "added").length;
 
-        // Only call displayMessages if there are new messages and the count has changed
         if (newMessageCount > 0 && newMessageCount !== lastMessageCount) {
-            lastMessageCount = newMessageCount; // Update the last message count
-            displayMessages(localStorage.getItem("roomId")); // Call displayMessages once
+            clearTimeout(timeoutId); // Clear the previous timeout
+            timeoutId = setTimeout(() => {
+                lastMessageCount = newMessageCount;
+                displayMessages(localStorage.getItem("roomId"));
+            }, 100); // Delay the call to displayMessages
         }
     });
 
@@ -179,12 +185,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function sendMessage(roomId) {
         const messageInput = document.getElementById("messageInput");
         const messageText = messageInput.value;
-
-        // Check if the message is not empty
-        if (messageText.trim() === "") {
-            alert("Please enter a message.");
-            return;
-        }
+        messageInput.value = ""; // Clear the input field
 
         try {
             const senderId = await fetch(`/api/users/currentUser/getId`)
@@ -203,10 +204,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             console.log("Document written with ID: ", docRef.id);
-            messageInput.value = ""; // Clear the input field
-
-            // Fetch and append the last message
-//            await fetchLastMessage(roomId);
 
         } catch (e) {
             console.error("Error adding document: ", e);

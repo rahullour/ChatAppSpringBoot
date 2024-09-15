@@ -64,70 +64,68 @@ public class InviteController {
                 User user = userService.getUserByEmail(emailAddress);
                 try {
                     if(isValidEmail(emailAddress)) {
-                        if (user != null && !user.getEmail().equals(senderEmail)) {
+                        if (user == null) {
+                            String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
+                            notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form", type);
+                            continue;
+                        }
+                        if (type) {
+                            // Create the invite
+                            Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
+                            Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
+// Create a new InviteGroup
+                            InviteGroup inviteGroup = new InviteGroup();
+                            inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
+
+                            InviteGroup inviteGroupOther = new InviteGroup();
+                            inviteGroupOther.setInvite(invite_other);
+
+// Check if the UserGroup already exists
+                            UserGroup existingUserGroup = userGroupService.findUserGroupByName(groupName); // Implement this method to find UserGroup by name
+
+                            if (existingUserGroup != null) {
+                                // If the UserGroup exists, add the new InviteGroup to its list
+                                inviteGroup.setUserGroup(existingUserGroup); // Set the UserGroup for the InviteGroup
+                                inviteGroupOther.setUserGroup(existingUserGroup);
+
+                                // Save the InviteGroup
+                                inviteGroupService.saveInviteGroup(inviteGroup);
+                                inviteGroupService.saveInviteGroup(inviteGroupOther);
+                            } else {
+                                // If the UserGroup does not exist, create a new one
+                                UserGroup newUserGroup = new UserGroup();
+                                newUserGroup.setName(groupName); // Set the name of the new UserGroup
+                                userGroupService.saveUserGroup(newUserGroup);
+                                List<InviteGroup> inviteGroups = new ArrayList<>();
+                                inviteGroup.setUserGroup(newUserGroup); // Set the UserGroup for the InviteGroup
+                                inviteGroupOther.setUserGroup(newUserGroup);
+                                // Save the InviteGroup
+                                inviteGroupService.saveInviteGroup(inviteGroup);
+                                inviteGroupService.saveInviteGroup(inviteGroupOther);
+                            }
+                        } else {
                             List<Invite> connections = inviteService.getInvites(senderEmail, emailAddress, type ? 1 : 0);
                             if (!connections.isEmpty() && connections.getLast().isAccepted()) {
                                 notificationManager.sendFlashNotification(emailAddress + " is connected already !", "alert-success", "short-noty");
                                 return ResponseEntity.status(HttpStatus.FOUND)
                                         .header("Location", "/")
                                         .build();
-                            }
-                            connections.addAll(inviteService.getInvites(emailAddress, senderEmail, type ? 1 : 0));
-                            for(Invite i: connections){
-                                inviteGroupService.rejectInviteGroup(i.getId());
-                                inviteService.rejectInvite(i.getId());
-                            }
-                            if(type){
-                                // Create the invite
-                                Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
-                                Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
-// Create a new InviteGroup
-                                InviteGroup inviteGroup = new InviteGroup();
-                                inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
-
-                                InviteGroup inviteGroupOther = new InviteGroup();
-                                inviteGroupOther.setInvite(invite_other);
-
-// Check if the UserGroup already exists
-                                UserGroup existingUserGroup = userGroupService.findUserGroupByName(groupName); // Implement this method to find UserGroup by name
-
-                                if (existingUserGroup != null) {
-                                    // If the UserGroup exists, add the new InviteGroup to its list
-                                    inviteGroup.setUserGroup(existingUserGroup); // Set the UserGroup for the InviteGroup
-                                    inviteGroupOther.setUserGroup(existingUserGroup);
-
-                                    // Save the InviteGroup
-                                    inviteGroupService.saveInviteGroup(inviteGroup);
-                                    inviteGroupService.saveInviteGroup(inviteGroupOther);
-                                } else {
-                                    // If the UserGroup does not exist, create a new one
-                                    UserGroup newUserGroup = new UserGroup();
-                                    newUserGroup.setName(groupName); // Set the name of the new UserGroup
-                                    userGroupService.saveUserGroup(newUserGroup);
-                                    List<InviteGroup> inviteGroups = new ArrayList<>();
-                                    inviteGroup.setUserGroup(newUserGroup); // Set the UserGroup for the InviteGroup
-                                    inviteGroupOther.setUserGroup(newUserGroup);
-                                    // Save the InviteGroup
-                                    inviteGroupService.saveInviteGroup(inviteGroup);
-                                    inviteGroupService.saveInviteGroup(inviteGroupOther);
+                            } else {
+                                for (Invite i : connections) {
+                                    inviteGroupService.rejectInviteGroup(i.getId());
+                                    inviteService.rejectInvite(i.getId());
                                 }
-                            }else{
                                 inviteService.createInvite(senderEmail, emailAddress, 0, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
                                 inviteService.createInvite(emailAddress, senderEmail, 0, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
                             }
 
-                            String token = tokenGenerationService.generateVerificationToken(user);
-                            String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&groupName=" + groupName;
-                            String notificationMessage = "Chat with " + emailAddress + " will be enabled after email verification of joinee!";
-                            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
-                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink, type);
-
                         }
-                        else{
-                            String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
-                            notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form", type);
-                        }
+                        String token = tokenGenerationService.generateVerificationToken(user);
+                        String verificationLink = "http://www.localhost:8080/verifyInviteUser?user_id=" + user.getId() + "&token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&groupName=" + groupName;
+                        String notificationMessage = "Chat with " + emailAddress + " will be enabled after email verification of joinee!";
+                        notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
+                        emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink, type);
                     }
                     else{
                         String notificationMessage = "Invalid email id: " + emailAddress;
@@ -143,6 +141,8 @@ public class InviteController {
             String notificationMessage = e.getMessage();
             notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
         }
+
+
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", "/")
                 .build();
