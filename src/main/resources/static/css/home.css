@@ -40,7 +40,6 @@ body{
 .chat-screen{
     #one-to-one, #group-chats ul{
         list-style-type: none;
-        margin: 0px;
         background: #cbfff1;
         li{
             padding: 10px;
@@ -103,6 +102,29 @@ body{
     margin: 0px 8px;
     object-fit: cover; /* Ensures the image covers the container */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.notification {
+    background-color: #2cd173;
+    color: white;
+    padding: 15px;
+    margin: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    opacity: 1;
+    transition: opacity 0.5s ease; /* Only fade-out transition */
+}
+
+.notification.hide {
+    opacity: 0;
+}
+
+.invite-item{
+    border-bottom: 1px solid #ffffff;
+}
+
+#single-list, #group-list{
+    margin-top: 1px;
 }
 
 

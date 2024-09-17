@@ -1,7 +1,5 @@
 $(document).ready(function() {
     let emailList = [];
-    let stompClient = null;
-
     // User Invitation Logic
     $('#emailInput').on('keypress', function(e) {
         if (e.which === 13) { // Enter key
@@ -38,33 +36,6 @@ $(document).ready(function() {
         updateEmailList();
     });
 
-
-    function sendMessage() {
-        const message = {
-            from: 'YourUsername', // Replace with actual username
-            text: $('#messageInput').val()
-        };
-        stompClient.send("/app/sendMessage", {}, JSON.stringify(message));
-        $('#messageInput').val('');
-    }
-
-    function showMessage(message) {
-        const messageContainer = $('#messages');
-        const messageElement = $('<div class="message"></div>');
-
-        // Check if the message is sent by the current user
-        if (message.from === 'YourUsername') { // Replace 'YourUsername' with the actual username
-            messageElement.addClass('sent');
-            messageElement.text(message.text);
-        } else {
-            messageElement.addClass('received');
-            messageElement.text(message.from + ': ' + message.text);
-        }
-
-        messageContainer.append(messageElement);
-        messageContainer.scrollTop(messageContainer[0].scrollHeight); // Scroll to the bottom
-    }
-
     $('#inviteForm').on('submit', function(event) {
         event.preventDefault();
         const selectedOptions = Array.from(document.getElementById('emailInput').selectedOptions);
@@ -74,13 +45,18 @@ $(document).ready(function() {
     });
     document.getElementById('group_type').addEventListener('change', function() {
         const groupNameInput = document.getElementById('group_name');
+        const groupImageInput = document.getElementById('profilePictureFile');
 
         if (this.checked) {
             groupNameInput.disabled = false; // Enable input
+            groupImageInput.disabled = false;
+            groupImageInput.classList.remove('disabled');
             groupNameInput.classList.remove('disabled'); // Remove disabled class if needed
         } else {
             groupNameInput.disabled = true; // Disable input
             groupNameInput.classList.add('disabled'); // Add disabled class if needed
+            groupImageInput.disabled = true; // Disable input
+            groupImageInput.classList.add('disabled'); // Add disabled class if needed
         }
     });
     $('#emailInput').select2({

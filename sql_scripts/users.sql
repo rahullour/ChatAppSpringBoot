@@ -19,6 +19,24 @@ CREATE TABLE `user` (
   INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+CREATE TABLE `token` (
+  `id` INT AUTO_INCREMENT UNIQUE KEY,
+  `user_id` INT NOT NULL,
+  `type` VARCHAR(50) NOT NULL,
+  `token` VARCHAR(255) NOT NULL,
+  `expire_at` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE user_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	type VARCHAR(100) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES user(id)
+);
+
 --
 -- Inserting data for table `users`
 --
@@ -29,14 +47,6 @@ CREATE TABLE `user` (
 -- Default passwords here are: name@123--
 -- https://bcrypt-generator.com/
 
-INSERT INTO `user`  (username, password, enabled, email)
-VALUES
-('john','$2a$10$B3IffY.kkIaOpkhmKz.6YuAFeOvqclMNAUg0XT9Ao6Mdc1srTE1aC',1, "john@gmail.com"),
-('mary','$2a$10$fb1UvXR8NBOSzOX9PfW70umhpr5wvjQVwTgdDnIqFnRUaPMPxK/uO',1, "mary@gmail.com"),
-('rahul','$2a$10$f1YUEL87NiJc9Dz7WejrNeMa8uy0qjrqSUVQPUFZQSwGPor290QPy',1, "rahullour01@gmail.com");
-
-
---
 -- Table structure for table `authorities`
 
 CREATE TABLE `authority` (
@@ -50,11 +60,3 @@ CREATE TABLE `authority` (
 --
 -- Inserting data for table `authorities`
 --
-
-INSERT INTO `authority` (user_id, authority) VALUES 
-(1,'ROLE_USER'),
-(2,'ROLE_USER'),
-(2,'ROLE_ADMIN'),
-(3,'ROLE_USER'),
-(3,'ROLE_ADMIN'),
-(3,'ROLE_SU_ADMIN');

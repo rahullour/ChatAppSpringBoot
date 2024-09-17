@@ -1,45 +1,101 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        // Fetch both single and group invites simultaneously
-        const [singleInvites, groupInvites] = await Promise.all([
-            fetchInvites('api/invites/single'),
-            fetchInvites('api/invites/group')
-        ]);
-        // Display single invites if available
-        if (singleInvites.length > 0) {
-            await displayInvites(singleInvites, 'single');
-            const singleListItems = document.querySelectorAll('#single-list li');
-            if (singleListItems.length > 0) {
-                document.querySelector('#one-to-one-tab').click();
-                singleListItems[0].click();
-            }
-        }
+    let stompClient = null; // Declare stompClient in the appropriate scope
+    let notificationCount = 0; // Initialize notification count
 
-        // Display group invites if available
-        if (groupInvites.length > 0) {
-            await displayInvites(groupInvites, 'group');
-            const groupListItems = document.querySelectorAll('#group-list li');
-            if (groupListItems.length > 0 && singleInvites.length === 0) {
-                document.querySelector('#group-chats-tab').click();
-                groupListItems[0].click();
-            }
-        }
-
-        // Handle case when no invites are available
-        if (singleInvites.length === 0 && groupInvites.length === 0) {
-            const chatMessagesBox = document.querySelector('.chat-messages');
-            $('.chat-screen').parent().css('height', '92%');
-            if (chatMessagesBox) {
-                chatMessagesBox.innerText = "You don't have any conversation, invite someone!";
-                chatMessagesBox.style.verticalAlign = 'middle';
-                chatMessagesBox.style.textAlign = 'center';
-                chatMessagesBox.style.margin = 'auto';
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching invites:', error);
+    function connectWebSocket() {
+        const socket = new SockJS('/ws'); // Adjust the URL as needed
+        stompClient = Stomp.over(socket); // Initialize stompClient
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            subscribeToNotifications(); // Subscribe to notifications after connecting
+        }, function(error) {
+            console.error('STOMP error:', error); // Handle connection errors
+        });
     }
-});
+
+    function subscribeToNotifications() {
+        const roomId = localStorage.getItem("roomId");
+        console.log('Subscribing to room:', roomId);
+        if (roomId) {
+            stompClient.subscribe('/topic/notifications/' + roomId, function (notification) {
+                console.log('Received notification:', notification);
+                handleNotification(notification.body); // Handle the incoming notification
+            });
+        } else {
+            console.warn('No roomId found in localStorage');
+        }
+    }
+
+    function handleNotification(message) {
+        console.log('Handling notification:', message);
+        notificationCount++; // Increment the notification count
+        showNotificationToast(message); // Show the toast notification
+    }
+
+    function showNotificationToast(message) {
+        const toastContainer = document.getElementById('toast-container');
+
+        // Create a new notification element
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.innerText = message;
+
+        // Append the notification to the toast container
+        toastContainer.appendChild(notification);
+
+        // Automatically hide the notification after 1 second
+        setTimeout(() => {
+            notification.classList.add('hide');
+            // Remove the notification from the DOM after the fade-out transition
+            notification.addEventListener('transitionend', () => {
+                toastContainer.removeChild(notification);
+            });
+        }, 1000); // Adjust the duration as needed
+    }
+
+    // Connect to WebSocket when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', async function() {
+        connectWebSocket();
+        try {
+            // Fetch both single and group invites simultaneously
+            const [singleInvites, groupInvites] = await Promise.all([
+                fetchInvites('api/invites/single'),
+                fetchInvites('api/invites/group')
+            ]);
+            // Display single invites if available
+            if (singleInvites.length > 0) {
+                await displayInvites(singleInvites, 'single');
+                const singleListItems = document.querySelectorAll('#single-list li');
+                if (singleListItems.length > 0) {
+                    document.querySelector('#one-to-one-tab').click();
+                    singleListItems[0].click();
+                }
+            }
+
+            // Display group invites if available
+            if (groupInvites.length > 0) {
+                await displayInvites(groupInvites, 'group');
+                const groupListItems = document.querySelectorAll('#group-list li');
+                if (groupListItems.length > 0 && singleInvites.length === 0) {
+                    document.querySelector('#group-chats-tab').click();
+                    groupListItems[0].click();
+                }
+            }
+
+            // Handle case when no invites are available
+            if (singleInvites.length === 0 && groupInvites.length === 0) {
+                const chatMessagesBox = document.querySelector('.chat-messages');
+                $('.chat-screen').parent().css('height', '92%');
+                if (chatMessagesBox) {
+                    chatMessagesBox.innerText = "You don't have any conversation, invite someone!";
+                    chatMessagesBox.style.verticalAlign = 'middle';
+                    chatMessagesBox.style.textAlign = 'center';
+                    chatMessagesBox.style.margin = 'auto';
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching invites:', error);
+        }
+    });
 
     function fetchInvites(endpoint) {
         return fetch(endpoint)
@@ -127,13 +183,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             inviteList.appendChild(inviteItem);
+            const messagesQuery = query(
+                collection(db, "Messages"),
+                where("roomId", "==", `${invite.roomId}`),
+                orderBy("timestamp", "asc") // Order messages by timestamp ascending
+            );
+
+            // Set up the Firestore listener for real-time updates
+            onSnapshot(messagesQuery, (snapshot) => {
+                displayMessages(`${invite.roomId}`); // Call displayMessages once
+            });
         }
     }
 
     function openChat(roomId) {
-        // Logic to open chat messages screen based on roomId
-        localStorage.setItem("roomId", roomId);
         console.log(`Opening chat for room ID: ${roomId}`);
+        localStorage.setItem("roomId", roomId);
+        if (stompClient && stompClient.connected) {
+            console.log('Resubscribing to new room');
+            stompClient.unsubscribe('/topic/notifications/' + localStorage.getItem("roomId"));
+            subscribeToNotifications();
+        } else {
+            console.warn('STOMP client not connected');
+        }
+        notificationCount = 0; // Reset notification count when opening a new chat
+        displayMessages(roomId); // Function to display messages for the room
     }
 
 
@@ -159,27 +233,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     const app = initializeApp(firebaseConfig);
     // const analytics = getAnalytics(app);
     const db = getFirestore(app);
-
-    let lastMessageCount = 0; // Variable to track the number of messages displayed
-
-    const messagesQuery = query(
-        collection(db, "Messages"),
-        where("roomId", "==", localStorage.getItem("roomId")),
-        orderBy("timestamp", "asc") // Order messages by timestamp ascending
-    );
-
-    let timeoutId;
-    onSnapshot(messagesQuery, (snapshot) => {
-        const newMessageCount = snapshot.docChanges().filter(change => change.type === "added").length;
-
-        if (newMessageCount > 0 && newMessageCount !== lastMessageCount) {
-            clearTimeout(timeoutId); // Clear the previous timeout
-            timeoutId = setTimeout(() => {
-                lastMessageCount = newMessageCount;
-                displayMessages(localStorage.getItem("roomId"));
-            }, 100); // Delay the call to displayMessages
-        }
-    });
 
     // Function to send a message
     async function sendMessage(roomId) {
@@ -211,6 +264,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function displayMessages(roomId) {
+        // check if chatis open for the roomId
+        if(localStorage.getItem("roomId") != roomId){
+            console.log("chat is open for diff room, setting new msg count");
+           // Show a toast notification for new messages
+            showNotificationToast('You have new messages in other chats');
+            return;
+        }
         const messagesContainer = document.getElementById("messages");
         messagesContainer.innerHTML = ""; // Clear existing messages
 
@@ -348,76 +408,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Call the function to update the profile picture
     updateProfilePic();
 
-    async function fetchLastMessage(roomId) {
-        try {
-            // Get a reference to the Messages collection, order by timestamp, and limit to the last message
-            const lastMessageQuery = query(
-                collection(db, "Messages"),
-                where("roomId", "==", roomId),
-                orderBy("timestamp", "desc"),
-                limit(1) // Limit to the last message
-            );
-
-            const querySnapshot = await getDocs(lastMessageQuery);
-
-            // Append last message directly without clearing previous messages
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const messageElement = document.createElement("div");
-                // Create a wrapper for the message
-                const messageWrapper = document.createElement("div");
-                messageWrapper.classList.add("message-wrapper", "current-user");
-
-                // Create the message content
-                const messageContent = document.createElement("div");
-                messageContent.classList.add("message-content");
-
-                // Format the date
-                const messageDate = new Date(data.timestamp.toDate());
-                const now = new Date();
-                const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
-                let dateDisplay;
-
-                // Check conditions for displaying date and time
-                const isSameMonth = messageDate.getMonth() === now.getMonth() && messageDate.getFullYear() === now.getFullYear();
-                const isSameDate = messageDate.getDate() === now.getDate() && isSameMonth;
-
-                if (isSameDate) {
-                    // Show only time (12-hour format)
-                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-                } else if (isSameMonth) {
-                    // Show date and time (12-hour format)
-                    dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                } else {
-                    // Show date, month, and time (12-hour format)
-                    const month = messageDate.toLocaleString('default', { month: 'long' });
-                    dateDisplay = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                }
-
-                // Add date to the message content
-                const dateElement = document.createElement("div");
-                dateElement.classList.add("message-date");
-                dateElement.textContent = dateDisplay; // Show formatted date
-                messageContent.appendChild(dateElement);
-
-                // Add message text
-                const textElement = document.createElement("span");
-                textElement.textContent = data.text;
-                messageContent.appendChild(textElement);
-
-                messageWrapper.appendChild(messageContent);
-
-                // Append the last message to the last message container
-                const lastMessageContainer = document.getElementById("messages");
-                lastMessageContainer.appendChild(messageWrapper);
-            });
-        } catch (e) {
-            console.error("Error fetching last message: ", e);
-        }
-        const chatMessagesBox = document.querySelector('.message-container');
-        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
-    }
-
     localStorage.setItem("roomId", 0);
     document.getElementById("sendMessage").addEventListener("click", () => sendMessage(localStorage.getItem("roomId")));
 
@@ -430,4 +420,3 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
     });
-
