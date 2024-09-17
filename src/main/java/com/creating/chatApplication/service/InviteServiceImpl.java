@@ -1,6 +1,5 @@
 package com.creating.chatApplication.service;
 
-import com.creating.chatApplication.entity.Conversation;
 import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.User;
@@ -19,9 +18,6 @@ public class InviteServiceImpl implements InviteService {
     private NotificationManager notificationManager;
 
     @Autowired
-    private ConversationService conversationService;
-
-    @Autowired
     private UserService userService;
 
     @Override
@@ -31,19 +27,17 @@ public class InviteServiceImpl implements InviteService {
         invite.setRecipientEmail(recipientEmail);
         invite.setType(type);
         invite.setRoomId(roomId);
-
-        // Get the recipient's FCM token (you need to implement this method)
-        String recipientToken = userService.getFCMTokenByEmail(recipientEmail);
-
-        // Send notification via FCM
-        String notificationTitle = "New Chat Invitation";
-        String notificationBody = senderEmail + " has invited you to chat.";
         return inviteRepository.save(invite);
     }
 
     @Override
     public List<Invite> getInvites(String s_email, String r_email, int type) {
         return inviteRepository.findBySenderRecipientEmailAndType(s_email, r_email, type);
+    }
+
+    @Override
+    public List<Invite> getInvitesByRoom(String s_email, String r_email, int type, String room_id) {
+        return inviteRepository.findBySenderRecipientEmailTypeAndRoom(s_email, r_email, type, room_id);
     }
 
     @Override
@@ -59,25 +53,6 @@ public class InviteServiceImpl implements InviteService {
     @Override
     public List<Invite> getInvitesBySenderOrRecieverEmailAccepted(String email, int type) {
         return inviteRepository.findBySenderOrRecieverEmailAndTypeAccepted(email, type);
-    }
-
-    @Override
-    public void acceptInvite(int inviteId, String username) {
-        Invite invite = inviteRepository.findById(inviteId).orElse(null);
-        if (invite != null) {
-            // Create a new conversation
-            Conversation conversation = new Conversation();
-            conversation.setName(invite.getSenderEmail() + ", " + username);
-            conversation.setGroupChat(false);
-            Conversation createdConversation = conversationService.createConversation(conversation, userService.getUserByUsername(invite.getSenderEmail()));
-
-            // Add the recipient to the conversation
-            User recipient = userService.getUserByUsername(username);
-            conversationService.joinConversation(createdConversation, recipient);
-
-            // Delete the invite
-            inviteRepository.delete(invite);
-        }
     }
 
     @Override

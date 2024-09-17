@@ -2,6 +2,10 @@ package com.creating.chatApplication.events;
 
 import com.creating.chatApplication.entity.Authority;
 import com.creating.chatApplication.service.*;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.LogoutSuccessEvent;
@@ -16,11 +20,9 @@ import org.springframework.stereotype.Component;
 import com.creating.chatApplication.entity.User;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Base64;
+import java.util.*;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 public class AuthenticationEvents {
@@ -30,6 +32,9 @@ public class AuthenticationEvents {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private Firestore firestore;
 
     @Autowired
     private NotificationManager notificationManager;
@@ -157,11 +162,62 @@ public class AuthenticationEvents {
             List<Authority> authorities = new ArrayList<>();
             authorities.add(userAuthority);
             newUser.setAuthorities(authorities);
-            userService.saveUser(newUser);
+            User user = userService.saveUser(newUser);
             String notificationMessage = "New User Created. If you wish to login without third-party APIs, your default password is: " + password + ", please save it somewhere.";
             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "long-noty");
+
+            // Check if user already exists in Firestore
+            Firestore db = this.firestore;
+            DocumentReference userRef = db.collection("Users").document(String.valueOf(user.getId()));
+            ApiFuture<DocumentSnapshot> future = userRef.get();
+
+            try {
+                DocumentSnapshot document = future.get();
+                if (!document.exists()) {
+                    // Create a new user record in Firestore
+                    Map<String, Object> userData = new HashMap<>();
+                    userData.put("id", user.getId());
+                    userData.put("email", user.getEmail());
+                    userData.put("createdAt", LocalDateTime.now().toString());
+
+                    // Add user to Firestore
+                    userRef.set(userData);
+                    System.out.println("New user created in Firestore.");
+                } else {
+                    System.out.println("User already exists in Firestore.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // Check for sender's user record and create if not exists
+            String senderEmail = userService.getUserById(user.getId()).getEmail(); // Get sender's email
+            DocumentReference senderRef = db.collection("Users").document(String.valueOf(user.getId()));
+            ApiFuture<DocumentSnapshot> senderFuture = senderRef.get();
+
+            try {
+                DocumentSnapshot senderDocument = senderFuture.get();
+                if (!senderDocument.exists()) {
+                    // Create sender user record in Firestore
+                    Map<String, Object> senderData = new HashMap<>();
+                    senderData.put("id", user.getId());
+                    senderData.put("email", senderEmail);
+                    senderData.put("createdAt", LocalDateTime.now().toString());
+
+                    // Add sender to Firestore
+                    senderRef.set(senderData);
+                    System.out.println("Sender user created in Firestore.");
+                } else {
+                    System.out.println("Sender user already exists in Firestore.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         }
     }
+
+
 
     private String convertImageToBase64(String imagePath) {
         try {

@@ -14,6 +14,7 @@ CREATE TABLE `invite` (
 CREATE TABLE `user_group` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    profile_picture_url LONGTEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -33,13 +34,4 @@ CREATE TABLE status (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id)
 );
-
-CREATE TABLE `user_room` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` int NOT NULL,
-  `room_id` varchar(50) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `user_room_unique` (`user_id`, `room_id`),
-  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

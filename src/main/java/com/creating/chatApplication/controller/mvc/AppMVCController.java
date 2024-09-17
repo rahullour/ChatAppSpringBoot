@@ -1,9 +1,6 @@
 package com.creating.chatApplication.controller.mvc;
 
-import com.creating.chatApplication.entity.Authority;
-import com.creating.chatApplication.entity.Invite;
-import com.creating.chatApplication.entity.FlashNotification;
-import com.creating.chatApplication.entity.User;
+import com.creating.chatApplication.entity.*;
 import com.creating.chatApplication.service.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -59,6 +58,9 @@ public class AppMVCController {
 
     @Autowired
     private Firestore firestore;
+
+    @Autowired
+    private TokenService tokenService;
 
     @GetMapping("/")
     public String home(Model model, HttpServletRequest request, HttpServletResponse response) {
@@ -130,9 +132,15 @@ public class AppMVCController {
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
         try {
-            byte[] imageBytes = profilePicture.getBytes();
-            String profilePictureBase64 = Base64.getEncoder().encodeToString(imageBytes);
-            user.setProfilePictureUrl(profilePictureBase64);
+            if(profilePicture.isEmpty()){
+                String profileImageUrl = convertImageToBase64("src/main/resources/static/images/profile-image.png");
+                user.setProfilePictureUrl(profileImageUrl);
+            }
+            else{
+                byte[] imageBytes = profilePicture.getBytes();
+                String profilePictureBase64 = Base64.getEncoder().encodeToString(imageBytes);
+                user.setProfilePictureUrl(profilePictureBase64);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -149,6 +157,16 @@ public class AppMVCController {
         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
         notificationManager.sendFlashNotification("Registration successful!", "alert-success", "short-noty");
         return "redirect:/loginPage";
+    }
+
+    private String convertImageToBase64(String imagePath) {
+        try {
+            byte[] imageBytes = Files.readAllBytes(Paths.get(imagePath));
+            return Base64.getEncoder().encodeToString(imageBytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @GetMapping("/verifyResetEmail")
@@ -249,16 +267,17 @@ public class AppMVCController {
     }
 
     @GetMapping("/verifyInviteUser")
-    public String verifyChatJoin(@RequestParam int user_id, @RequestParam String token, @RequestParam int type, @RequestParam int sender_id, @RequestParam String groupName) {
-        User user = userService.findByVerificationTokenAndUserId(user_id, token);
+    public String verifyChatJoin(@RequestParam String token, @RequestParam int type, @RequestParam int sender_id, @RequestParam int user_id, @RequestParam String groupName) {
+        Token stored_token = tokenService.findByUserTokenAndType(sender_id, token, "invite");
 
-        if (user == null) {
+        if (stored_token == null) {
             notificationManager.sendFlashNotification("Invalid verification token/user_id.", "alert-danger", "short-noty");
         }
-        else if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
+        else if (stored_token.getExpire_at().isBefore(LocalDateTime.now())) {
             notificationManager.sendFlashNotification("Verification token has expired.", "alert-danger", "short-noty");
         }
         else{
+            User user = userService.getUserById(user_id);
             List<Invite> invites = inviteService.getInvites(userService.getUserById(sender_id).getEmail(), user.getEmail(), type);
             for(Invite i:invites){
                 i.setAccepted(true);
@@ -267,7 +286,7 @@ public class AppMVCController {
             for(Invite i:invites_other){
                 i.setAccepted(true);
             }
-            tokenGenerationService.generateVerificationToken(user);
+            tokenService.delete(stored_token.getId());
             notificationManager.sendFlashNotification("Chat join complete, please login!", "alert-success", "short-noty");
 
             // Check if user already exists in Firestore

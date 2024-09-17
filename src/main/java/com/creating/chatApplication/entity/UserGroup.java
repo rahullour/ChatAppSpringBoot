@@ -13,6 +13,9 @@ public class UserGroup {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "profile_picture_url", columnDefinition = "LONGTEXT")
+    private String profilePictureUrl;
+
     public UserGroup() {}
 
     public UserGroup(String name) {
@@ -35,11 +38,20 @@ public class UserGroup {
         this.name = name;
     }
 
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
+    }
+
     @Override
     public String toString() {
         return "UserGroup{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", profilePictureUrl='" + profilePictureUrl + '\'' +
                 '}';
     }
 }

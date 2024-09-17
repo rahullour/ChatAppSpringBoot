@@ -20,7 +20,7 @@
 <div id="notification-container">
     <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
-
+<div id="toast-container" class="toast-container"></div> <!-- New toast container -->
 <nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,9 +95,9 @@
                             <h5 class="modal-title" id="inviteModalLabel">Invite Users</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form action="#" th:action="@{/api/invites}" method="post" id="inviteForm">
+                        <form action="#" th:action="@{/api/invites}" method="post" id="inviteForm" enctype="multipart/form-data">
                             <div class="modal-body">
-                                <div class="container row mb-3">
+                                <div class="row mb-3">
                                     <div class="col-md-6">
                                         <div class="form-check form-switch mb-3">
                                             <input class="form-check-input" type="checkbox" role="switch" id="group_type" name="type">
@@ -107,6 +107,19 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <input type="text" id="group_name" name="groupName" placeholder="Group Name" class="form-control disabled" disabled required/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <div class="justify-content-center d-flex mb-2">
+                                                <label for="profilePictureFile">Group Picture</label>
+                                            </div>
+                                            <div id="imagePreview" style="margin-bottom: 10px; display: none;" class="justify-content-center d-flex mb-3">
+                                                <img id="previewImage" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 135px; height: 135px; object-fit: cover;" />
+                                            </div>
+                                            <input type="file" id="profilePictureFile" name="profilePicture" accept="image/*" class="form-control" onchange="previewProfileImage(event)" disabled/>
                                         </div>
                                     </div>
                                 </div>
@@ -172,5 +185,16 @@
 <script th:src="@{/js/home.js}"></script>
 <script th:src="@{/js/status.js}"></script>
 <script th:type="module" th:src="@{/js/chat.js}"></script>
+<script>
+    function previewProfileImage(event) {
+    var reader = new FileReader();
+    reader.onload = function() {
+        var output = document.getElementById('previewImage');
+        output.src = reader.result;
+        document.getElementById('imagePreview').style.display = 'block';
+    };
+    reader.readAsDataURL(event.target.files[0]);
+}
+</script>
 </body>
 </html>
