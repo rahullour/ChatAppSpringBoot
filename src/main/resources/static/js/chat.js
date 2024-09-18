@@ -1,5 +1,6 @@
     let stompClient = null; // Declare stompClient in the appropriate scope
     let notificationCount = 0; // Initialize notification count
+    let offlineNotification; // Variable to hold the offline notification
 
     function connectWebSocket() {
         const socket = new SockJS('/ws'); // Adjust the URL as needed
@@ -31,7 +32,7 @@
         showNotificationToast(message); // Show the toast notification
     }
 
-    function showNotificationToast(message) {
+    function showNotificationToast(message, persistent = false) {
         const toastContainer = document.getElementById('toast-container');
 
         // Create a new notification element
@@ -42,14 +43,48 @@
         // Append the notification to the toast container
         toastContainer.appendChild(notification);
 
-        // Automatically hide the notification after 1 second
-        setTimeout(() => {
-            notification.classList.add('hide');
-            // Remove the notification from the DOM after the fade-out transition
-            notification.addEventListener('transitionend', () => {
-                toastContainer.removeChild(notification);
+        if (!persistent) {
+            // Automatically hide the notification after 1 second if not persistent
+            setTimeout(() => {
+                notification.classList.add('hide');
+                // Remove the notification from the DOM after the fade-out transition
+                notification.addEventListener('transitionend', () => {
+                    toastContainer.removeChild(notification);
+                });
+            }, 1000); // Adjust the duration as needed
+        } else {
+            // If persistent, do not auto-hide and allow for manual removal later
+            offlineNotification = notification; // Store reference for later use
+        }
+    }
+
+    // Function to handle offline state
+    function handleOffline() {
+        showNotificationToast('You are currently offline. Please check your internet connection.', true);
+    }
+
+    // Function to handle online state
+    function handleOnline() {
+        if (offlineNotification) {
+            offlineNotification.classList.add('hide'); // Hide offline notification
+            offlineNotification.addEventListener('transitionend', () => {
+                const toastContainer = document.getElementById('toast-container');
+                toastContainer.removeChild(offlineNotification); // Remove it from DOM after transition
+                offlineNotification = null; // Clear reference
             });
-        }, 1000); // Adjust the duration as needed
+        }
+
+        showNotificationToast('You are back online!'); // Show a brief message about being back online
+        location.reload();
+    }
+
+    // Event listeners for online and offline events
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    // Initial check for online status on page load
+    if (!navigator.onLine) {
+        handleOffline(); // Call if already offline on load
     }
 
     // Connect to WebSocket when the DOM is fully loaded
@@ -93,7 +128,7 @@
                 }
             }
         } catch (error) {
-            console.error('Error fetching invites:', error);
+            console.log('Error fetching invites:', error);
         }
     });
 
@@ -116,33 +151,43 @@
         const inviteList = document.getElementById(listId);
         inviteList.innerHTML = '';
 
-        for (const invite of invites) {
-            const inviteItem = document.createElement('li');
-            inviteItem.classList.add('invite-item');
-            inviteItem.style.cursor = 'pointer';
+        if (type === "single") {
+            for (const invite of invites) {
+                const inviteItem = document.createElement('li');
+                inviteItem.classList.add('invite-item');
+                inviteItem.style.cursor = 'pointer';
 
-            if (type === "single") {
                 try {
-                    // Fetch user ID based on email
-                    const userIdResponse = await fetch(`api/users/getId?email=${invite.recipientEmail}`);
-                    if (!userIdResponse.ok) {
-                        throw new Error('getUserIdByEmail response was not ok');
+                    // Fetch user ID
+                    const userId = await fetchCurrentUserId();
+                    if (userId === -1) { // Check if userId is valid
+                        console.error('Invalid user ID, db issue, please contact admin');
+                        return;
                     }
-                    const userId = await userIdResponse.json();
+                    // Fetch user email
+                    const userEmail = await fetchUserEmail(userId);
+                    if (userEmail === -1) { // Check if fetchCurrentUserId is valid
+                        console.error('Invalid user email, db issue, please contact admin');
+                        return;
+                    }
+
+                    const emailChosen = userEmail === invite.senderEmail ? invite.recipientEmail : invite.senderEmail;
+                    const userIdChosenResponse = await fetch(`api/users/getId?email=${emailChosen}`);
+                    const userIdChosen = await userIdChosenResponse.json(); // Assuming this returns the ID
 
                     // Create a wrapper for the invite item
                     const inviteWrapper = document.createElement('div');
                     inviteWrapper.classList.add('invite-wrapper');
 
                     if (userId) {
-                        const profilePicBase64 = await getProfilePic(userId);
+                        const profilePicBase64 = await getProfilePic(userIdChosen);
                         const imgElement = document.createElement("img");
                         imgElement.src = `data:image/png;base64,${profilePicBase64}`;
                         imgElement.classList.add("profile-pic");
                         inviteWrapper.appendChild(imgElement);
                     }
 
-                    const usernameResponse = await fetch(`api/users/getUserNameByEmail?email=${invite.recipientEmail}`);
+                    const usernameResponse = await fetch(`api/users/getUserNameByEmail?email=${emailChosen}`);
                     if (!usernameResponse.ok) {
                         throw new Error('getUserNameByEmail response was not ok');
                     }
@@ -158,41 +203,102 @@
 
                     inviteItem.setAttribute('data-room-id', `${invite.roomId}`);
                     inviteItem.onclick = () => openChat(`${invite.roomId}`);
+                    inviteList.appendChild(inviteItem);
+
                 } catch (error) {
                     console.error('Error fetching user data:', error);
                 }
-            } else {
-                // Handle group invites
+
+                // Set up Firestore listener for real-time updates after processing invites
+                const messagesQuery = query(
+                    collection(db, "Messages"),
+                    where("roomId", "==", `${invite.roomId}`),
+                    orderBy("timestamp", "asc")
+                );
+
+                onSnapshot(messagesQuery, (snapshot) => {
+                    displayMessages(`${invite.roomId}`); // Call displayMessages once for each room ID
+                });
+
+            }
+        } else {
+            // Handle group invites
+            const groupedInvites = {};
+
+            // Group invites by roomId
+            for (const invite of invites) {
+                if (!groupedInvites[invite.roomId]) {
+                    groupedInvites[invite.roomId] = [];
+                }
+                groupedInvites[invite.roomId].push(invite);
+            }
+
+            // Create a single invite item for each unique roomId
+            for (const roomId in groupedInvites) {
+                const groupInviteItems = groupedInvites[roomId];
+
+                // Assuming we only need one of the invites to get the group info
+                const firstInvite = groupInviteItems[0];
+
                 try {
-                    const groupResponse = await fetch(`api/invite_groups?inviteId=${invite.id}`);
+                    const groupResponse = await fetch(`api/invite_groups?inviteId=${firstInvite.id}`);
                     if (!groupResponse.ok) {
                         throw new Error('Network response was not ok');
                     }
+
                     const inviteGroup = await groupResponse.json();
+
+                    // Fetch user group information
                     const userGroupResponse = await fetch(`api/user_groups?groupId=${inviteGroup.userGroup.id}`);
                     if (!userGroupResponse.ok) {
                         throw new Error('Network response was not ok');
                     }
                     const userGroup = await userGroupResponse.json();
-                    inviteItem.textContent = `${userGroup.name}`;
-                    inviteItem.setAttribute('data-room-id', `${invite.roomId}`);
-                    inviteItem.onclick = () => openChat(`${invite.roomId}`);
+
+                    // Create a single invite item for the group
+                    const inviteItem = document.createElement('li');
+                    inviteItem.classList.add('invite-item');
+                    inviteItem.style.cursor = 'pointer';
+
+                    // Create a wrapper for the invite item
+                    const inviteWrapper = document.createElement('div');
+                    inviteWrapper.classList.add('invite-wrapper');
+
+                    const profilePicBase64 = await getProfilePicByRoomId(`${userGroup.roomId}`);
+                    const imgElement = document.createElement("img");
+                    imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                    imgElement.classList.add("profile-pic");
+                    inviteWrapper.appendChild(imgElement);
+
+                    // Create a span for the username
+                    const usernameElement = document.createElement("span");
+                    usernameElement.textContent = `${userGroup.name}`;
+                    usernameElement.classList.add("username");
+
+                    inviteWrapper.appendChild(usernameElement);
+                    inviteItem.appendChild(inviteWrapper); // Append the wrapper to the invite item
+
+                    inviteItem.setAttribute('data-room-id', `${roomId}`);
+                    inviteItem.onclick = () => openChat(`${roomId}`);
+                    // Append the group invite item to the list
+                    inviteList.appendChild(inviteItem);
+
                 } catch (error) {
                     console.error('Error fetching group data:', error);
                 }
             }
+            // Set up Firestore listener for real-time updates after processing invites
+            for (const roomId in groupedInvites) {
+                const messagesQuery = query(
+                    collection(db, "Messages"),
+                    where("roomId", "==", roomId),
+                    orderBy("timestamp", "asc") // Order messages by timestamp ascending
+                );
 
-            inviteList.appendChild(inviteItem);
-            const messagesQuery = query(
-                collection(db, "Messages"),
-                where("roomId", "==", `${invite.roomId}`),
-                orderBy("timestamp", "asc") // Order messages by timestamp ascending
-            );
-
-            // Set up the Firestore listener for real-time updates
-            onSnapshot(messagesQuery, (snapshot) => {
-                displayMessages(`${invite.roomId}`); // Call displayMessages once
-            });
+                onSnapshot(messagesQuery, (snapshot) => {
+                    displayMessages(roomId); // Call displayMessages once for each room ID
+                });
+            }
         }
     }
 
@@ -372,6 +478,20 @@
         }
     }
 
+    // Function to fetch the current user email
+    async function fetchUserEmail(userId) {
+        try {
+            const response = await fetch(`/api/users/getEmail?id=${userId}`);
+            const userEmail = await response.text();
+            return userEmail;
+        } catch (error) {
+            console.error('Error fetching current user email:', error);
+            return -1;
+        }
+    }
+
+
+
     // Function to fetch the profile picture URL
     async function getProfilePic(senderId) {
         try {
@@ -386,6 +506,21 @@
             return '';
         }
     }
+
+        // Function to fetch the profile picture URL
+        async function getProfilePicByRoomId(roomId) {
+            try {
+                const response = await fetch(`/api/users/getProfilePicByRoomId?roomId=${roomId}`);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                return data.profilePicture;
+            } catch (error) {
+                console.error('Error fetching profile picture:', error);
+                return '';
+            }
+        }
 
     // Function to update the profile picture
     async function updateProfilePic() {

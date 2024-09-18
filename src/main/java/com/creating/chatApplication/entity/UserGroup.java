@@ -13,6 +13,9 @@ public class UserGroup {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "room_id")
+    private String roomId;
+
     @Column(name = "profile_picture_url", columnDefinition = "LONGTEXT")
     private String profilePictureUrl;
 
@@ -20,6 +23,14 @@ public class UserGroup {
 
     public UserGroup(String name) {
         this.name = name;
+    }
+
+    public String getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(String roomId) {
+        this.roomId = roomId;
     }
 
     public int getId() {

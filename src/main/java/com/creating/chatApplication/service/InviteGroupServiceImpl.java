@@ -7,6 +7,8 @@ import com.creating.chatApplication.repository.InviteGroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class InviteGroupServiceImpl implements InviteGroupService{
     @Autowired
@@ -20,6 +22,11 @@ public class InviteGroupServiceImpl implements InviteGroupService{
     @Override
     public InviteGroup findInviteGroupByInviteId(int igId) {
         return inviteGroupRepository.findByInviteId(igId);
+    }
+
+    @Override
+    public List<InviteGroup> findInviteGroupsByInviteId(List<Integer> inviteIds) {
+        return inviteGroupRepository.findAllByInviteId(inviteIds);
     }
 
     @Override

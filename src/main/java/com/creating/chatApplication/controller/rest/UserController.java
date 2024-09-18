@@ -2,6 +2,7 @@ package com.creating.chatApplication.controller.rest;
 
 import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.User;
+import com.creating.chatApplication.service.UserGroupService;
 import com.creating.chatApplication.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,10 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserGroupService userGroupService;
+
+
     @GetMapping("currentUser/getId")
     public ResponseEntity<Integer> getUserId(){
         return ResponseEntity.ok(userService.getCurrentUser().getId());
@@ -27,11 +32,24 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByEmail(email).getId());
     }
 
+    @GetMapping("/getEmail")
+    public ResponseEntity<String> getUserEmail(@RequestParam int id){
+        return ResponseEntity.ok(userService.getUserById(id).getEmail());
+    }
+
     @GetMapping("/getProfilePic")
     public ResponseEntity<String> getProfilePic(@RequestParam int id) {
         String profilePictureUrl = userService.getUserById(id).getProfilePictureUrl();
         return ResponseEntity.ok("{\"profilePicture\":\"" + profilePictureUrl + "\"}");
     }
+
+    @GetMapping("/getProfilePicByRoomId")
+    public ResponseEntity<String> getProfilePicByRoomId(@RequestParam String roomId) {
+        String profilePictureUrl = userGroupService.findUserGroupByRoomId(roomId).getProfilePictureUrl();
+        return ResponseEntity.ok("{\"profilePicture\":\"" + profilePictureUrl + "\"}");
+    }
+
+
 
     @GetMapping("/getUserEmails")
     public ResponseEntity<List<String>> getUserEmails(@RequestParam String q) {

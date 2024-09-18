@@ -338,7 +338,7 @@ public class AppMVCController {
             }
 
             // Proceed to create or check rooms
-            createOrCheckRoom(type, sender_id, user.getId(), groupName);
+            createOrCheckRoom(type, sender_id, user_id, groupName);
         }
         return "redirect:/loginPage";
     }
@@ -346,9 +346,6 @@ public class AppMVCController {
     private void createOrCheckRoom(int type, int senderId, int recipient_id, String groupName) {
         Firestore db = this.firestore;
         String roomId;
-
-        // Fetch sender user ID
-        String recipientEmail = userService.getUserById(recipient_id).getEmail(); // Get sender's email
 
         if (type == 0) { // Single chat
             roomId = "single_" + senderId + "_" + recipient_id; // Unique ID for single chat
@@ -385,15 +382,10 @@ public class AppMVCController {
                     roomRef.set(roomData);
                     System.out.println("Group room created.");
                 } else {
-                    // Room exists, now update the userIds
-                    List<String> userIds = (List<String>) document.get("userIds");
-                    if (!userIds.contains(recipientEmail)) {
-                        userIds.add(recipientEmail); // Add recipient's user ID
-                        roomRef.update("userIds", userIds);
-                        System.out.println("Group room updated with new user.");
-                    } else {
-                        System.out.println("User already exists in the group.");
-                    }
+                    List<Integer> userIds = (List<Integer>) document.get("userIds");
+                    userIds.add(recipient_id); // Add recipient's user ID
+                    roomRef.update("userIds", userIds);
+                    System.out.println("Group room updated with new user.");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
