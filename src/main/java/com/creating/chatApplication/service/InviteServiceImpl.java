@@ -46,8 +46,8 @@ public class InviteServiceImpl implements InviteService {
     }
 
     @Override
-    public List<Invite> getInvitesBySenderEmailAccepted(String s_email, int type) {
-        return inviteRepository.findBySenderEmailAndTypeAccepted(s_email, type);
+    public List<Invite> getInvitesAccepted(String email, int type) {
+        return inviteRepository.findByEmailAndTypeAccepted(email, type);
     }
 
     @Override

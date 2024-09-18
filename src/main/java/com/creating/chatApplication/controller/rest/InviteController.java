@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.List;
@@ -61,9 +62,43 @@ public class InviteController {
     public ResponseEntity<Void> sendInvite(@RequestParam String senderEmail, @RequestParam String emails, @RequestParam(required = false) boolean type, @RequestParam(required = false) String groupName, @RequestParam(required = false) MultipartFile profilePicture) {
         ObjectMapper objectMapper = new ObjectMapper();
         List<String> receiverEmails = null;
+        UserGroup newUserGroup = null;
         try {
             receiverEmails = objectMapper.readValue(emails, new TypeReference<List<String>>() {});
-
+            if(type){
+                List<Invite> invites = inviteService.getInvitesAccepted(senderEmail, 1);
+                List<Integer> inviteIds = new ArrayList<>();
+                for(Invite i: invites){
+                    inviteIds.add(i.getId());
+                }
+                HashSet<String> groupNames = new HashSet<>();
+                if(inviteIds != null){
+                    List<InviteGroup> inviteGroupsAttached = inviteGroupService.findInviteGroupsByInviteId(inviteIds);
+                    for(InviteGroup ig: inviteGroupsAttached){
+                        groupNames.add(ig.getUserGroup().getName());
+                    }
+                }
+                if(groupNames.contains(groupName)){
+                    notificationManager.sendFlashNotification(groupName + " group already exists, please delete chat and retry!", "alert-error", "short-noty");
+                    return ResponseEntity.status(HttpStatus.FOUND)
+                            .header("Location", "/")
+                            .build();
+                }
+                newUserGroup = new UserGroup();
+                newUserGroup.setName(groupName); // Set the name of the new UserGroup
+                try {
+                    byte[] imageBytes = profilePicture.getBytes();
+                    String profilePictureBase64 = Base64.getEncoder().encodeToString(imageBytes);
+                    newUserGroup.setProfilePictureUrl(profilePictureBase64);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                String groupNameFormed = "group_" + groupName + "_" + userService.getUserByEmail(senderEmail).getId();
+                for(String email: receiverEmails){
+                    groupNameFormed = groupNameFormed + "_" + userService.getUserByEmail(email).getId();
+                }
+                newUserGroup.setRoomId(groupNameFormed);
+            }
             for (String emailAddress : receiverEmails) {
                 User user = userService.getUserByEmail(emailAddress);
                 try {
@@ -75,56 +110,27 @@ public class InviteController {
                             continue;
                         }
                         if (type) {
-// Check if the UserGroup already exists
-                            UserGroup existingUserGroup = userGroupService.findUserGroupByName(groupName); // Implement this method to find UserGroup by name
-                            if(existingUserGroup != null){
-                                notificationManager.sendFlashNotification(groupName + " group already exists!", "alert-error", "short-noty");
-                                return ResponseEntity.status(HttpStatus.FOUND)
-                                          .header("Location", "/")
-                                          .build();
-                            }
                             // Create the invite
                             Invite invite = inviteService.createInvite(senderEmail, emailAddress, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
-                            Invite invite_other = inviteService.createInvite(emailAddress, senderEmail, 1, null, "group_" + groupName + "_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()));
-// Create a new InviteGroup
+                            // Create a new InviteGroup
                             InviteGroup inviteGroup = new InviteGroup();
                             inviteGroup.setInvite(invite); // Set the Invite for the InviteGroup
 
-                            InviteGroup inviteGroupOther = new InviteGroup();
-                            inviteGroupOther.setInvite(invite_other);
-
-
-                            // If the UserGroup does not exist, create a new one
-                            UserGroup newUserGroup = new UserGroup();
-                            newUserGroup.setName(groupName); // Set the name of the new UserGroup
-                            try {
-                                byte[] imageBytes = profilePicture.getBytes();
-                                String profilePictureBase64 = Base64.getEncoder().encodeToString(imageBytes);
-                                newUserGroup.setProfilePictureUrl(profilePictureBase64);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                            // Create the user group
                             userGroupService.saveUserGroup(newUserGroup);
                             List<InviteGroup> inviteGroups = new ArrayList<>();
                             inviteGroup.setUserGroup(newUserGroup); // Set the UserGroup for the InviteGroup
-                            inviteGroupOther.setUserGroup(newUserGroup);
                             // Save the InviteGroup
                             inviteGroupService.saveInviteGroup(inviteGroup);
-                            inviteGroupService.saveInviteGroup(inviteGroupOther);
                         } else {
                             List<Invite> connections = inviteService.getInvites(senderEmail, emailAddress,  0);
                             if (!connections.isEmpty() && connections.getLast().isAccepted()) {
-                                notificationManager.sendFlashNotification(emailAddress + " is connected already !", "alert-success", "short-noty");
+                                notificationManager.sendFlashNotification(emailAddress + " is connected already, please delete chat and retry!", "alert-error", "short-noty");
                                 return ResponseEntity.status(HttpStatus.FOUND)
                                         .header("Location", "/")
                                         .build();
                             } else {
-                                for (Invite i : connections) {
-                                    inviteGroupService.rejectInviteGroup(i.getId());
-                                    inviteService.rejectInvite(i.getId());
-                                }
                                 inviteService.createInvite(senderEmail, emailAddress, 0, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
-                                inviteService.createInvite(emailAddress, senderEmail, 0, null, "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId()));
                             }
 
                         }
@@ -156,11 +162,11 @@ public class InviteController {
     }
     @GetMapping("/invites/single")
     public List<Invite> getSingleInvites(){
-        return inviteService.getInvitesBySenderEmailAccepted(userService.getCurrentUser().getEmail(),  0);
+        return inviteService.getInvitesAccepted(userService.getCurrentUser().getEmail(), 0);
     }
     @GetMapping("/invites/group")
     public List<Invite> getGroupInvites(){
-        return inviteService.getInvitesBySenderEmailAccepted(userService.getCurrentUser().getEmail(), 1);
+        return inviteService.getInvitesAccepted(userService.getCurrentUser().getEmail(), 1);
     }
     @GetMapping("/user_groups")
     public UserGroup getUserGroups(@RequestParam int groupId){

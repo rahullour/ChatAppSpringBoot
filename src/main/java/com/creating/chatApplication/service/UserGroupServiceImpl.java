@@ -27,6 +27,11 @@ public class UserGroupServiceImpl implements UserGroupService{
     }
 
     @Override
+    public UserGroup findUserGroupByRoomId(String roomId) {
+        return userGroupRepository.findByRoomId(roomId);
+    }
+
+    @Override
     public UserGroup findUserGroupByName(String groupName) {
         return userGroupRepository.findByName(groupName);
     }

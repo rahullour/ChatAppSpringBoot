@@ -127,9 +127,6 @@ body{
     margin-top: 1px;
 }
 
-
-create multiple groups with same user new usegroup will be created each time
-add group image in usergroup
 show status of each user just below in list
 add each room setting , give edit room name and pic to room admin, show room users,set room admin,
 create setting modal , put themes for app , put status and theme setting in that
@@ -137,5 +134,3 @@ add seen by for each message
 move search to each room, add elastic search for searching of messages
 add docker
 clean extra tables
-chat  enter feel s slow
-add dark mode

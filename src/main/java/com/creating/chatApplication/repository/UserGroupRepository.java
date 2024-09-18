@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserGroupRepository extends JpaRepository<UserGroup, Integer> {
     UserGroup findByName(String name);
+    UserGroup findByRoomId(String roomId);
 }

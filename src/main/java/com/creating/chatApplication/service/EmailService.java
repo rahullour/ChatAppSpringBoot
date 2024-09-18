@@ -60,7 +60,7 @@ public class EmailService {
                 "            margin-top: 0;\n" +
                 "        }\n" +
                 "        .ii a[href] {\n" +
-                "        color: #fff;\n" +
+                "        color: #000000;\n" +
                 "    }\n" +
                 "        .button {\n" +
                 "            display: inline-block;\n" +
