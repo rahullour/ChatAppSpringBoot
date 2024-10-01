@@ -1,14 +1,25 @@
 package com.creating.chatApplication.controller.rest;
 
 import com.creating.chatApplication.entity.Invite;
+import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.User;
+import com.creating.chatApplication.entity.UserGroup;
 import com.creating.chatApplication.service.UserGroupService;
 import com.creating.chatApplication.service.UserService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.MailSendException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 
 @RequestMapping("/api/users")
@@ -62,6 +73,11 @@ public class UserController {
     public ResponseEntity<String> getUserNameByEmail(@RequestParam String email) {
         String uName = userService.getUserByEmail(email).getUsername();
         return ResponseEntity.ok(uName);
+    }
+
+    @PostMapping("/setProfilePic")
+    public void setProfilePic(@RequestParam MultipartFile profilePicture) {
+
     }
 
 }

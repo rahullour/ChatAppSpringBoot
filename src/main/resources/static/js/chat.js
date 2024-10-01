@@ -217,9 +217,8 @@
                 );
 
                 onSnapshot(messagesQuery, (snapshot) => {
-                    displayMessages(`${invite.roomId}`); // Call displayMessages once for each room ID
+                    displayMessages(`${invite.roomId}`);
                 });
-
             }
         } else {
             // Handle group invites
@@ -296,15 +295,17 @@
                 );
 
                 onSnapshot(messagesQuery, (snapshot) => {
-                    displayMessages(roomId); // Call displayMessages once for each room ID
+                    displayMessages(roomId);
                 });
             }
         }
     }
 
-    function openChat(roomId) {
+    async function openChat(roomId) {
         console.log(`Opening chat for room ID: ${roomId}`);
         localStorage.setItem("roomId", roomId);
+        displayMessages(roomId);
+
         if (stompClient && stompClient.connected) {
             console.log('Resubscribing to new room');
             stompClient.unsubscribe('/topic/notifications/' + localStorage.getItem("roomId"));
@@ -313,7 +314,6 @@
             console.warn('STOMP client not connected');
         }
         notificationCount = 0; // Reset notification count when opening a new chat
-        displayMessages(roomId); // Function to display messages for the room
     }
 
 
@@ -370,15 +370,13 @@
     }
 
     async function displayMessages(roomId) {
-        // check if chatis open for the roomId
+        // Check if chat is open for the roomId
         if(localStorage.getItem("roomId") != roomId){
-            console.log("chat is open for diff room, setting new msg count");
-           // Show a toast notification for new messages
+            console.log("Chat is open for a different room, setting new message count");
+            // Show a toast notification for new messages
             showNotificationToast('You have new messages in other chats');
             return;
         }
-        const messagesContainer = document.getElementById("messages");
-        messagesContainer.innerHTML = ""; // Clear existing messages
 
         try {
             // Get a reference to the Messages collection and order by timestamp in ascending order
@@ -398,11 +396,12 @@
                 const data = doc.data();
                 messages.push(data); // Push the message data to the array
             });
-
             // Display each message
             const currentUserId = await fetchCurrentUserId(); // Fetch current user ID
             const now = new Date();
-
+            let lastDisplayedDate = null; // Variable to track last displayed date
+            const messagesContainer = document.getElementById("messages");
+            messagesContainer.innerHTML = ""; // Clear existing messages
             for (const data of messages) {
                 const messageElement = document.createElement("div");
                 const isCurrentUser = data.senderId === currentUserId;
@@ -418,22 +417,30 @@
                 // Format the date
                 const messageDate = new Date(data.timestamp.toDate());
                 const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
-                let dateDisplay;
 
-                // Check conditions for displaying date and time
-                const isSameMonth = messageDate.getMonth() === now.getMonth() && messageDate.getFullYear() === now.getFullYear();
-                const isSameDate = messageDate.getDate() === now.getDate() && isSameMonth;
+                // Check if we need to display a date header
+                const displayDateHeader = !lastDisplayedDate ||
+                    messageDate.toDateString() !== lastDisplayedDate.toDateString();
 
-                if (isSameDate) {
-                    // Show only time (12-hour format)
-                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-                } else if (isSameMonth) {
-                    // Show date and time (12-hour format)
-                    dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                } else {
-                    // Show date, month, and time (12-hour format)
+                if (displayDateHeader) {
+                    lastDisplayedDate = messageDate; // Update last displayed date
+
+                    // Create and append date header
+                    const dateHeader = document.createElement("h4"); // Use h4 or any other heading tag
+                    dateHeader.classList.add("date-header");
+
                     const month = messageDate.toLocaleString('default', { month: 'long' });
-                    dateDisplay = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                    dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+
+                    messagesContainer.appendChild(dateHeader); // Add header to container
+                }
+
+                // Show only time (12-hour format) if it's today
+                let dateDisplay;
+                if (messageDate.toDateString() === now.toDateString()) {
+                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+                } else {
+                    dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
                 }
 
                 // Add date to the message content
@@ -462,20 +469,9 @@
         } catch (e) {
             console.error("Error fetching messages: ", e);
         }
+
         const chatMessagesBox = document.querySelector('.message-container');
         chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
-    }
-
-    // Function to fetch the current user ID
-    async function fetchCurrentUserId() {
-        try {
-            const response = await fetch(`/api/users/currentUser/getId`);
-            const userId = await response.json();
-            return userId; // Assuming userId is returned as an object, extract the ID if necessary
-        } catch (error) {
-            console.error('Error fetching current user ID:', error);
-            return -1; // Return a default value in case of an error
-        }
     }
 
     // Function to fetch the current user email
@@ -490,12 +486,10 @@
         }
     }
 
-
-
     // Function to fetch the profile picture URL
-    async function getProfilePic(senderId) {
+    async function getProfilePicByRoomId(roomId) {
         try {
-            const response = await fetch(`/api/users/getProfilePic?id=${senderId}`);
+            const response = await fetch(`/api/users/getProfilePicByRoomId?roomId=${roomId}`);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
@@ -506,21 +500,6 @@
             return '';
         }
     }
-
-        // Function to fetch the profile picture URL
-        async function getProfilePicByRoomId(roomId) {
-            try {
-                const response = await fetch(`/api/users/getProfilePicByRoomId?roomId=${roomId}`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                const data = await response.json();
-                return data.profilePicture;
-            } catch (error) {
-                console.error('Error fetching profile picture:', error);
-                return '';
-            }
-        }
 
     // Function to update the profile picture
     async function updateProfilePic() {

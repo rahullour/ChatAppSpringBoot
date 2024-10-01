@@ -7,6 +7,7 @@
     };
     reader.readAsDataURL(event.target.files[0]);
 }
+
 function validateForm() {
     // Validate passwords first
     if (!validatePasswords()) {

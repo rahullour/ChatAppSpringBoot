@@ -53,6 +53,10 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Authority> authorities;
 
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "theme_id")
+    private Theme theme;
+
     // Default constructor
     public User() {}
 
@@ -68,6 +72,16 @@ public class User {
     }
 
     // Getters and Setters
+
+
+    public Theme getTheme() {
+        return theme;
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
+    }
+
     public int getId() {
         return id;
     }
