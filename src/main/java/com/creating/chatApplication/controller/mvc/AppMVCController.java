@@ -64,6 +64,8 @@ public class AppMVCController {
 
     @GetMapping("/")
     public String home(Model model, HttpServletRequest request, HttpServletResponse response) {
+        User user_profile = userService.getCurrentUser(); // Fetch the current user
+        model.addAttribute("user", user_profile);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // Initialize user details
