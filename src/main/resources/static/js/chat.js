@@ -300,7 +300,7 @@
             }
         }
     }
-
+    let currentMessagesSubscription = null;
     async function openChat(roomId) {
         console.log(`Opening chat for room ID: ${roomId}`);
         localStorage.setItem("roomId", roomId);
@@ -369,109 +369,120 @@
         }
     }
 
+    let displayMessagesTimeout = null;
+
     async function displayMessages(roomId) {
-        // Check if chat is open for the roomId
-        if(localStorage.getItem("roomId") != roomId){
-            console.log("Chat is open for a different room, setting new message count");
-            // Show a toast notification for new messages
-            showNotificationToast('You have new messages in other chats');
-            return;
+        // Clear any pending calls to displayMessages
+        if (displayMessagesTimeout) {
+            clearTimeout(displayMessagesTimeout);
         }
 
-        try {
-            // Get a reference to the Messages collection and order by timestamp in ascending order
-            const messagesQuery = query(
-                collection(db, "Messages"),
-                where("roomId", "==", roomId),
-                orderBy("timestamp", "asc") // Order messages by timestamp ascending
-            );
-
-            const querySnapshot = await getDocs(messagesQuery);
-
-            // Create an array to hold the messages for later processing
-            const messages = [];
-
-            // Collect messages from the querySnapshot
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                messages.push(data); // Push the message data to the array
-            });
-            // Display each message
-            const currentUserId = await fetchCurrentUserId(); // Fetch current user ID
-            const now = new Date();
-            let lastDisplayedDate = null; // Variable to track last displayed date
-            const messagesContainer = document.getElementById("messages");
-            messagesContainer.innerHTML = ""; // Clear existing messages
-            for (const data of messages) {
-                const messageElement = document.createElement("div");
-                const isCurrentUser = data.senderId === currentUserId;
-
-                // Create a wrapper for the message
-                const messageWrapper = document.createElement("div");
-                messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-
-                // Create the message content
-                const messageContent = document.createElement("div");
-                messageContent.classList.add("message-content");
-
-                // Format the date
-                const messageDate = new Date(data.timestamp.toDate());
-                const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
-
-                // Check if we need to display a date header
-                const displayDateHeader = !lastDisplayedDate ||
-                    messageDate.toDateString() !== lastDisplayedDate.toDateString();
-
-                if (displayDateHeader) {
-                    lastDisplayedDate = messageDate; // Update last displayed date
-
-                    // Create and append date header
-                    const dateHeader = document.createElement("h4"); // Use h4 or any other heading tag
-                    dateHeader.classList.add("date-header");
-
-                    const month = messageDate.toLocaleString('default', { month: 'long' });
-                    dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-
-                    messagesContainer.appendChild(dateHeader); // Add header to container
-                }
-
-                // Show only time (12-hour format) if it's today
-                let dateDisplay;
-                if (messageDate.toDateString() === now.toDateString()) {
-                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-                } else {
-                    dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                }
-
-                // Add date to the message content
-                const dateElement = document.createElement("div");
-                dateElement.classList.add("message-date");
-                dateElement.textContent = dateDisplay; // Show formatted date
-                messageContent.appendChild(dateElement);
-
-                // Add message text
-                const textElement = document.createElement("span");
-                textElement.textContent = data.text;
-                messageContent.appendChild(textElement);
-
-                // Append profile picture for non-current users
-                if (!isCurrentUser) {
-                    const profilePicBase64 = await getProfilePic(data.senderId);
-                    const imgElement = document.createElement("img");
-                    imgElement.src = `data:image/png;base64,${profilePicBase64}`;
-                    imgElement.classList.add("profile-pic");
-                    messageWrapper.appendChild(imgElement);
-                }
-
-                messageWrapper.appendChild(messageContent);
-                messagesContainer.appendChild(messageWrapper);
+        // Set a new timeout
+        displayMessagesTimeout = setTimeout(async () => {
+            console.log("displaying messages");
+            // Check if chat is open for the roomId
+            if(localStorage.getItem("roomId") != roomId){
+                console.log("Chat is open for a different room, setting new message count");
+                // Show a toast notification for new messages
+                showNotificationToast('You have new messages in other chats');
+                return;
             }
-        } catch (e) {
-            console.error("Error fetching messages: ", e);
-        }
 
-        const chatMessagesBox = document.querySelector('.message-container');
-        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+            try {
+                // Get a reference to the Messages collection and order by timestamp in ascending order
+                const messagesQuery = query(
+                    collection(db, "Messages"),
+                    where("roomId", "==", roomId),
+                    orderBy("timestamp", "asc") // Order messages by timestamp ascending
+                );
+
+                const querySnapshot = await getDocs(messagesQuery);
+                // Create an array to hold the messages for later processing
+                const messages = [];
+
+                // Collect messages from the querySnapshot
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    messages.push(data); // Push the message data to the array
+                });
+
+                // Display each message
+                const currentUserId = await fetchCurrentUserId(); // Fetch current user ID
+                const now = new Date();
+                let lastDisplayedDate = null; // Variable to track last displayed date
+                const messagesContainer = document.getElementById("messages");
+                messagesContainer.innerHTML = ""; // Clear existing messages
+                for (const data of messages) {
+                    const messageElement = document.createElement("div");
+                    const isCurrentUser = data.senderId === currentUserId;
+
+                    // Create a wrapper for the message
+                    const messageWrapper = document.createElement("div");
+                    messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+
+                    // Create the message content
+                    const messageContent = document.createElement("div");
+                    messageContent.classList.add("message-content");
+
+                    // Format the date
+                    const messageDate = new Date(data.timestamp.toDate());
+                    const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
+
+                    // Check if we need to display a date header
+                    const displayDateHeader = !lastDisplayedDate ||
+                        messageDate.toDateString() !== lastDisplayedDate.toDateString();
+
+                    if (displayDateHeader) {
+                        lastDisplayedDate = messageDate; // Update last displayed date
+
+                        // Create and append date header
+                        const dateHeader = document.createElement("h4"); // Use h4 or any other heading tag
+                        dateHeader.classList.add("date-header");
+
+                        const month = messageDate.toLocaleString('default', { month: 'long' });
+                        dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+
+                        messagesContainer.appendChild(dateHeader); // Add header to container
+                    }
+
+                    // Show only time (12-hour format) if it's today
+                    let dateDisplay;
+                    if (messageDate.toDateString() === now.toDateString()) {
+                        dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+                    } else {
+                        dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                    }
+
+                    // Add date to the message content
+                    const dateElement = document.createElement("div");
+                    dateElement.classList.add("message-date");
+                    dateElement.textContent = dateDisplay; // Show formatted date
+                    messageContent.appendChild(dateElement);
+
+                    // Add message text
+                    const textElement = document.createElement("span");
+                    textElement.textContent = data.text;
+                    messageContent.appendChild(textElement);
+
+                    // Append profile picture for non-current users
+                    if (!isCurrentUser) {
+                        const profilePicBase64 = await getProfilePic(data.senderId);
+                        const imgElement = document.createElement("img");
+                        imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                        imgElement.classList.add("profile-pic");
+                        messageWrapper.appendChild(imgElement);
+                    }
+
+                    messageWrapper.appendChild(messageContent);
+                    messagesContainer.appendChild(messageWrapper);
+                }
+            } catch (e) {
+                console.error("Error fetching messages: ", e);
+            }
+
+            const chatMessagesBox = document.querySelector('.message-container');
+            chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+        }, 300); // 300ms delay
     }
 
     // Function to fetch the current user email

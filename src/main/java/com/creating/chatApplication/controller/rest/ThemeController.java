@@ -45,8 +45,12 @@ public class ThemeController {
     }
 
     @GetMapping("/currentTheme")
-    public Theme getCurrentThemes() {
-        return userService.getCurrentUser().getTheme();
+    public ResponseEntity<String> getCurrentThemes() {
+        Theme theme =  userService.getCurrentUser().getTheme();
+        if (theme == null) {
+            return new ResponseEntity<>("Theme not found", HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(theme.getThemeUrl(), HttpStatus.OK);
     }
 
 
