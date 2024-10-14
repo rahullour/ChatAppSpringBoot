@@ -224,111 +224,178 @@ async function initializeProfilePicture() {
 $('#settings-modal').on('show.bs.modal', function () {
     initializeProfilePicture(); // Initialize profile picture when modal opens
 });
+// Global state to track loading status
+const state = {
+    themesLoaded: false,
+    currentThemeLoaded: false,
+};
 
-async function fetchThemes() {
-    try {
-        const response = await fetch('/api/themes'); // Adjust the endpoint as needed
-        if (!response.ok) {
-            throw new Error('Failed to fetch themes');
+// Event dispatcher for state changes
+const eventDispatcher = {
+    listeners: {},
+    addListener(event, callback) {
+        if (!this.listeners[event]) {
+            this.listeners[event] = [];
         }
-        const themes = await response.json();
-        displayThemes(themes); // Call your display function here
-    } catch (error) {
-        console.error('Error fetching themes:', error);
-    }
+        this.listeners[event].push(callback);
+    },
+    dispatch(event) {
+        if (this.listeners[event]) {
+            this.listeners[event].forEach(callback => callback());
+        }
+    },
+};
+
+// Initialize the app
+function initialize() {
+    showLoadingIndicator();
+    Promise.all([fetchThemes(), setCurrentTheme()])
+        .then(() => {
+            hideLoadingIndicator();
+        })
+        .catch(error => {
+            console.error('Initialization error:', error);
+            showErrorMessage('Failed to initialize the app. Please refresh the page.');
+            hideLoadingIndicator();
+        });
 }
 
-async function initialize() {
-    try {
-        await Promise.all([
-            fetchThemes(),
-            setCurrentTheme()
-        ]);
-        console.log('Themes set executed successfully in the background.');
-    } catch (error) {
-        console.error('Error during initialization:', error);
-    }
-}
-
-// Call the initialize function when needed
-initialize();
-
-
-function displayThemes(themes) {
-    const themeSelection = document.getElementById('theme-selection');
-    themeSelection.innerHTML = ''; // Clear existing themes
-
-    themes.forEach(theme => {
-        const themeBox = document.createElement('div');
-        themeBox.className = 'theme-box col-md-2';
-
-        // Use the compressed URL directly for background image
-        if (theme.compressedUrl) {
-            themeBox.style.backgroundImage = `url(data:image/png;base64,${theme.compressedUrl})`;
-            themeBox.style.backgroundSize = 'cover';
-            themeBox.style.height = '100px'; // Set height for the box
-            themeBox.style.cursor = 'pointer';
-        } else {
-            console.warn(`No compressed URL found for theme ID: ${theme.id}`);
-        }
-
-        // Add click event listener with ID
-        themeBox.onclick = () => selectTheme(theme.id); // Pass the ID instead of a URL
-
-        themeSelection.appendChild(themeBox);
+// Fetch themes without blocking the UI
+function fetchThemes() {
+    return $.ajax({
+        url: '/api/themes',
+        method: 'GET',
+        success: function (themes) {
+            displayThemes(themes);
+            state.themesLoaded = true;
+            eventDispatcher.dispatch('themesLoaded');
+        },
+        error: function () {
+            console.error('Error fetching themes');
+            showErrorMessage('Failed to load themes. Please try again later.');
+        },
     });
 }
 
-async function selectTheme(id) {
-    try {
-        // Fetch the original image in Base64 format
-        const response = await fetch(`/api/themeImage?themeId=${id}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch theme image');
-        }
-        const base64Image = await response.text(); // Get the Base64 string
-        // Set the background image using the original image
-        document.getElementById('messages').style.backgroundImage = `url(data:image/png;base64,${base64Image})`;
+function displayThemes(themes) {
+    const themeSelection = $('#theme-selection');
+    themeSelection.empty(); // Clear existing themes
 
-        // Now set the theme using its ID
-        const setThemeResponse = await fetch(`/api/setTheme?themeId=${id}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!setThemeResponse.ok) {
-            throw new Error('Failed to set theme');
-        }
-
-        alert('Theme updated successfully!');
-    } catch (error) {
-        console.error('Error setting theme:', error);
-    }
+    themes.forEach((theme) => {
+        const themeBox = createThemeBox(theme);
+        // Use setTimeout to prevent freezing during rendering
+        setTimeout(() => {
+            themeSelection.append(themeBox);
+        }, 0);
+    });
 }
 
-async function setCurrentTheme() {
-    try {
-        const response = await fetch('/api/currentTheme');
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+function createThemeBox(theme) {
+    const themeBox = $('<div class="theme-box col-md-2"></div>');
+    const loadingIndicator = createLoadingIndicator();
 
-        const text = await response.text(); // Get raw text first
-        if (!text) {
-            console.log('Received empty response');
-            return;
-        }
+    themeBox.append(loadingIndicator);
 
-        const theme = JSON.parse(text); // Parse the text as JSON
-        if (theme != null) {
-            const base64Image = `data:image/png;base64,${theme.themeUrl}`;
-            document.getElementById('messages').style.backgroundImage = `url('${base64Image}')`;
-        }
-
-    } catch (error) {
-        console.error('Error fetching themes:', error);
+    if (theme.compressedUrl) {
+        lazyLoadThemeImage(theme.compressedUrl, themeBox, loadingIndicator);
+    } else {
+        loadingIndicator.text('No image');
+        setTimeout(() => { loadingIndicator.hide(); }, 2000); // Hide after some time
     }
+
+    themeBox.on('click', () => selectTheme(theme.id));
+
+    return themeBox;
 }
 
+// Lazy load theme image
+function lazyLoadThemeImage(url, themeBox, loadingIndicator) {
+    const img = new Image();
+    loadingIndicator.show();
+
+    img.onload = () => {
+        themeBox.css('background-image', `url(data:image/png;base64,${url})`);
+        themeBox.css('background-size', 'cover');
+        loadingIndicator.hide();
+    };
+
+    img.onerror = () => {
+        loadingIndicator.text('Error loading image');
+        setTimeout(() => { loadingIndicator.hide(); }, 2000);
+    };
+
+    // Start loading the image
+    setTimeout(() => {
+        img.src = `data:image/png;base64,${url}`;
+    }, 0);
+}
+
+function createLoadingIndicator() {
+    return $('<div class="loading-indicator">Loading...</div>');
+}
+
+function selectTheme(id) {
+    showLoadingIndicator();
+
+    $.ajax({
+        url: `/api/themeImage?themeId=${id}`,
+        method: 'GET',
+        success: function (base64Image) {
+            applyThemeBackground(base64Image);
+            $.ajax({
+                url: `/api/setTheme?themeId=${id}`,
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                success: function () {
+                    showSuccessMessage('Theme updated successfully!');
+                },
+                error: function () {
+                    showErrorMessage('Failed to set theme.');
+                },
+            });
+        },
+        error: function () {
+            showErrorMessage('Failed to fetch theme image.');
+        },
+        complete: hideLoadingIndicator,
+    });
+}
+
+function setCurrentTheme() {
+    return $.ajax({
+        url: '/api/currentTheme',
+        method: 'GET',
+        success: function (base64Image) {
+            applyThemeBackground(base64Image);
+            state.currentThemeLoaded = true;
+            eventDispatcher.dispatch('currentThemeLoaded');
+        },
+        error: function () {
+            console.error('Error fetching current theme');
+            showErrorMessage('Failed to load current theme. Using default.');
+        },
+    });
+}
+
+function applyThemeBackground(base64Image) {
+    $('#messages').css('background-image', `url(data:image/png;base64,${base64Image})`);
+}
+
+function showLoadingIndicator() {
+    $('#loading-overlay').show();
+}
+
+function hideLoadingIndicator() {
+    $('#loading-overlay').hide();
+}
+
+function showErrorMessage(message) {
+    alert(message); // Replace with a more user-friendly notification system
+}
+
+function showSuccessMessage(message) {
+    alert(message); // Replace with a more user-friendly notification system
+}
+
+// Call the initialize function when the DOM is ready
+$(document).ready(initialize);
