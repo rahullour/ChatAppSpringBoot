@@ -127,14 +127,14 @@ function previewProfileImage(event) {
 //    return true; // Return true to indicate validation success
 //}
 
-function trimProfileEmail() {
-    const profileSettings = document.getElementById('profile-settings');
-    const emailInput = profileSettings.querySelector('#email');
-    let emailValue = emailInput.value.trim(); // Trim whitespace from the input
-    if (emailValue.endsWith('@gmail.com')) {
-        emailInput.value = emailValue.slice(0, -10);
-    }
-}
+//function trimProfileEmail() {
+//    const profileSettings = document.getElementById('profile-settings');
+//    const emailInput = profileSettings.querySelector('#email');
+//    let emailValue = emailInput.value.trim(); // Trim whitespace from the input
+//    if (emailValue.endsWith('@gmail.com')) {
+//        emailInput.value = emailValue.slice(0, -10);
+//    }
+//}
 
 function loadContent(option, element) {
     // Hide all sections initially
@@ -155,7 +155,6 @@ function loadContent(option, element) {
     switch(option) {
         case 'profile-settings':
             document.getElementById('profile-settings').style.display = 'block';
-            trimProfileEmail();
             break;
         case 'theme':
             document.getElementById('theme-settings').style.display = 'block';
@@ -403,6 +402,38 @@ function showErrorMessage(message) {
 function showSuccessMessage(message) {
     alert(message); // Replace with a more user-friendly notification system
 }
+
+function togglePasswordFields() {
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirmPassword');
+    const updatePasswordCheckbox = document.getElementById('updatePasswordCheckbox');
+
+    if (updatePasswordCheckbox.checked) {
+        passwordField.disabled = false;
+        confirmPasswordField.disabled = false;
+    } else {
+        passwordField.disabled = true;
+        confirmPasswordField.disabled = true;
+    }
+}
+
+// Function to enable/disable email field based on checkbox state
+function toggleEmailField() {
+    const emailField = document.getElementById('email');
+    const updateEmailCheckbox = document.getElementById('updateEmailCheckbox');
+
+    if (updateEmailCheckbox.checked) {
+        emailField.disabled = false;
+    } else {
+        emailField.disabled = true;
+    }
+}
+
+// Initially disable password and email fields
+document.addEventListener('DOMContentLoaded', function() {
+    togglePasswordFields();
+    toggleEmailField();
+});
 
 // Call the initialize function when the DOM is ready
 $(document).ready(initialize);

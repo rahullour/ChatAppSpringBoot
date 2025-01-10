@@ -260,6 +260,7 @@ body{
 .theme-box {
     border: 2px solid transparent;
     margin: 5px;
+    height: 15vh;
 }
 .theme-box:hover {
     border-color: #007bff; /* Highlight on hover */
@@ -267,13 +268,3 @@ body{
 #theme-settings{
     width: 100%;
 }
-/*
-chat messages duplication fix
-by data separation of messages
-themes loading freezing app
-invite user accept/reject flow, remove email invite confirm, backend flow will remain same
-message seen by, based on this, new message noty
-docker
-elastic search for search in messages
-login with google first time , save password to clipboard
-*/

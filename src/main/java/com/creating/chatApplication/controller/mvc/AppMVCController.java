@@ -66,6 +66,9 @@ public class AppMVCController {
     @Autowired
     private ThemeRepository themeRepository;
 
+    @Autowired
+    private UserDataService userDataService;
+
     @GetMapping("/")
     public String home(Model model, HttpServletRequest request, HttpServletResponse response) {
         User user_profile = userService.getCurrentUser(); // Fetch the current user
@@ -180,6 +183,120 @@ public class AppMVCController {
         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
         notificationManager.sendFlashNotification("Registration successful!", "alert-success", "short-noty");
         return "redirect:/loginPage";
+    }
+
+    @RequestMapping(value = "/updateProfile", method = {RequestMethod.POST, RequestMethod.PATCH})
+    public String updateProfile(@Valid @ModelAttribute("user") User user, BindingResult bindingResult,
+                                Model model, @RequestParam(value = "profilePicture", required = false) MultipartFile profilePicture,
+                                @RequestParam(value = "confirmPassword", required = false) String confirmPassword) {
+
+        // First collect all validation errors
+        List<String> errors = new ArrayList<>();
+        User current_user = userService.getCurrentUser();
+
+        // Check binding validation errors
+        // Handle bindingResult errors selectively
+        if (bindingResult.hasErrors()) {
+            // Always validate username as it's required
+            if (bindingResult.hasFieldErrors("username")) {
+                errors.add(bindingResult.getFieldError("username").getDefaultMessage());
+            }
+
+            // Only validate password errors if password is being updated
+            if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+                if (bindingResult.hasFieldErrors("password")) {
+                    errors.add(bindingResult.getFieldError("password").getDefaultMessage());
+                }
+            }
+
+            // Only validate email errors if email is being updated
+            if (user.getEmail() != null && !user.getEmail().equals(current_user.getEmail())) {
+                if (bindingResult.hasFieldErrors("email")) {
+                    errors.add(bindingResult.getFieldError("email").getDefaultMessage());
+                }
+            }
+        }
+
+        // Validate password match only if password is being updated
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            if (confirmPassword == null || !user.getPassword().equals(confirmPassword)) {
+                errors.add("Passwords do not match");
+            }
+        }
+
+
+        // Only validate email if it's being updated
+        if (user.getEmail() != null && !user.getEmail().equals(current_user.getEmail())) {
+            User existingUser = userService.getUserByEmail(user.getEmail());
+            if (existingUser != null && existingUser.getId() != current_user.getId()) {
+                errors.add("Email already exists!");
+            }
+        }
+
+        // If any errors were found, add them all to notifications at once
+        if (!errors.isEmpty()) {
+            for (String error : errors) {
+                notificationManager.sendFlashNotification(error, "alert-danger", "medium-noty");
+            }
+            model.addAttribute("notifications", notificationManager.getNotifications());
+            notificationManager.clearNotifications();
+            return "redirect:/loginPage";  // Change this to your actual profile page path
+        }
+
+        // Update username
+        current_user.setUsername(user.getUsername());
+
+        // Handle profile picture update
+        try {
+            if (profilePicture != null && !profilePicture.isEmpty()) {
+                byte[] imageBytes = profilePicture.getBytes();
+                String profilePictureBase64 = Base64.getEncoder().encodeToString(imageBytes);
+                current_user.setProfilePictureUrl(profilePictureBase64);
+            } else if (current_user.getProfilePictureUrl() == null) {
+                String profileImageUrl = convertImageToBase64("src/main/resources/static/images/profile-image.png");
+                current_user.setProfilePictureUrl(profileImageUrl);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            notificationManager.sendFlashNotification("Error updating profile picture", "alert-danger", "short-noty");
+        }
+
+        boolean needsRelogin = false;
+
+        // Handle password update
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            String hashedPassword = passwordEncoder.encode(user.getPassword());
+            if (!hashedPassword.equals(current_user.getPassword())) {
+                current_user.setPassword(hashedPassword);
+                needsRelogin = true;
+                notificationManager.sendFlashNotification("Password updated successfully. Please login with your new password.",
+                        "alert-success", "medium-noty");
+            }
+        }
+
+        // Handle email update
+        if (user.getEmail() != null && !user.getEmail().equals(current_user.getEmail())) {
+            current_user.setEnabled(false);
+            current_user.setEmail(user.getEmail());
+            needsRelogin = true;
+
+            String token = tokenGenerationService.generateVerificationToken(current_user);
+            String verificationLink = "http://localhost:8080/verifyEmail?user_id=" + current_user.getId() + "&token=" + token;
+            emailService.sendVerificationEmail(current_user.getEmail(), verificationLink);
+
+            notificationManager.sendFlashNotification("Verification email sent to your new email address. Please verify within 5 minutes.",
+                    "alert-success", "medium-noty");
+        }
+
+        userService.saveUser(current_user);
+
+        if (!needsRelogin) {
+            notificationManager.sendFlashNotification("Profile updated successfully!", "alert-success", "short-noty");
+            return "redirect:/";
+        } else {
+            userDataService.logUserLogout(current_user.getId());
+            return "redirect:/loginPage";
+        }
     }
 
     private String convertImageToBase64(String imagePath) {
