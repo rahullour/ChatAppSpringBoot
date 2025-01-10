@@ -16,7 +16,7 @@
 
 <div class="container mt-5 signup-container">
     <h4 class="text-center mb-4 form-heading app-color">Sign Up</h4>
-    <form id="signupForm" th:action="@{/signup(${_csrf.parameterName}=${_csrf.token})}" method="post" th:object="${user}" enctype="multipart/form-data" onsubmit="return validateForm()">
+    <form id="signupForm" th:action="@{/signup(${_csrf.parameterName}=${_csrf.token})}" method="post" th:object="${user}" enctype="multipart/form-data">
         <div class="d-flex gap-4">
             <div class="col-md-6">
                 <div class="form-group">
@@ -30,7 +30,6 @@
                 </div>
                 <div class="input-group">
                     <input type="text" id="email" th:field="*{email}" placeholder="Email" class="form-control" aria-label="email" aria-describedby="basic-addon2" required />
-                    <span class="input-group-text" id="basic-addon2">@gmail.com</span>
                 </div>
             </div>
             <div class="col-md-6">

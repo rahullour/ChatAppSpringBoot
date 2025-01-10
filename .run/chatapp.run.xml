@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="chatapp" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.creating.chatApplication.ChatApplication" />
+    <module name="chatApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -121,7 +121,7 @@
                 const chatMessagesBox = document.querySelector('.chat-messages');
                 $('.chat-screen').parent().css('height', '92%');
                 if (chatMessagesBox) {
-                    chatMessagesBox.innerText = "You don't have any conversation, invite someone!";
+                    chatMessagesBox.innerText = "You don't have any conversation, feel free to invite someone!";
                     chatMessagesBox.style.verticalAlign = 'middle';
                     chatMessagesBox.style.textAlign = 'center';
                     chatMessagesBox.style.margin = 'auto';

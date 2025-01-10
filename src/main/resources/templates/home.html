@@ -120,7 +120,7 @@
                                                     <div id="profile-settings" style="display: none;">
                                                         <div class="profile-container">
                                                             <h4 class="text-center mb-4 form-heading app-color">Update Profile</h4>
-                                                            <form id="profileUpdateForm" th:action="@{/updateProfile(${_csrf.parameterName}=${_csrf.token})}" method="post" th:object="${user}" enctype="multipart/form-data" onsubmit="return validateForm()">
+                                                            <form id="profileUpdateForm" th:action="@{/updateProfile(${_csrf.parameterName}=${_csrf.token})}" method="post" th:object="${user}" enctype="multipart/form-data">
                                                                 <div class="d-flex gap-5">
                                                                     <div class="col-md-6">
                                                                         <div class="form-group">
