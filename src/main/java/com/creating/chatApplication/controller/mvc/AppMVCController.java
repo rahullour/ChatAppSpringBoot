@@ -122,29 +122,32 @@ public class AppMVCController {
                          Model model, @RequestParam("profilePicture") MultipartFile profilePicture,
                          @RequestParam("confirmPassword") String confirmPassword) {
 
-        // First check if there are any validation errors
+        // First collect all validation errors
+        List<String> errors = new ArrayList<>();
+
+        // Check binding validation errors
         if (bindingResult.hasErrors()) {
             for (FieldError error : bindingResult.getFieldErrors()) {
-                notificationManager.sendFlashNotification(error.getDefaultMessage(), "alert-danger", "medium-noty");
+                errors.add(error.getDefaultMessage());
             }
-            List<FlashNotification> notifications = notificationManager.getNotifications();
-            model.addAttribute("notifications", notifications);
-            notificationManager.clearNotifications();
-            return "signup-form";
         }
 
-        // Check if passwords match
+        // Check password match
         if (!user.getPassword().equals(confirmPassword)) {
-            notificationManager.sendFlashNotification("Passwords do not match", "alert-danger", "medium-noty");
-            List<FlashNotification> notifications = notificationManager.getNotifications();
-            model.addAttribute("notifications", notifications);
-            notificationManager.clearNotifications();
-            return "signup-form";
+            errors.add("Passwords do not match");
         }
+
+        // Check for existing user
         if (userService.getUserByEmail(user.getEmail()) != null) {
-            notificationManager.sendFlashNotification("Username already exists !", "alert-danger", "short-noty");
-            List<FlashNotification> notifications = notificationManager.getNotifications();
-            model.addAttribute("notifications", notifications);
+            errors.add("User already exists!");
+        }
+
+        // If any errors were found, add them all to notifications at once
+        if (!errors.isEmpty()) {
+            for (String error : errors) {
+                notificationManager.sendFlashNotification(error, "alert-danger", "medium-noty");
+            }
+            model.addAttribute("notifications", notificationManager.getNotifications());
             notificationManager.clearNotifications();
             return "signup-form";
         }

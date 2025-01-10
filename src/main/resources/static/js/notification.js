@@ -24,7 +24,7 @@ $(document).ready(function() {
                     notificationElement.remove();   
                 }, 500);
             } else {
-                notificationElement.text(originalMessage + " " + timer + " seconds...");
+                notificationElement.text(originalMessage);
             }
         }, 1000);
     });
