@@ -94,31 +94,38 @@ function previewProfileImage(event) {
     };
     reader.readAsDataURL(event.target.files[0]);
 }
-
-function validateForm() {
-    // Validate passwords first
-    if (!validatePasswords()) {
-        return false; // Prevent form submission if passwords don't match
-    }
-
-    // If passwords match, trim the email and append '@gmail.com'
-    const emailInput = document.getElementById('email');
-    emailInput.value = emailInput.value.trim() + '@gmail.com';
-
-    return true; // Allow form submission
-}
-
-function validatePasswords() {
-    var password = document.getElementById("password").value;
-    var confirmPassword = document.getElementById("confirmPassword").value;
-
-    if (password !== confirmPassword) {
-        alert("Passwords do not match.");
-        return false; // Return false to indicate validation failure
-    }
-
-    return true; // Return true to indicate validation success
-}
+//
+//function trimEmail(email) {
+//    let emailValue = email.trim();
+//    while(emailValue.endsWith('@gmail.com')) {
+//        emailValue = emailValue.slice(0, -10);
+//    }
+//    return emailValue;
+//}
+//
+//function validateForm(event) {
+//    const emailInput = document.getElementById('email');
+//    // Validate passwords first
+//    if (!validatePasswords()) {
+//        emailInput.value = trimEmail(emailInput.value);
+//        event.preventDefault();
+//        return false; // Prevent form submission if passwords don't match
+//    }
+//    emailInput.value = trimEmail(emailInput.value) + '@gmail.com';
+//    return true; // Allow form submission
+//}
+//
+//function validatePasswords() {
+//    var password = document.getElementById("password").value;
+//    var confirmPassword = document.getElementById("confirmPassword").value;
+//
+//    if (password !== confirmPassword) {
+//        alert("Passwords do not match.");
+//        return false; // Return false to indicate validation failure
+//    }
+//
+//    return true; // Return true to indicate validation success
+//}
 
 function trimProfileEmail() {
     const profileSettings = document.getElementById('profile-settings');
@@ -372,7 +379,7 @@ function setCurrentTheme() {
         },
         error: function () {
             console.error('Error fetching current theme');
-            showErrorMessage('Failed to load current theme. Using default.');
+            showErrorMessage('Using default.');
         },
     });
 }

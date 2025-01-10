@@ -1,6 +1,7 @@
 package com.creating.chatApplication.controller.mvc;
 
 import com.creating.chatApplication.entity.*;
+import com.creating.chatApplication.repository.ThemeRepository;
 import com.creating.chatApplication.service.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,6 +63,9 @@ public class AppMVCController {
     @Autowired
     private TokenService tokenService;
 
+    @Autowired
+    private ThemeRepository themeRepository;
+
     @GetMapping("/")
     public String home(Model model, HttpServletRequest request, HttpServletResponse response) {
         User user_profile = userService.getCurrentUser(); // Fetch the current user
@@ -114,11 +118,24 @@ public class AppMVCController {
 
 
     @PostMapping("/signup")
-    public String signup(@Valid @ModelAttribute("user") User user, BindingResult bindingResult, Model model, @RequestParam("profilePicture") MultipartFile profilePicture) {
+    public String signup(@Valid @ModelAttribute("user") User user, BindingResult bindingResult,
+                         Model model, @RequestParam("profilePicture") MultipartFile profilePicture,
+                         @RequestParam("confirmPassword") String confirmPassword) {
+
+        // First check if there are any validation errors
         if (bindingResult.hasErrors()) {
             for (FieldError error : bindingResult.getFieldErrors()) {
                 notificationManager.sendFlashNotification(error.getDefaultMessage(), "alert-danger", "medium-noty");
             }
+            List<FlashNotification> notifications = notificationManager.getNotifications();
+            model.addAttribute("notifications", notifications);
+            notificationManager.clearNotifications();
+            return "signup-form";
+        }
+
+        // Check if passwords match
+        if (!user.getPassword().equals(confirmPassword)) {
+            notificationManager.sendFlashNotification("Passwords do not match", "alert-danger", "medium-noty");
             List<FlashNotification> notifications = notificationManager.getNotifications();
             model.addAttribute("notifications", notifications);
             notificationManager.clearNotifications();
@@ -147,6 +164,7 @@ public class AppMVCController {
             e.printStackTrace();
         }
         user.setEnabled(false);
+        user.setTheme(themeRepository.findById(1).orElse(null));
         Authority userAuthority = new Authority("ROLE_USER");
         userAuthority.setUser(user);
         List<Authority> authorities = new ArrayList<>();
