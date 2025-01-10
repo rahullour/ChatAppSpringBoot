@@ -95,7 +95,24 @@ public class InviteController {
                 }
                 String groupNameFormed = "group_" + groupName + "_" + userService.getUserByEmail(senderEmail).getId();
                 for(String email: receiverEmails){
-                    groupNameFormed = groupNameFormed + "_" + userService.getUserByEmail(email).getId();
+                    if(userService.getUserByEmail(email) != null) {
+                        groupNameFormed = groupNameFormed + "_" + userService.getUserByEmail(email).getId();
+                    }
+                    else{
+                        for (String emailAddress : receiverEmails) {
+                            User user = userService.getUserByEmail(emailAddress);
+                            if (user == null) {
+                                String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
+                                notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+                                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), "http://www.localhost:8080/signup-form", type);
+                                continue;
+                            }
+                        }
+                        return ResponseEntity.status(HttpStatus.FOUND)
+                                .header("Location", "/")
+                                .build();
+
+                    }
                 }
                 newUserGroup.setRoomId(groupNameFormed);
             }
