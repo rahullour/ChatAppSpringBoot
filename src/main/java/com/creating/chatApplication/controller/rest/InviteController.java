@@ -65,6 +65,15 @@ public class InviteController {
         UserGroup newUserGroup = null;
         try {
             receiverEmails = objectMapper.readValue(emails, new TypeReference<List<String>>() {});
+            for(String email: receiverEmails) {
+                if(senderEmail.equals(email)){
+                    String notificationMessage = "You cannot invite yourself !";
+                    notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "short-noty");
+                    return ResponseEntity.status(HttpStatus.FOUND)
+                            .header("Location", "/")
+                            .build();
+                }
+            }
             if(type){
                 List<Invite> invites = inviteService.getInvitesAccepted(senderEmail, 1);
                 List<Integer> inviteIds = new ArrayList<>();
