@@ -27,34 +27,19 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-lg-0 gap-2">
+            <ul class="navbar-nav mb-lg-0">
                 <li class="nav-item d-flex">
                     <div>
-                        <a class="nav-link active nav-logo" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="20px" height="20px"> <span style="padding-top: 2px;">WeChat </span></a>
+                        <a class="nav-link active nav-logo d-flex" aria-current="page" href="#"><img th:src="@{/favicon.ico}" width="30px" height="30px"> <div>WeChat </div></a>
                     </div>
                 </li>
-                <li>
-                    <div class="user-status d-flex mt-2 gap-1"><img th:src="@{/images/status.png}" width="20px" height="20px"><p style="line-height: 17px;" id="myStatus"></p></div>
+                <li class="m-auto">
+                    <div class="user-status d-flex gap-1"><img th:src="@{/images/status.png}" width="25px" height="25px"><div id="myStatus"></div></div>
                 </li>
             </ul>
         </div>
         <div>
-            <ul class="navbar-nav me-auto mb-lg-0 gap-1">
-                <li>
-                    <form action="#" th:action="@{/api/status}" method="post" id="statusForm">
-                        <div class="status-section gap-1 d-flex">
-                            <select id="statusSelect" name="statusSelect" class="form-control" required>
-                                <option value="">Select Status</option>
-                                <option value="Available">Available</option>
-                                <option value="Busy">Busy</option>
-                                <option value="Away">Away</option>
-                                <option value="Custom">Custom</option>
-                            </select>
-                            <input type="text" name="customStatus" id="customStatus" class="form-control" placeholder="Enter custom status" style="display:none;" />
-                            <button type="submit" class="btn btn-primary" id="setStatus">Set Status</button>
-                        </div>
-                    </form>
-                </li>
+            <ul class="navbar-nav mb-lg-0 gap-3">
                 <li>
                     <div class="invite-btn">
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#inviteModal">
@@ -74,17 +59,10 @@
                                             #authentication.principal.attributes['name'] :
                                             #authentication.principal.username}"></span>
                 </li>
-                <li class="nav-item">
-                    <form th:action="@{/logout}" method="POST">
-                        <button type="submit" class="btn btn-small" onclick="return confirm('Are you sure?')">
-                            <img th:src="@{/images/logout.png}" alt="Logout" width="30px" height="30px"/>
-                        </button>
-                    </form>
-                </li>
                 <li>
                     <div class="invite-btn">
-                        <button type="button" class="btn btn-primary" onclick="loadContent('profile-settings', null)" data-bs-toggle="modal" data-bs-target="#settings-modal">
-                            Settings
+                        <button type="button" class="btn p-0" onclick="loadContent('profile-settings', null)" data-bs-toggle="modal" data-bs-target="#settings-modal">
+                            <img th:src="@{/images/settings_icon.jpg}" width="35px" height="35px">
                         </button>
                     </div>
                     <div id="settings-modal" class="modal fade" tabindex="-1" aria-labelledby="settings-modal-label" aria-hidden="true">
@@ -170,6 +148,21 @@
                                                                     <button type="submit" class="btn btn-primary btn-block w-25" id="submitButton">Update</button>
                                                                 </div>
                                                             </form>
+                                                            <div class="mb-2">
+                                                                <form action="#" th:action="@{/api/status}" method="post" id="statusForm">
+                                                                    <input type="text" name="customStatus" id="customStatus" class="form-control mb-2" placeholder="Enter custom status" style="display:none;" />
+                                                                    <div class="status-section gap-1 d-flex">
+                                                                        <select id="statusSelect" name="statusSelect" class="form-control" required>
+                                                                            <option value="">Select Status</option>
+                                                                            <option value="Available">Available</option>
+                                                                            <option value="Busy">Busy</option>
+                                                                            <option value="Away">Away</option>
+                                                                            <option value="Custom">Custom</option>
+                                                                        </select>
+                                                                        <button type="submit" class="btn btn-primary" id="setStatus">Set Status</button>
+                                                                    </div>
+                                                                </form>
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -198,6 +191,13 @@
                             </div>
                         </div>
                     </div>
+                </li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="POST">
+                        <button type="submit" class="btn p-0" onclick="return confirm('Are you sure?')">
+                            <img th:src="@{/images/logout.png}" alt="Logout" width="40px" height="40px"/>
+                        </button>
+                    </form>
                 </li>
             </ul>
         </div>

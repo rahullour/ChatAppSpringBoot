@@ -31,6 +31,24 @@ public class StatusController {
     @PostMapping("/status")
         public ResponseEntity<Void> setStatus(@RequestParam String statusSelect, @RequestParam(required = false) String customStatus) {
         if(Objects.equals(statusSelect, "Custom")){
+            boolean error = false;
+            if(customStatus.isBlank()){
+                notificationManager.sendFlashNotification("Status cannot blank !", "alert-danger", "short-noty");
+                error = true;
+            }
+            if(customStatus.length() < 4){
+                notificationManager.sendFlashNotification("Status must have have 4 or more chars !", "alert-danger", "short-noty");
+                error = true;
+            }
+            if(customStatus.length() > 60){
+                notificationManager.sendFlashNotification("Status cannot exceed 60 chars !", "alert-danger", "short-noty");
+                error = true;
+            }
+            if(error){
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .header("Location", "/")
+                        .build();
+            }
             statusSelect = customStatus;
         }
         statusService.setStatus(userService.getCurrentUser().getId(), statusSelect);

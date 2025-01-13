@@ -447,11 +447,7 @@
 
                     // Show only time (12-hour format) if it's today
                     let dateDisplay;
-                    if (messageDate.toDateString() === now.toDateString()) {
-                        dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-                    } else {
-                        dateDisplay = `${messageDate.getDate()} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                    }
+                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
 
                     // Add date to the message content
                     const dateElement = document.createElement("div");

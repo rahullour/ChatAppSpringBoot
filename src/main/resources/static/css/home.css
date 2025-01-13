@@ -7,6 +7,18 @@ body{
         border-top-radius: none;
 
     }
+    .navbar-collapse{
+        ul{
+            gap: 1vw;
+        }
+        .nav-logo{
+            display: flex;
+            gap: 5px;
+            div{
+                font-size: larger;
+            }
+        }
+    }
 }
 .sidebar{
    background-color: #f8f9fa;
@@ -14,7 +26,9 @@ body{
    padding-right: 0px !important;
 }
 
-
+.invite-btn{
+    margin-top: 3px;
+}
 .message {
     margin-bottom: 10px;
     padding: 10px;
@@ -55,10 +69,7 @@ body{
     }
 }
 .user-status{
-    padding-top: 3px;
-    img{
-        border-radius: 15%;
-    }
+    font-size: large;
 }
 .chat-messages{
     padding: 10px !important;
