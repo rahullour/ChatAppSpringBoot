@@ -92,11 +92,19 @@ body{
 
 .message-date {
     position: absolute;
-    top: -16px; /* Adjust position as needed */
-    right: 0; /* Align to the right */
-    font-size: 0.8em; /* Smaller font for the date */
-    color: #888; /* Lighter color for the date */
+    top: -20px;
+    right: 0;
+    font-size: 0.8em;
     width: max-content;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    text-align: center;
+    padding: 0px 2px;
+    margin: 0px;
+    border-radius: 0px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
 }
 .profile-pic {
     width: 37px;
@@ -125,6 +133,25 @@ body{
 .invite-item{
     border-bottom: 1px solid #ffffff;
 }
+
+#inviteForm .select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #92fff4;
+}
+
+.date-header {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    text-align: center;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-size: 1.0em;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
 
 #single-list, #group-list{
     margin-top: 1px;
