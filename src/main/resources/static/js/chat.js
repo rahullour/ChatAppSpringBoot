@@ -383,7 +383,6 @@
             // Check if chat is open for the roomId
             if(localStorage.getItem("roomId") != roomId){
                 console.log("Chat is open for a different room, setting new message count");
-                // Show a toast notification for new messages
                 showNotificationToast('You have new messages in other chats');
                 return;
             }
@@ -393,74 +392,117 @@
                 const messagesQuery = query(
                     collection(db, "Messages"),
                     where("roomId", "==", roomId),
-                    orderBy("timestamp", "asc") // Order messages by timestamp ascending
+                    orderBy("timestamp", "asc")
                 );
 
                 const querySnapshot = await getDocs(messagesQuery);
-                // Create an array to hold the messages for later processing
                 const messages = [];
 
-                // Collect messages from the querySnapshot
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    messages.push(data); // Push the message data to the array
+                    messages.push(data);
                 });
 
-                // Display each message
-                const currentUserId = await fetchCurrentUserId(); // Fetch current user ID
+                const currentUserId = await fetchCurrentUserId();
                 const now = new Date();
-                let lastDisplayedDate = null; // Variable to track last displayed date
+                let lastDisplayedDate = null;
                 const messagesContainer = document.getElementById("messages");
-                messagesContainer.innerHTML = ""; // Clear existing messages
+                messagesContainer.innerHTML = "";
+
                 for (const data of messages) {
                     const messageElement = document.createElement("div");
                     const isCurrentUser = data.senderId === currentUserId;
 
-                    // Create a wrapper for the message
                     const messageWrapper = document.createElement("div");
                     messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
 
-                    // Create the message content
+                    // Create a hidden div to store messageId and senderId
+                    const hiddenDataDiv = document.createElement("div");
+                    hiddenDataDiv.classList.add("message-metadata");
+                    hiddenDataDiv.style.display = "none"; // Hide the div
+
+                    // Option 1: Add key-value pairs as data attributes
+                    hiddenDataDiv.dataset.messageId = data.messageId;
+                    hiddenDataDiv.dataset.senderId = data.senderId;
+
+                    // Alternatively, Option 2: Use text content in a key-value format (if you prefer)
+                    hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
+
+                    messageWrapper.appendChild(hiddenDataDiv);
+
                     const messageContent = document.createElement("div");
                     messageContent.classList.add("message-content");
 
-                    // Format the date
-                    const messageDate = new Date(data.timestamp.toDate());
-                    const options = { hour: 'numeric', minute: 'numeric', hour12: true }; // Options for time formatting
+                    // Add message actions button
+                    const actionsButton = document.createElement("div");
+                    actionsButton.classList.add("message-actions-btn");
+                    actionsButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                    `;
 
-                    // Check if we need to display a date header
+                    // Add message actions menu
+                    const actionsMenu = document.createElement("div");
+                    actionsMenu.classList.add("message-actions-menu");
+                    actionsMenu.innerHTML = `
+                        <div class="action-item" data-action="copy">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy
+                        </div>
+                        <div class="action-item" data-action="reply">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9 14 4 9 9 4"></polyline>
+                                <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                            </svg>
+                            Reply
+                        </div>
+                        <div class="action-item" data-action="forward">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14"></path>
+                                <path d="m12 5 7 7-7 7"></path>
+                            </svg>
+                            Forward
+                        </div>
+                        <div class="action-item" data-action="select">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                            </svg>
+                            Select
+                        </div>
+                    `;
+
+                    const messageDate = new Date(data.timestamp.toDate());
+                    const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+
                     const displayDateHeader = !lastDisplayedDate ||
                         messageDate.toDateString() !== lastDisplayedDate.toDateString();
 
                     if (displayDateHeader) {
-                        lastDisplayedDate = messageDate; // Update last displayed date
-
-                        // Create and append date header
-                        const dateHeader = document.createElement("h4"); // Use h4 or any other heading tag
+                        lastDisplayedDate = messageDate;
+                        const dateHeader = document.createElement("h4");
                         dateHeader.classList.add("date-header");
-
                         const month = messageDate.toLocaleString('default', { month: 'long' });
                         dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-
-                        messagesContainer.appendChild(dateHeader); // Add header to container
+                        messagesContainer.appendChild(dateHeader);
                     }
 
-                    // Show only time (12-hour format) if it's today
-                    let dateDisplay;
-                    dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+                    let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
 
-                    // Add date to the message content
                     const dateElement = document.createElement("div");
                     dateElement.classList.add("message-date");
-                    dateElement.textContent = dateDisplay; // Show formatted date
+                    dateElement.textContent = dateDisplay;
                     messageContent.appendChild(dateElement);
 
-                    // Add message text
                     const textElement = document.createElement("span");
                     textElement.textContent = data.text;
                     messageContent.appendChild(textElement);
 
-                    // Append profile picture for non-current users
                     if (!isCurrentUser) {
                         const profilePicBase64 = await getProfilePic(data.senderId);
                         const imgElement = document.createElement("img");
@@ -469,6 +511,8 @@
                         messageWrapper.appendChild(imgElement);
                     }
 
+                    messageContent.appendChild(actionsButton);
+                    messageContent.appendChild(actionsMenu);
                     messageWrapper.appendChild(messageContent);
                     messagesContainer.appendChild(messageWrapper);
                 }
@@ -478,8 +522,53 @@
 
             const chatMessagesBox = document.querySelector('.message-container');
             chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
-        }, 300); // 300ms delay
+        }, 300);
     }
+
+    // Add jQuery event handlers
+    $(document).ready(function() {
+        // Handle showing/hiding the menu
+        $(document).on('click', '.message-actions-btn', function(e) {
+            e.stopPropagation();
+            const menu = $(this).siblings('.message-actions-menu');
+            $('.message-actions-menu').not(menu).hide();
+            menu.toggle();
+        });
+
+        // Handle clicking outside to close menu
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.message-actions-menu, .message-actions-btn').length) {
+                $('.message-actions-menu').hide();
+            }
+        });
+
+        // Handle action clicks
+        $(document).on('click', '.action-item', function(e) {
+            e.stopPropagation();
+            const action = $(this).data('action');
+            const messageElement = $(this).closest('.message-content');
+            const messageMetadataElement = $(this).closest('.message-metadata');
+            const messageText = messageElement.find('span').text();
+
+            switch(action) {
+                case 'copy':
+                    navigator.clipboard.writeText(messageText);
+                    break;
+                case 'reply':
+                    debugger;
+                    console.log('Reply to:', messageText);
+                    break;
+                case 'forward':
+                    console.log('Forward:', messageText);
+                    break;
+                case 'select':
+                    console.log('Select:', messageText);
+                    break;
+            }
+
+            $(this).closest('.message-actions-menu').hide();
+        });
+    });
 
     // Function to fetch the current user email
     async function fetchUserEmail(userId) {

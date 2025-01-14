@@ -87,7 +87,7 @@ body{
     display: flex;
     align-items: flex-start;
     margin: 10px 0;
-    padding: 7px 0px;
+    padding: 7px 40px;
 }
 
 .current-user {
@@ -96,6 +96,80 @@ body{
 
 .other-user {
     justify-content: flex-start; /* Align other users' messages to the left */
+}
+
+.message-actions-btn {
+    position: absolute;
+    right: -27px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    padding: 4px;
+    border-radius: 4px;
+    background: white;
+}
+
+.message-content:hover .message-actions-btn {
+    opacity: 1;
+}
+
+.message-actions-btn:hover {
+    background: white;
+}
+
+.message-actions-btn svg {
+    display: block;
+    color: black;
+}
+
+.message-actions-menu {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 1000;
+    min-width: 150px;
+    padding: 4px 0;
+}
+
+.current-user .message-actions-menu {
+    right: 35px;
+}
+
+/* For other user messages */
+.other-user .message-actions-menu {
+    left: 100px;
+}
+
+
+.action-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #333;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.action-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.action-item svg {
+    color: #666;
+}
+
+/* Ensure the menu doesn't get cut off in the message container */
+.message-container {
+    overflow-y: auto;
+    padding-right: 16px; /* Add some padding to accommodate the menu */
 }
 
 .message-content {
