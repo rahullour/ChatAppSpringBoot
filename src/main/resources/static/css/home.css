@@ -1,6 +1,11 @@
 body{
     height: 100vh;
 }
+
+* {
+    font-family: 'Quicksand', sans-serif !important;
+}
+
 .navbar-header{
     border-bottom: 1px solid #c2c2c2;
     .nav-links{

@@ -11,6 +11,10 @@ body {
     background-size: cover;
 }
 
+* {
+    font-family: 'Quicksand', sans-serif !important;
+}
+
 .signup-container {
     background: white;
     padding: 30px !important;

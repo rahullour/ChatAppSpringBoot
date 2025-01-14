@@ -2,6 +2,11 @@ body{
     background-image: url("/images/login-back.png");
     background-size: cover
 }
+
+* {
+    font-family: 'Quicksand', sans-serif !important;
+}
+
 .login-card{
     width: 100%; max-width: 400px; border-radius: 15px !important;
 }
