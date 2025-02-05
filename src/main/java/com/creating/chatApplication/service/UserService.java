@@ -26,4 +26,6 @@ public interface UserService {
     void DeleteUserById(int id);
 
     List<String> findEmailsByQuery(String query);
+
+    String getUserNameById(int id);
 }

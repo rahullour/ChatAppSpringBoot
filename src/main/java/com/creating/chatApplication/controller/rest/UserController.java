@@ -38,6 +38,11 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser().getId());
     }
 
+    @GetMapping("getUsername")
+    public ResponseEntity<String> getUserName(@RequestParam int id){
+        return ResponseEntity.ok(userService.getUserNameById(id));
+    }
+
     @GetMapping("/getId")
     public ResponseEntity<Integer> getUserId(@RequestParam String email){
         return ResponseEntity.ok(userService.getUserByEmail(email).getId());

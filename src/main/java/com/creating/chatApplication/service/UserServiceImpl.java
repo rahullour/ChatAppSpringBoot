@@ -23,6 +23,14 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    public String getUserNameById(int id) {
+        return userRepository.findById(id)
+                .map(User::getUsername)
+                .orElse(null);
+    }
+
+
+    @Override
     public User getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }

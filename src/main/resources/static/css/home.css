@@ -385,3 +385,18 @@ body{
 #theme-settings{
     width: 100%;
 }
+.read-by-container {
+    display: flex;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    padding: 5px;
+    gap: 3px;
+}
+
+.read-by-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+}
+

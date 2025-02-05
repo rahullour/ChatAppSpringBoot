@@ -216,9 +216,16 @@
                     orderBy("timestamp", "asc")
                 );
 
+//                onSnapshot(messagesQuery, (snapshot) => {
+//                    if(sessionStorage.getItem("item_clicked") == 'false'){
+//                        displayMessages(localStorage.getItem("roomId"));
+//                    }
+//                    sessionStorage.setItem("item_clicked", 'false');
+//                });
                 onSnapshot(messagesQuery, (snapshot) => {
-                    displayMessages(`${invite.roomId}`);
+                    handleNewMessages(snapshot, localStorage.getItem("roomId"));
                 });
+
             }
         } else {
             // Handle group invites
@@ -295,17 +302,94 @@
                 );
 
                 onSnapshot(messagesQuery, (snapshot) => {
-                    displayMessages(roomId);
+                    if(sessionStorage.getItem("item_clicked") == 'false'){
+                        displayMessages(roomId);
+                    }
+                    sessionStorage.setItem("item_clicked", 'false');
                 });
             }
         }
     }
+
+    async function handleNewMessages(snapshot, roomId) {
+        const messagesContainer = document.getElementById("messages");
+        if (!messagesContainer) return;
+
+        const currentUserId = await fetchCurrentUserId();
+        let lastReadMessageId = null;
+        let lastReadByUsers = [];
+
+        snapshot.docChanges().forEach(async (change) => {
+            if (change.type === "added") {
+                const data = change.doc.data();
+                const messageId = data.messageId;
+                const isCurrentUser = data.senderId === currentUserId;
+
+                // Remove previous "read by" if the last message was not read by multiple users
+                const lastMessageWrapper = messagesContainer.querySelector(".message-wrapper:last-of-type");
+                if (lastMessageWrapper) {
+                    const lastReadByWrapper = lastMessageWrapper.nextElementSibling;
+                    if (lastReadByWrapper && lastReadByWrapper.classList.contains("read-by-wrapper")) {
+                        lastReadByWrapper.remove();
+                    }
+                }
+
+                // Create new message element
+                const messageWrapper = document.createElement("div");
+                messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+                messageWrapper.setAttribute("data-message-id", messageId);
+
+                const messageContent = document.createElement("div");
+                messageContent.classList.add("message-content");
+
+                const textElement = document.createElement("span");
+                textElement.textContent = data.text;
+                messageContent.appendChild(textElement);
+
+                const messageDate = new Date(data.timestamp.toDate());
+                const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+                const dateElement = document.createElement("div");
+                dateElement.classList.add("message-date");
+                dateElement.textContent = messageDate.toLocaleTimeString(undefined, options);
+                messageContent.appendChild(dateElement);
+
+                if (!isCurrentUser) {
+                    const profilePicBase64 = await getProfilePic(data.senderId);
+                    const imgElement = document.createElement("img");
+                    imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                    imgElement.classList.add("profile-pic");
+                    messageWrapper.appendChild(imgElement);
+                }
+
+                messageWrapper.appendChild(messageContent);
+                messagesContainer.appendChild(messageWrapper);
+
+                if (data.readBy && data.readBy.length > 1) {
+                    lastReadMessageId = messageId;
+                    lastReadByUsers = data.readBy;
+                }
+            }
+        });
+
+        // Auto-scroll to bottom
+        const chatMessagesBox = document.querySelector('.message-container');
+        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+
+        // Mark new messages as read
+        markMessagesAsRead(roomId);
+
+        // Display read-by indicators correctly
+        if (lastReadMessageId) {
+            displayReadByUsers(lastReadMessageId, lastReadByUsers, roomId);
+        }
+    }
+
     let currentMessagesSubscription = null;
     async function openChat(roomId) {
         console.log(`Opening chat for room ID: ${roomId}`);
-        localStorage.setItem("roomId", roomId);
         displayMessages(roomId);
-
+        sessionStorage.setItem("item_clicked", 'true');
+        localStorage.setItem("roomId", roomId);
         if (stompClient && stompClient.connected) {
             console.log('Resubscribing to new room');
             stompClient.unsubscribe('/topic/notifications/' + localStorage.getItem("roomId"));
@@ -319,7 +403,7 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
     // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-      import { getFirestore, collection, getDocs, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+      import { getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
     // TODO: Add SDKs for Firebase products that you want to use
     // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -339,6 +423,38 @@
     const app = initializeApp(firebaseConfig);
     // const analytics = getAnalytics(app);
     const db = getFirestore(app);
+
+    async function addReadByField() {
+        const messagesRef = collection(db, "Messages");
+        const q = query(messagesRef, limit(1));  // Fetch only the first document
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const firstDoc = querySnapshot.docs[0];
+            const firstDocData = firstDoc.data();
+
+            // If the first document already has 'readBy', assume all do and exit
+            if (firstDocData.hasOwnProperty("readBy")) {
+                console.log("readBy field already exists, no update needed.");
+                return;
+            }
+        }
+
+        console.log("Updating all documents to add readBy field...");
+
+        // Since first doc didn't have 'readBy', update all documents
+        const allDocsSnapshot = await getDocs(messagesRef);
+        allDocsSnapshot.forEach(async (messageDoc) => {
+            const docRef = doc(db, "Messages", messageDoc.id);
+            await updateDoc(docRef, { readBy: [] });
+            console.log(`Updated doc: ${messageDoc.id}`);
+        });
+
+        console.log("All documents updated.");
+    }
+
+    // Call function once
+    addReadByField().then(() => console.log("Done checking/updating documents"));
 
     // Function to send a message
     async function sendMessage(roomId) {
@@ -381,12 +497,13 @@
         displayMessagesTimeout = setTimeout(async () => {
             console.log("displaying messages");
             // Check if chat is open for the roomId
-            if(localStorage.getItem("roomId") != roomId){
+            if (localStorage.getItem("roomId") != roomId) {
                 console.log("Chat is open for a different room, setting new message count");
                 showNotificationToast('You have new messages in other chats');
                 return;
             }
-
+            let lastReadMessageId = null;
+            let lastReadByUsers = [];
             try {
                 // Get a reference to the Messages collection and order by timestamp in ascending order
                 const messagesQuery = query(
@@ -415,19 +532,17 @@
 
                     const messageWrapper = document.createElement("div");
                     messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+                    messageWrapper.setAttribute("data-message-id", data.messageId); // Store message ID
 
                     // Create a hidden div to store messageId and senderId
                     const hiddenDataDiv = document.createElement("div");
                     hiddenDataDiv.classList.add("message-metadata");
                     hiddenDataDiv.style.display = "none"; // Hide the div
 
-                    // Option 1: Add key-value pairs as data attributes
                     hiddenDataDiv.dataset.messageId = data.messageId;
                     hiddenDataDiv.dataset.senderId = data.senderId;
 
-                    // Alternatively, Option 2: Use text content in a key-value format (if you prefer)
                     hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
-
                     messageWrapper.appendChild(hiddenDataDiv);
 
                     const messageContent = document.createElement("div");
@@ -454,26 +569,6 @@
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                             </svg>
                             Copy
-                        </div>
-                        <div class="action-item" data-action="reply">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 14 4 9 9 4"></polyline>
-                                <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
-                            </svg>
-                            Reply
-                        </div>
-                        <div class="action-item" data-action="forward">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14"></path>
-                                <path d="m12 5 7 7-7 7"></path>
-                            </svg>
-                            Forward
-                        </div>
-                        <div class="action-item" data-action="select">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                            </svg>
-                            Select
                         </div>
                     `;
 
@@ -515,6 +610,11 @@
                     messageContent.appendChild(actionsMenu);
                     messageWrapper.appendChild(messageContent);
                     messagesContainer.appendChild(messageWrapper);
+
+                    if (data.readBy && data.readBy.length > 1) {
+                        lastReadMessageId = data.messageId;
+                        lastReadByUsers = data.readBy;
+                    }
                 }
             } catch (e) {
                 console.error("Error fetching messages: ", e);
@@ -522,7 +622,128 @@
 
             const chatMessagesBox = document.querySelector('.message-container');
             chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+
+            markMessagesAsRead(roomId);
+
+            if (lastReadMessageId) {
+                displayReadByUsers(lastReadMessageId, lastReadByUsers, roomId);
+            }
         }, 300);
+    }
+
+    async function displayReadByUsers(messageId, readByUsers, roomId) {
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageElement) return;
+
+        const messageWrapper = messageElement.closest(".message-wrapper");
+        if (!messageWrapper) return;
+
+        // Check if a ReadBy wrapper already exists after this messageWrapper
+        let readByWrapper = messageWrapper.nextElementSibling;
+        if (readByWrapper && readByWrapper.classList.contains("read-by-wrapper")) {
+            readByWrapper.innerHTML = ""; // Clear existing readBy avatars
+        } else {
+            // Create a new message-wrapper div for read receipts
+            readByWrapper = document.createElement("div");
+            readByWrapper.classList.add("message-wrapper", "read-by-wrapper", "justify-content-end");
+            readByWrapper.style.display = "flex";
+            readByWrapper.style.alignItems = "center";
+            readByWrapper.style.marginTop = "3px";
+        }
+
+        // Create the readByContainer inside the new message-wrapper
+        let readByContainer = document.createElement("div");
+        readByContainer.classList.add("read-by-container");
+        readByContainer.style.display = "flex";
+        readByContainer.style.marginTop = "5px";
+
+        const currentUserId = await fetchCurrentUserId();
+        const isGroupChat = roomId.startsWith("group_"); // Assuming group chats have a "group_" prefix
+
+        for (const userId of readByUsers) {
+            if (userId === currentUserId) continue; // Skip own read receipt
+
+            const userProfilePic = await getProfilePic(userId);
+            if (!userProfilePic) continue;
+
+            // Fetch the username using the API
+            const username = await fetch(`/api/users/getUsername?id=${userId}`)
+                .then(response => response.text())
+                .catch(error => {
+                    console.error('Error fetching username:', error);
+                    return `User ${userId}`; // Fallback if API fails
+                });
+
+            const imgElement = document.createElement("img");
+            imgElement.src = `data:image/png;base64,${userProfilePic}`;
+            imgElement.classList.add("read-by-avatar");
+            imgElement.style.width = "18px";
+            imgElement.style.height = "18px";
+            imgElement.style.borderRadius = "50%";
+            imgElement.title = `Read by ${username}`;
+
+            readByContainer.appendChild(imgElement);
+
+            if (!isGroupChat) break; // In one-to-one chat, show only one image
+        }
+
+        // Append readByContainer inside readByWrapper
+        readByWrapper.appendChild(readByContainer);
+
+        // Insert the new message-wrapper right after the existing message-wrapper
+        messageWrapper.insertAdjacentElement("afterend", readByWrapper);
+        const chatMessagesBox = document.querySelector('.message-container');
+        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+    }
+
+
+
+    // **Function to mark messages as read when they become visible**
+    async function markMessagesAsRead(roomId) {
+        const currentUserId = await fetchCurrentUserId();
+        if (!currentUserId || currentUserId === -1) return;
+
+        const messagesContainer = document.getElementById("messages");
+        if (!messagesContainer) return;
+
+        // Use IntersectionObserver to track visibility of messages
+        const observer = new IntersectionObserver(async (entries) => {
+            for (const entry of entries) {
+                if (entry.isIntersecting) {
+                    const messageElement = entry.target;
+                    const messageId = messageElement.querySelector(".message-metadata")?.dataset.messageId;
+
+                    if (!messageId) continue; // Skip if no message ID
+
+                    const messageRef = doc(db, "Messages", messageId);
+
+                    try {
+                        // Fetch current message data
+                        const messageDoc = await getDoc(messageRef);
+                        if (!messageDoc.exists()) continue;
+
+                        const messageData = messageDoc.data();
+                        const readBy = messageData.readBy || [];
+
+                        // Update Firestore only if the user hasn't already read the message
+                        if (!readBy.includes(currentUserId)) {
+                            await updateDoc(messageRef, {
+                                readBy: [...readBy, currentUserId]
+                            });
+                            console.log(`Message ${messageId} marked as read by ${currentUserId}`);
+                        }
+                    } catch (error) {
+                        console.error("Error updating readBy field:", error);
+                    }
+                }
+            }
+        }, { threshold: 0.8 }); // Trigger when 80% of the message is visible
+
+        // Observe all messages inside the chat
+        const messages = messagesContainer.querySelectorAll(".message-wrapper");
+        messages.forEach(message => {
+            observer.observe(message);
+        });
     }
 
     // Add jQuery event handlers
@@ -555,7 +776,6 @@
                     navigator.clipboard.writeText(messageText);
                     break;
                 case 'reply':
-                    debugger;
                     console.log('Reply to:', messageText);
                     break;
                 case 'forward':
