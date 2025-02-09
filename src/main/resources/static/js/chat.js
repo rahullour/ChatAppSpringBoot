@@ -1155,3 +1155,26 @@
             }
         }
     });
+
+    document.addEventListener('click', function(event) {
+        let target = event.target;
+
+        // Check if the clicked element or any of its parent elements has the class "invite-item"
+        while (target) {
+            if (target.classList && target.classList.contains('invite-item')) {
+                // Get all elements with the class "invite-item"
+                const inviteItems = document.querySelectorAll('.invite-item');
+
+                // Remove the class "chat-active-li" from all "invite-item" elements
+                inviteItems.forEach(item => {
+                    item.classList.remove('chat-active-li');
+                });
+
+                // Add the class "chat-active-li" to the clicked element
+                target.classList.add('chat-active-li');
+                break; // Stop traversing up the DOM
+            }
+            target = target.parentNode; // Move to the parent element
+        }
+    });
+

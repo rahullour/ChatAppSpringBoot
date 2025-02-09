@@ -460,3 +460,6 @@ body{
     font-size: 0.8em;
     margin-bottom: 5px;
 }
+.chat-active-li, .invite-item:hover{
+   background: aquamarine;
+}
