@@ -96,24 +96,29 @@
                 fetchInvites('api/invites/single'),
                 fetchInvites('api/invites/group')
             ]);
-            // Display single invites if available
-            if (singleInvites.length > 0) {
-                await displayInvites(singleInvites, 'single');
+
+            // Event listeners for tab clicks to select first chat if available
+            document.querySelector('#one-to-one-tab').addEventListener('click', async () => {
+                await displayInvites(singleInvites, 'single'); // Ensure invites are displayed before selecting
                 const singleListItems = document.querySelectorAll('#single-list li');
                 if (singleListItems.length > 0) {
-                    document.querySelector('#one-to-one-tab').click();
-                    singleListItems[0].click();
+                    singleListItems[0].click(); // Select first chat in single invites
                 }
-            }
+            });
 
-            // Display group invites if available
-            if (groupInvites.length > 0) {
-                await displayInvites(groupInvites, 'group');
+            document.querySelector('#group-chats-tab').addEventListener('click', async () => {
+                await displayInvites(groupInvites, 'group'); // Ensure invites are displayed before selecting
                 const groupListItems = document.querySelectorAll('#group-list li');
-                if (groupListItems.length > 0 && singleInvites.length === 0) {
-                    document.querySelector('#group-chats-tab').click();
-                    groupListItems[0].click();
+                if (groupListItems.length > 0) {
+                    groupListItems[0].click(); // Select first chat in group invites
                 }
+            });
+
+            // Auto-select the appropriate tab based on available invites
+            if (singleInvites.length > 0) {
+                document.querySelector('#one-to-one-tab').click();
+            } else if (groupInvites.length > 0) {
+                document.querySelector('#group-chats-tab').click();
             }
 
             // Handle case when no invites are available
@@ -131,6 +136,7 @@
             console.log('Error fetching invites:', error);
         }
     });
+
 
     function fetchInvites(endpoint) {
         return fetch(endpoint)
@@ -208,24 +214,6 @@
                 } catch (error) {
                     console.error('Error fetching user data:', error);
                 }
-
-                // Set up Firestore listener for real-time updates after processing invites
-                const messagesQuery = query(
-                    collection(db, "Messages"),
-                    where("roomId", "==", `${invite.roomId}`),
-                    orderBy("timestamp", "asc")
-                );
-
-//                onSnapshot(messagesQuery, (snapshot) => {
-//                    if(sessionStorage.getItem("item_clicked") == 'false'){
-//                        displayMessages(localStorage.getItem("roomId"));
-//                    }
-//                    sessionStorage.setItem("item_clicked", 'false');
-//                });
-                onSnapshot(messagesQuery, (snapshot) => {
-                    handleNewMessages(snapshot, localStorage.getItem("roomId"));
-                });
-
             }
         } else {
             // Handle group invites
@@ -293,260 +281,199 @@
                     console.error('Error fetching group data:', error);
                 }
             }
-            // Set up Firestore listener for real-time updates after processing invites
-            for (const roomId in groupedInvites) {
-                const messagesQuery = query(
-                    collection(db, "Messages"),
-                    where("roomId", "==", roomId),
-                    orderBy("timestamp", "asc") // Order messages by timestamp ascending
-                );
-
-                onSnapshot(messagesQuery, (snapshot) => {
-                    if(sessionStorage.getItem("item_clicked") == 'false'){
-                        displayMessages(roomId);
-                    }
-                    sessionStorage.setItem("item_clicked", 'false');
-                });
-            }
-        }
-    }
-
-    async function handleNewMessages(snapshot, roomId) {
-        const messagesContainer = document.getElementById("messages");
-        if (!messagesContainer) return;
-
-        const currentUserId = await fetchCurrentUserId();
-        let lastReadMessageId = null;
-        let lastReadByUsers = [];
-
-        snapshot.docChanges().forEach(async (change) => {
-            if (change.type === "added") {
-                const data = change.doc.data();
-                const messageId = data.messageId;
-                const isCurrentUser = data.senderId === currentUserId;
-
-                // Remove previous "read by" if the last message was not read by multiple users
-                const lastMessageWrapper = messagesContainer.querySelector(".message-wrapper:last-of-type");
-                if (lastMessageWrapper) {
-                    const lastReadByWrapper = lastMessageWrapper.nextElementSibling;
-                    if (lastReadByWrapper && lastReadByWrapper.classList.contains("read-by-wrapper")) {
-                        lastReadByWrapper.remove();
-                    }
-                }
-
-                // Create new message element
-                const messageWrapper = document.createElement("div");
-                messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-                messageWrapper.setAttribute("data-message-id", messageId);
-
-                const messageContent = document.createElement("div");
-                messageContent.classList.add("message-content");
-
-                const textElement = document.createElement("span");
-                textElement.textContent = data.text;
-                messageContent.appendChild(textElement);
-
-                const messageDate = new Date(data.timestamp.toDate());
-                const options = { hour: 'numeric', minute: 'numeric', hour12: true };
-                const dateElement = document.createElement("div");
-                dateElement.classList.add("message-date");
-                dateElement.textContent = messageDate.toLocaleTimeString(undefined, options);
-                messageContent.appendChild(dateElement);
-
-                if (!isCurrentUser) {
-                    const profilePicBase64 = await getProfilePic(data.senderId);
-                    const imgElement = document.createElement("img");
-                    imgElement.src = `data:image/png;base64,${profilePicBase64}`;
-                    imgElement.classList.add("profile-pic");
-                    messageWrapper.appendChild(imgElement);
-                }
-
-                messageWrapper.appendChild(messageContent);
-                messagesContainer.appendChild(messageWrapper);
-
-                if (data.readBy && data.readBy.length > 1) {
-                    lastReadMessageId = messageId;
-                    lastReadByUsers = data.readBy;
-                }
-            }
-        });
-
-        // Auto-scroll to bottom
-        const chatMessagesBox = document.querySelector('.message-container');
-        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
-
-        // Mark new messages as read
-        markMessagesAsRead(roomId);
-
-        // Display read-by indicators correctly
-        if (lastReadMessageId) {
-            displayReadByUsers(lastReadMessageId, lastReadByUsers, roomId);
-        }
-    }
-
-    let currentMessagesSubscription = null;
-    async function openChat(roomId) {
-        console.log(`Opening chat for room ID: ${roomId}`);
-        displayMessages(roomId);
-        sessionStorage.setItem("item_clicked", 'true');
-        localStorage.setItem("roomId", roomId);
-        if (stompClient && stompClient.connected) {
-            console.log('Resubscribing to new room');
-            stompClient.unsubscribe('/topic/notifications/' + localStorage.getItem("roomId"));
-            subscribeToNotifications();
-        } else {
-            console.warn('STOMP client not connected');
-        }
-        notificationCount = 0; // Reset notification count when opening a new chat
-    }
-
-
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-      import { getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
-
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-    const firebaseConfig = {
-      apiKey: "AIzaSyBGhQf-pYZx3ed6FASGo55RkrcVYS_SrIk",
-      authDomain: "wechat-5e447.firebaseapp.com",
-      projectId: "wechat-5e447",
-      storageBucket: "wechat-5e447.appspot.com",
-      messagingSenderId: "97550275374",
-      appId: "1:97550275374:web:bae6cd2ecd5f77bad160bf",
-      measurementId: "G-WCTTEX1QHQ"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    // const analytics = getAnalytics(app);
-    const db = getFirestore(app);
-
-    async function addReadByField() {
-        const messagesRef = collection(db, "Messages");
-        const q = query(messagesRef, limit(1));  // Fetch only the first document
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const firstDoc = querySnapshot.docs[0];
-            const firstDocData = firstDoc.data();
-
-            // If the first document already has 'readBy', assume all do and exit
-            if (firstDocData.hasOwnProperty("readBy")) {
-                console.log("readBy field already exists, no update needed.");
-                return;
-            }
-        }
-
-        console.log("Updating all documents to add readBy field...");
-
-        // Since first doc didn't have 'readBy', update all documents
-        const allDocsSnapshot = await getDocs(messagesRef);
-        allDocsSnapshot.forEach(async (messageDoc) => {
-            const docRef = doc(db, "Messages", messageDoc.id);
-            await updateDoc(docRef, { readBy: [] });
-            console.log(`Updated doc: ${messageDoc.id}`);
-        });
-
-        console.log("All documents updated.");
-    }
-
-    // Call function once
-    addReadByField().then(() => console.log("Done checking/updating documents"));
-
-    // Function to send a message
-    async function sendMessage(roomId) {
-        const messageInput = document.getElementById("messageInput");
-        const messageText = messageInput.value;
-        messageInput.value = ""; // Clear the input field
-
-        try {
-            const senderId = await fetch(`/api/users/currentUser/getId`)
-                .then(response => response.json())
-                .catch(error => {
-                    console.error('Error fetching current user', error);
-                    return -1;
-                });
-
-            const docRef = await addDoc(collection(db, "Messages"), {
-                isSeen: false,
-                roomId: roomId,
-                senderId: senderId,
-                text: messageText,
-                timestamp: new Date()
-            });
-            await updateDoc(docRef, { messageId: docRef.id });
-            console.log("Document written with ID: ", docRef.id);
-
-        } catch (e) {
-            console.error("Error adding document: ", e);
         }
     }
 
     let displayMessagesTimeout = null;
 
-    async function displayMessages(roomId) {
-        // Clear any pending calls to displayMessages
-        if (displayMessagesTimeout) {
-            clearTimeout(displayMessagesTimeout);
-        }
+    async function handleNewMessages(snapshot, roomId) {
+            const messagesContainer = document.getElementById("messages");
+            if (!messagesContainer) return;
 
-        // Set a new timeout
-        displayMessagesTimeout = setTimeout(async () => {
-            console.log("displaying messages");
-            // Check if chat is open for the roomId
-            if (localStorage.getItem("roomId") != roomId) {
-                console.log("Chat is open for a different room, setting new message count");
-                showNotificationToast('You have new messages in other chats');
-                return;
+            const currentUserId = await fetchCurrentUserId();
+
+            // Fetch the latest read receipts from the Rooms table
+            const roomRef = doc(db, "Rooms", roomId);
+            const roomDoc = await getDoc(roomRef);
+            const lastReadMessageIdData = roomDoc.exists() ? roomDoc.data().lastReadMessageId || {} : {};
+
+            // Get the last message ID from the DOM
+            const lastMessageWrapper = messagesContainer.querySelector(".message-wrapper:last-of-type");
+            let lastMessageTimestamp = null;
+
+            if (lastMessageWrapper) {
+                const lastMessageId = lastMessageWrapper.getAttribute("data-message-id");
+            // Fetch the last message timestamp from firebase using lastMessageId
+                const messageRef = doc(db, "Messages", lastMessageId);
+                const messageDoc = await getDoc(messageRef);
+                if(messageDoc.exists()){
+                    lastMessageTimestamp = messageDoc.data().timestamp;
+                }
             }
-            let lastReadMessageId = null;
-            let lastReadByUsers = [];
-            try {
-                // Get a reference to the Messages collection and order by timestamp in ascending order
-                const messagesQuery = query(
-                    collection(db, "Messages"),
-                    where("roomId", "==", roomId),
-                    orderBy("timestamp", "asc")
-                );
 
-                const querySnapshot = await getDocs(messagesQuery);
-                const messages = [];
+            // Construct the Firestore query
+            let messagesQuery = query(
+                collection(db, "Messages"),
+                where("roomId", "==", roomId),
+                orderBy("timestamp", "asc")
+            );
 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    messages.push(data);
-                });
+            // Add the timestamp filter if a last message ID exists
+            if (lastMessageTimestamp) {
+                messagesQuery = query(messagesQuery, where("timestamp", ">", lastMessageTimestamp));
+            }
 
-                const currentUserId = await fetchCurrentUserId();
-                const now = new Date();
+            const newSnapshot = await getDocs(messagesQuery);
+            // no messages in message box yet, run full messages show
+            if(lastMessageTimestamp == null){
+                 // Clear any pending calls to displayMessages
+                        if (displayMessagesTimeout) {
+                            clearTimeout(displayMessagesTimeout);
+                        }
+
+                        // Set a new timeout
+                        displayMessagesTimeout = setTimeout(async () => {
+                            console.log("displaying messages");
+                            // Check if chat is open for the roomId
+                            if (localStorage.getItem("roomId") != roomId) {
+                                console.log("Chat is open for a different room, setting new message count");
+                                showNotificationToast('You have new messages in other chats');
+                                return;
+                            }
+                            try {
+                                // Get a reference to the Messages collection and order by timestamp in ascending order
+                                const messagesQuery = query(
+                                    collection(db, "Messages"),
+                                    where("roomId", "==", roomId),
+                                    orderBy("timestamp", "asc")
+                                );
+
+                                const querySnapshot = await getDocs(messagesQuery);
+                                const messages = [];
+
+                                querySnapshot.forEach((doc) => {
+                                    const data = doc.data();
+                                    messages.push(data);
+                                });
+
+                                const currentUserId = await fetchCurrentUserId();
+                                const now = new Date();
+                                let lastDisplayedDate = null;
+                                const messagesContainer = document.getElementById("messages");
+                                messagesContainer.innerHTML = "";
+
+                                for (const data of messages) {
+                                    const messageElement = document.createElement("div");
+                                    const isCurrentUser = data.senderId === currentUserId;
+
+                                    const messageWrapper = document.createElement("div");
+                                    messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+                                    messageWrapper.setAttribute("data-message-id", data.messageId); // Store message ID
+
+                                    // Create a hidden div to store messageId and senderId
+                                    const hiddenDataDiv = document.createElement("div");
+                                    hiddenDataDiv.classList.add("message-metadata");
+                                    hiddenDataDiv.style.display = "none"; // Hide the div
+
+                                    hiddenDataDiv.dataset.messageId = data.messageId;
+                                    hiddenDataDiv.dataset.senderId = data.senderId;
+                                    messageElement.dataset.timestamp = new Date().getTime();
+
+                                    hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
+                                    messageWrapper.appendChild(hiddenDataDiv);
+
+                                    const messageContent = document.createElement("div");
+                                    messageContent.classList.add("message-content");
+
+                                    // Add message actions button
+                                    const actionsButton = document.createElement("div");
+                                    actionsButton.classList.add("message-actions-btn");
+                                    actionsButton.innerHTML = `
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="1"></circle>
+                                            <circle cx="12" cy="5" r="1"></circle>
+                                            <circle cx="12" cy="19" r="1"></circle>
+                                        </svg>
+                                    `;
+
+                                    // Add message actions menu
+                                    const actionsMenu = document.createElement("div");
+                                    actionsMenu.classList.add("message-actions-menu");
+                                    actionsMenu.innerHTML = `
+                                        <div class="action-item" data-action="copy">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                            </svg>
+                                            Copy
+                                        </div>
+                                    `;
+
+                                    const messageDate = new Date(data.timestamp.toDate());
+                                    const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+
+                                    const displayDateHeader = !lastDisplayedDate ||
+                                        messageDate.toDateString() !== lastDisplayedDate.toDateString();
+
+                                    if (displayDateHeader) {
+                                        lastDisplayedDate = messageDate;
+                                        const dateHeader = document.createElement("h4");
+                                        dateHeader.classList.add("date-header");
+                                        const month = messageDate.toLocaleString('default', { month: 'long' });
+                                        dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                                        messagesContainer.appendChild(dateHeader);
+                                    }
+
+                                    let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+
+                                    const dateElement = document.createElement("div");
+                                    dateElement.classList.add("message-date");
+                                    dateElement.textContent = dateDisplay;
+                                    messageContent.appendChild(dateElement);
+
+                                    const textElement = document.createElement("span");
+                                    textElement.textContent = data.text;
+                                    messageContent.appendChild(textElement);
+
+                                    if (!isCurrentUser) {
+                                        const profilePicBase64 = await getProfilePic(data.senderId);
+                                        const imgElement = document.createElement("img");
+                                        imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                                        imgElement.classList.add("profile-pic");
+                                        messageWrapper.appendChild(imgElement);
+                                    }
+
+                                    messageContent.appendChild(actionsButton);
+                                    messageContent.appendChild(actionsMenu);
+                                    messageWrapper.appendChild(messageContent);
+                                    messagesContainer.appendChild(messageWrapper);
+
+
+                                }
+                            } catch (e) {
+                                console.error("Error fetching messages: ", e);
+                            }
+                        }, 300);
+
+            }
+            else{
                 let lastDisplayedDate = null;
-                const messagesContainer = document.getElementById("messages");
-                messagesContainer.innerHTML = "";
-
-                for (const data of messages) {
-                    const messageElement = document.createElement("div");
+                newSnapshot.forEach(async (change) => {
+                    const data = change.data();
+                    const messageId = data.messageId;
                     const isCurrentUser = data.senderId === currentUserId;
 
+                    // Create new message element
                     const messageWrapper = document.createElement("div");
                     messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-                    messageWrapper.setAttribute("data-message-id", data.messageId); // Store message ID
-
-                    // Create a hidden div to store messageId and senderId
-                    const hiddenDataDiv = document.createElement("div");
-                    hiddenDataDiv.classList.add("message-metadata");
-                    hiddenDataDiv.style.display = "none"; // Hide the div
-
-                    hiddenDataDiv.dataset.messageId = data.messageId;
-                    hiddenDataDiv.dataset.senderId = data.senderId;
-
-                    hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
-                    messageWrapper.appendChild(hiddenDataDiv);
+                    messageWrapper.setAttribute("data-message-id", messageId);
 
                     const messageContent = document.createElement("div");
                     messageContent.classList.add("message-content");
+
+                    const textElement = document.createElement("span");
+                    textElement.textContent = data.text;
+                    messageContent.appendChild(textElement);
 
                     // Add message actions button
                     const actionsButton = document.createElement("div");
@@ -572,11 +499,31 @@
                         </div>
                     `;
 
+                    // before adding dateElement check if a date element already exists, if then don't create
                     const messageDate = new Date(data.timestamp.toDate());
                     const options = { hour: 'numeric', minute: 'numeric', hour12: true };
 
+                    // Find the last date header from the messages container
+                    const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
+
+                    let lastDisplayedDate = null;
+
+                    if (lastDateHeader) {
+                        // Extract the date from the last date header's text content
+                        try {
+                            const lastDateHeaderText = lastDateHeader.textContent;
+                            // Parse the date from the string (e.g., "10 February 1:30 PM")
+                            lastDisplayedDate = parseDateFromHeader(lastDateHeaderText); // Function to parse the date string
+                        } catch (error) {
+                            console.error("Error parsing date from header:", error);
+                            // Handle the error appropriately, e.g., set lastDisplayedDate to null or a default value
+                            lastDisplayedDate = null; // Or some default value, depending on your logic
+                        }
+                    }
+
+                    // Use toLocalDateString to compare only date and not consider timezone
                     const displayDateHeader = !lastDisplayedDate ||
-                        messageDate.toDateString() !== lastDisplayedDate.toDateString();
+                        messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
 
                     if (displayDateHeader) {
                         lastDisplayedDate = messageDate;
@@ -586,119 +533,207 @@
                         dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
                         messagesContainer.appendChild(dateHeader);
                     }
-
                     let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-
                     const dateElement = document.createElement("div");
                     dateElement.classList.add("message-date");
                     dateElement.textContent = dateDisplay;
                     messageContent.appendChild(dateElement);
 
-                    const textElement = document.createElement("span");
-                    textElement.textContent = data.text;
-                    messageContent.appendChild(textElement);
+                    /**
+                     * Parses the date string and returns a Date object.
+                     * @param {string} dateString - The date string from the date header.
+                     * @returns {Date|null} - The Date object or null if parsing fails.
+                     */
+                    function parseDateFromHeader(dateString) {
+                        try {
+                            // Split the date string into parts
+                            const parts = dateString.split(' ');
+                            const day = parseInt(parts[0], 10);
+                            const month = parts[1];
+                            const time = parts[2] + ' ' + parts[3]; // Combine time and AM/PM
+
+                            // Create a date string that can be parsed by Date
+                            const dateStr = `${month} ${day}, ${new Date().getFullYear()} ${time}`;
+
+                            // Parse the date string
+                            const parsedDate = new Date(dateStr);
+
+                            // Check if the parsed date is valid
+                            if (isNaN(parsedDate.getTime())) {
+                                console.error('Invalid date parsed');
+                                return null;
+                            }
+
+                            return parsedDate;
+                        } catch (error) {
+                            console.error('Error parsing date:', error);
+                            return null;
+                        }
+                    }
 
                     if (!isCurrentUser) {
                         const profilePicBase64 = await getProfilePic(data.senderId);
-                        const imgElement = document.createElement("img");
-                        imgElement.src = `data:image/png;base64,${profilePicBase64}`;
-                        imgElement.classList.add("profile-pic");
-                        messageWrapper.appendChild(imgElement);
+                        if (profilePicBase64) {
+                            const imgElement = document.createElement("img");
+                            imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                            imgElement.classList.add("profile-pic");
+                            messageWrapper.appendChild(imgElement);
+                        }
                     }
 
                     messageContent.appendChild(actionsButton);
                     messageContent.appendChild(actionsMenu);
                     messageWrapper.appendChild(messageContent);
                     messagesContainer.appendChild(messageWrapper);
-
-                    if (data.readBy && data.readBy.length > 1) {
-                        lastReadMessageId = data.messageId;
-                        lastReadByUsers = data.readBy;
-                    }
-                }
-            } catch (e) {
-                console.error("Error fetching messages: ", e);
+                })
             }
 
+            // Auto-scroll to bottom
             const chatMessagesBox = document.querySelector('.message-container');
-            chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+            const observer = new MutationObserver(() => {
+                chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+            });
+            observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
 
+            // Mark new messages as read
             markMessagesAsRead(roomId);
 
-            if (lastReadMessageId) {
-                displayReadByUsers(lastReadMessageId, lastReadByUsers, roomId);
-            }
-        }, 300);
+            // **Display read receipts from Rooms table**
+            displayReadByUsersFromRooms(roomId, lastReadMessageIdData);
     }
 
-    async function displayReadByUsers(messageId, readByUsers, roomId) {
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-        if (!messageElement) return;
+    let currentMessagesSubscription = null;
+    async function openChat(roomId) {
+        console.log(`Opening chat for room ID: ${roomId}`);
+         // Set up Firestore listener for real-time updates after processing invites
+        localStorage.setItem("roomId", roomId);
+        const messagesQuery = query(
+            collection(db, "Messages"),
+            where("roomId", "==", localStorage.getItem("roomId")),
+            orderBy("timestamp", "asc")
+        );
 
-        const messageWrapper = messageElement.closest(".message-wrapper");
-        if (!messageWrapper) return;
+        onSnapshot(messagesQuery, (snapshot) => {
+           handleNewMessages(snapshot, roomId);
+        });
 
-        // Check if a ReadBy wrapper already exists after this messageWrapper
-        let readByWrapper = messageWrapper.nextElementSibling;
-        if (readByWrapper && readByWrapper.classList.contains("read-by-wrapper")) {
-            readByWrapper.innerHTML = ""; // Clear existing readBy avatars
+        if (stompClient && stompClient.connected) {
+            console.log('Resubscribing to new room');
+            stompClient.unsubscribe('/topic/notifications/' + localStorage.getItem("roomId"));
+            subscribeToNotifications();
         } else {
-            // Create a new message-wrapper div for read receipts
-            readByWrapper = document.createElement("div");
-            readByWrapper.classList.add("message-wrapper", "read-by-wrapper", "justify-content-end");
-            readByWrapper.style.display = "flex";
-            readByWrapper.style.alignItems = "center";
-            readByWrapper.style.marginTop = "3px";
+            console.warn('STOMP client not connected');
         }
+        notificationCount = 0; // Reset notification count when opening a new chat
+    }
 
-        // Create the readByContainer inside the new message-wrapper
-        let readByContainer = document.createElement("div");
-        readByContainer.classList.add("read-by-container");
-        readByContainer.style.display = "flex";
-        readByContainer.style.marginTop = "5px";
 
-        const currentUserId = await fetchCurrentUserId();
-        const isGroupChat = roomId.startsWith("group_"); // Assuming group chats have a "group_" prefix
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
+      import { writeBatch, getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
 
-        for (const userId of readByUsers) {
-            if (userId === currentUserId) continue; // Skip own read receipt
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyBGhQf-pYZx3ed6FASGo55RkrcVYS_SrIk",
+      authDomain: "wechat-5e447.firebaseapp.com",
+      projectId: "wechat-5e447",
+      storageBucket: "wechat-5e447.appspot.com",
+      messagingSenderId: "97550275374",
+      appId: "1:97550275374:web:bae6cd2ecd5f77bad160bf",
+      measurementId: "G-WCTTEX1QHQ"
+    };
 
-            const userProfilePic = await getProfilePic(userId);
-            if (!userProfilePic) continue;
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    // const analytics = getAnalytics(app);
+    const db = getFirestore(app);
 
-            // Fetch the username using the API
-            const username = await fetch(`/api/users/getUsername?id=${userId}`)
-                .then(response => response.text())
+    // Function to send a message
+    async function sendMessage(roomId) {
+        const messageInput = document.getElementById("messageInput");
+        const messageText = messageInput.value;
+        messageInput.value = ""; // Clear the input field
+
+        try {
+            const senderId = await fetch(`/api/users/currentUser/getId`)
+                .then(response => response.json())
                 .catch(error => {
-                    console.error('Error fetching username:', error);
-                    return `User ${userId}`; // Fallback if API fails
+                    console.error('Error fetching current user', error);
+                    return -1;
                 });
 
-            const imgElement = document.createElement("img");
-            imgElement.src = `data:image/png;base64,${userProfilePic}`;
-            imgElement.classList.add("read-by-avatar");
-            imgElement.style.width = "18px";
-            imgElement.style.height = "18px";
-            imgElement.style.borderRadius = "50%";
-            imgElement.title = `Read by ${username}`;
+           const batch = writeBatch(db);
+           const messageRef = doc(collection(db, "Messages")); // Let Firestore generate the ID
 
-            readByContainer.appendChild(imgElement);
+           batch.set(messageRef, {
+             roomId: roomId,
+             senderId: senderId,
+             text: messageText,
+             timestamp: new Date(),
+             messageId: messageRef.id // Include messageId directly
+           });
 
-            if (!isGroupChat) break; // In one-to-one chat, show only one image
+           await batch.commit();
+           console.log("Document written");
+
+        } catch (e) {
+            console.error("Error adding document: ", e);
         }
-
-        // Append readByContainer inside readByWrapper
-        readByWrapper.appendChild(readByContainer);
-
-        // Insert the new message-wrapper right after the existing message-wrapper
-        messageWrapper.insertAdjacentElement("afterend", readByWrapper);
-        const chatMessagesBox = document.querySelector('.message-container');
-        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
     }
 
+    async function displayReadByUsersFromRooms(roomId) {
+        const messagesContainer = document.getElementById("messages");
+        if (!messagesContainer) return;
 
+        const roomRef = doc(db, "Rooms", roomId);
+        const currentUserId = await fetchCurrentUserId();
 
-    // **Function to mark messages as read when they become visible**
+        onSnapshot(roomRef, (roomSnapshot) => {
+            if (!roomSnapshot.exists()) return;
+
+            const roomData = roomSnapshot.data();
+            const lastReadMessageIdData = roomData.lastReadMessageId || {};
+
+            messagesContainer.querySelectorAll(".read-by-wrapper").forEach(el => el.remove());
+
+            for (const [userId, lastReadMessageId] of Object.entries(lastReadMessageIdData)) {
+                if (!lastReadMessageId) continue;
+                // *** THE CHECK IS HERE ***
+                if (userId === currentUserId.toString()) continue; // Skip if the user is the current user
+
+                const messageElement = document.querySelector(`[data-message-id="${lastReadMessageId}"]`);
+                if (!messageElement) continue;
+
+                let readByWrapper = messageElement.nextElementSibling;
+                if (!readByWrapper || !readByWrapper.classList.contains("read-by-wrapper")) {
+                    readByWrapper = document.createElement("div");
+                    readByWrapper.classList.add("read-by-wrapper", "justify-content-end");
+                    messageElement.insertAdjacentElement("afterend", readByWrapper);
+                }
+
+                readByWrapper.innerHTML = "";
+
+                getProfilePic(userId).then(userProfilePic => {
+                    if (userProfilePic) {
+                        const imgElement = document.createElement("img");
+                        imgElement.src = `data:image/png;base64,${userProfilePic}`;
+                        imgElement.classList.add("read-by-avatar");
+                        imgElement.style.width = "18px";
+                        imgElement.style.height = "18px";
+                        imgElement.style.borderRadius = "50%";
+                        imgElement.title = `Read by User ${userId}`;
+                        readByWrapper.appendChild(imgElement);
+                    }
+                }).catch(error => {
+                    console.error("Error fetching profile picture for user", userId, error);
+                });
+            }
+        });
+    }
+
     async function markMessagesAsRead(roomId) {
         const currentUserId = await fetchCurrentUserId();
         if (!currentUserId || currentUserId === -1) return;
@@ -706,45 +741,44 @@
         const messagesContainer = document.getElementById("messages");
         if (!messagesContainer) return;
 
-        // Use IntersectionObserver to track visibility of messages
-        const observer = new IntersectionObserver(async (entries) => {
-            for (const entry of entries) {
-                if (entry.isIntersecting) {
-                    const messageElement = entry.target;
-                    const messageId = messageElement.querySelector(".message-metadata")?.dataset.messageId;
+        const roomRef = doc(db, "Rooms", roomId);
 
-                    if (!messageId) continue; // Skip if no message ID
+        const updateLastReadMessage = async () => {
+            const lastMessageElement = messagesContainer.querySelector(".message-wrapper:last-of-type");
+            if (!lastMessageElement) return; // No messages
 
-                    const messageRef = doc(db, "Messages", messageId);
+            const messageId = lastMessageElement.dataset.messageId;
+            if (!messageId) return;
 
-                    try {
-                        // Fetch current message data
-                        const messageDoc = await getDoc(messageRef);
-                        if (!messageDoc.exists()) continue;
+            try {
+                const roomDoc = await getDoc(roomRef);
+                if (!roomDoc.exists()) return;
 
-                        const messageData = messageDoc.data();
-                        const readBy = messageData.readBy || [];
+                const roomData = roomDoc.data();
+                const lastReadMessageId = roomData.lastReadMessageId || {};
 
-                        // Update Firestore only if the user hasn't already read the message
-                        if (!readBy.includes(currentUserId)) {
-                            await updateDoc(messageRef, {
-                                readBy: [...readBy, currentUserId]
-                            });
-                            console.log(`Message ${messageId} marked as read by ${currentUserId}`);
-                        }
-                    } catch (error) {
-                        console.error("Error updating readBy field:", error);
-                    }
+                if (lastReadMessageId[currentUserId] !== messageId) {
+                    lastReadMessageId[currentUserId] = messageId;
+                    await updateDoc(roomRef, { lastReadMessageId });
+                    console.log(`Room ${roomId} updated: User ${currentUserId} read message ${messageId}`);
                 }
+            } catch (error) {
+                console.error("Error updating lastReadMessageId:", error);
             }
-        }, { threshold: 0.8 }); // Trigger when 80% of the message is visible
+        };
 
-        // Observe all messages inside the chat
-        const messages = messagesContainer.querySelectorAll(".message-wrapper");
-        messages.forEach(message => {
-            observer.observe(message);
-        });
+        // Call initially when component mounts or messages load
+        updateLastReadMessage();
+
+        // Call whenever new messages are added (you'll need to adapt this to your
+        // specific message adding logic)
+        // Example:
+        // messagesContainer.addEventListener('child_added', updateLastReadMessage);
+
+        // Or if you are using some other method to add messages, call updateLastReadMessage in that method.
+        // E.g., if you have a `loadMoreMessages()` function, call it at the end of that function.
     }
+
 
     // Add jQuery event handlers
     $(document).ready(function() {
