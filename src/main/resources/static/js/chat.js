@@ -314,22 +314,7 @@
                     lastMessageTimestamp = messageDoc.data().timestamp;
                 }
             }
-
-            // Construct the Firestore query
-            let messagesQuery = query(
-                collection(db, "Messages"),
-                where("roomId", "==", roomId),
-                orderBy("timestamp", "asc")
-            );
-
-            // Add the timestamp filter if a last message ID exists
-            if (lastMessageTimestamp) {
-                messagesQuery = query(messagesQuery, where("timestamp", ">", lastMessageTimestamp));
-            }
-
-            const newSnapshot = await getDocs(messagesQuery);
-            // no messages in message box yet, run full messages show
-            if(lastMessageTimestamp == null){
+            if(sessionStorage.getItem("newChat") == "true"){
                  // Clear any pending calls to displayMessages
                         if (displayMessagesTimeout) {
                             clearTimeout(displayMessagesTimeout);
@@ -462,6 +447,13 @@
             }
             else{
                 let lastDisplayedDate = null;
+                // Construct the Firestore query
+                let messagesQuery = query(
+                    collection(db, "Messages"),
+                    where("roomId", "==", localStorage.getItem("roomId")),
+                    orderBy("timestamp", "asc")
+                );
+                const newSnapshot = await getDocs(messagesQuery);
                 newSnapshot.forEach(async (change) => {
                     const data = change.data();
                     const messageId = data.messageId;
@@ -598,6 +590,7 @@
     let currentMessagesSubscription = null;
     async function openChat(roomId) {
         console.log(`Opening chat for room ID: ${roomId}`);
+        sessionStorage.setItem("newChat", "true");
          // Set up Firestore listener for real-time updates after processing invites
         localStorage.setItem("roomId", roomId);
         const messagesQuery = query(
