@@ -400,6 +400,13 @@ body{
     gap: 3px;
 }
 
+.read-by-wrapper{
+    display: flex;
+    align-items: flex-start;
+    margin: 10px 0;
+    padding: 7px 40px;
+}
+
 .read-by-avatar {
     width: 18px;
     height: 18px;

@@ -680,13 +680,13 @@
             try {
                 await handleNewMessages(snapshot, roomId);
                 markMessagesAsRead(localStorage.getItem("roomId"));
-                // **Display read receipts from Rooms table**
-                // displayReadByUsersFromRooms(roomId, lastReadMessageIdData);
             } finally {
+                // **Display read receipts from Rooms table**
                 hideLoadingChatNotification(); // Hide loading notification after completion (success or failure)
             }
         });
 
+        displayReadByUsersFromRooms(roomId);
 
         if (stompClient && stompClient.connected) {
             console.log('Resubscribing to new room');
@@ -887,15 +887,13 @@
            const batch = writeBatch(db);
            batch.set(messageRef, messageData); // Use the messageRef and data
 
+           markMessagesAsRead(localStorage.getItem("roomId"));
            await batch.commit();
            console.log("Document written");
        } catch (e) {
            console.error("Error adding document: ", e);
        }
    }
-
-
-
 
     async function displayReadByUsersFromRooms(roomId) {
         const messagesContainer = document.getElementById("messages");
@@ -906,7 +904,6 @@
 
         onSnapshot(roomRef, (roomSnapshot) => {
             if (!roomSnapshot.exists()) return;
-
             const roomData = roomSnapshot.data();
             const lastReadMessageIdData = roomData.lastReadMessageId || {};
 
