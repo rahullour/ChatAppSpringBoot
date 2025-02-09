@@ -66,55 +66,88 @@
         showNotificationToast('You are currently offline. Please check your internet connection.', true);
     }
 
-    // Add a variable to track if the chat is loading
-    let isChatLoading = false;
-    const loadingChatClass = 'loading-chat-notification'; // CSS class for loading notification
+   // Add a variable to track if the chat is loading
+   let isChatLoading = false;
+   const loadingChatClass = 'loading-chat-notification'; // CSS class for loading notification
 
-    // Function to show the "Loading Chat" notification
-    function showLoadingChatNotification() {
-        if (isChatLoading) return; // Prevent multiple notifications
-        isChatLoading = true;
-         showLoadingNotificationToast('Loading chat ... <span class="loading-indicator"></span>', true, loadingChatClass);
-    }
+   // Function to show the "Loading Chat" notification
+   function showLoadingChatNotification() {
+     if (isChatLoading) return; // Prevent multiple notifications
+     isChatLoading = true;
+     showLoadingNotificationToast('Loading chat ... <span class="loading-indicator"></span>', true, loadingChatClass);
+   }
 
-    // Function to hide the "Loading Chat" notification
-    function hideLoadingChatNotification() {
-        isChatLoading = false;
-        hideNotificationToast(loadingChatClass); // Remove the loading chat notification with class
-    }
-
+   // Function to hide the "Loading Chat" notification
+   function hideLoadingChatNotification() {
+     isChatLoading = false;
+     hideNotificationToast(loadingChatClass); // Remove the loading chat notification with class
+   }
 
    function showLoadingNotificationToast(messageHTML, persistent, className = '') {
-       const notification = document.createElement('div');
-       notification.classList.add('notification-toast'); // Base class
-       if (className) {
-           notification.classList.add(className); // Add the specific class
-       }
-       notification.innerHTML = messageHTML; // Use innerHTML to render the HTML
+     const notification = document.createElement('div');
+     notification.classList.add('notification-toast'); // Base class
+     if (className) {
+       notification.classList.add(className); // Add the specific class
+     }
+     notification.innerHTML = messageHTML; // Use innerHTML to render the HTML
 
-       document.body.appendChild(notification);
+     document.body.appendChild(notification);
 
-       if (!persistent) {
-           setTimeout(() => {
-               document.body.removeChild(notification);
-           }, 3000); // Example: Remove after 3 seconds
-       }
-       return notification;
+     // Center the notification within the chat-messages div
+     centerNotification(notification);
+
+     if (!persistent) {
+       setTimeout(() => {
+         document.body.removeChild(notification);
+       }, 3000); // Example: Remove after 3 seconds
+     }
+     return notification;
    }
 
 
    function hideNotificationToast(className = '') {
-       // Find the specific notification to hide
-       const notifications = document.getElementsByClassName(className);
+     // Find the specific notification to hide
+     const notifications = document.getElementsByClassName(className);
 
-       // Check if any notifications with the class name were found
-       if (notifications.length > 0) {
-           // Remove the first notification found with the specified class
-           document.body.removeChild(notifications[0]);
-       } else {
-           console.log("No notification found with class:", className);
-       }
+     // Check if any notifications with the class name were found
+     if (notifications.length > 0) {
+       // Remove the first notification found with the specified class
+       document.body.removeChild(notifications[0]);
+     } else {
+       console.log("No notification found with class:", className);
+     }
    }
+
+   function centerNotification(notification) {
+     const chatMessages = document.querySelector('.chat-messages');
+     const sidebar = document.querySelector('.sidebar'); // Replace '.sidebar' with the actual class of your sidebar
+
+     if (chatMessages && notification) {
+       const chatRect = chatMessages.getBoundingClientRect();
+       const notificationWidth = notification.offsetWidth;
+       const notificationHeight = notification.offsetHeight;
+
+       // Calculate the sidebar width (if it exists)
+       const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
+
+       const top = 70; // Account for scrolling
+       const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 50;   // Account for scrolling and sidebar
+
+       notification.style.position = 'absolute'; // Ensure absolute positioning
+       notification.style.top = top + 'px';
+       notification.style.left = left + 'px';
+     }
+   }
+
+
+   // You might want to call centerNotification on window resize as well:
+   window.addEventListener('resize', () => {
+     const notification = document.querySelector('.' + loadingChatClass);
+     if (notification) {
+       centerNotification(notification);
+     }
+   });
+
 
     // Function to handle online state
     function handleOnline() {
@@ -493,6 +526,21 @@
                             } catch (e) {
                                 console.error("Error fetching messages: ", e);
                             }
+                             // show ready by (run this on handleNewMessages finishes )
+                            if (!messagesContainer) return;
+                            const roomRef = doc(db, "Rooms", roomId);
+                            try {
+                                const roomDoc = await getDoc(roomRef);
+                                if (roomDoc.exists()) {
+                                    const currentUserId = await fetchCurrentUserId();
+                                    await showReadyByImages(roomDoc, currentUserId);
+                                } else {
+                                    console.log("Room does not exists.")
+                                }
+                            } catch (error) {
+                                console.error("Error fetching room:", error);
+                            }
+                            markMessagesAsRead(localStorage.getItem("roomId"));
                             resolve();
                             sessionStorage.setItem("newChat", "false");
                         }, 300);
@@ -685,6 +733,7 @@
                 hideLoadingChatNotification(); // Hide loading notification after completion (success or failure)
             }
         });
+
 
         displayReadByUsersFromRooms(roomId);
 
@@ -895,52 +944,76 @@
        }
    }
 
-    async function displayReadByUsersFromRooms(roomId) {
+   async function showReadyByImages(roomSnapshot, currentUserId){
+//        if (!roomSnapshot.exists()) return;
         const messagesContainer = document.getElementById("messages");
         if (!messagesContainer) return;
+        const roomData = roomSnapshot.data();
+        const lastReadMessageIdData = roomData.lastReadMessageId || {};
 
+        messagesContainer.querySelectorAll(".read-by-wrapper").forEach(el => el.remove());
+        for (const [userId, lastReadMessageId] of Object.entries(lastReadMessageIdData)) {
+            if (!lastReadMessageId) continue;
+            // *** THE CHECK IS HERE ***
+            if (userId === currentUserId.toString()) continue; // Skip if the user is the current user
+
+            const messageElement = document.querySelector(`[data-message-id="${lastReadMessageId}"]`);
+            if (!messageElement) continue;
+
+            let readByWrapper = messageElement.nextElementSibling;
+            if (!readByWrapper || !readByWrapper.classList.contains("read-by-wrapper")) {
+                readByWrapper = document.createElement("div");
+                readByWrapper.classList.add("read-by-wrapper", "justify-content-end");
+                messageElement.insertAdjacentElement("afterend", readByWrapper);
+            }
+
+            readByWrapper.innerHTML = "";
+            getProfilePic(userId).then(userProfilePic => {
+                // Fetch the username using the API
+                fetch(`/api/users/getUsername?id=${userId}`)
+                    .then(response => response.text()) // Assuming the API returns plain text username
+                    .then(username => {
+                        if (userProfilePic) {
+                            const imgElement = document.createElement("img");
+                            const imgElementParent = document.createElement("div");
+                            imgElementParent.classList.add("read-by-images");
+                            imgElement.src = `data:image/png;base64,${userProfilePic}`;
+                            imgElement.classList.add("read-by-avatar");
+                            imgElement.style.width = "18px";
+                            imgElement.style.height = "18px";
+                            imgElement.style.borderRadius = "50%";
+                            imgElement.title = `Read by ${username}`;
+                            imgElementParent.appendChild(imgElement);
+                            readByWrapper.appendChild(imgElementParent);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error fetching username for user", userId, error);
+                        // Optionally, you can still display the userId if fetching the username fails
+                        if (userProfilePic) {
+                            const imgElement = document.createElement("img");
+                            imgElement.src = `data:image/png;base64,${userProfilePic}`;
+                            imgElement.classList.add("read-by-avatar");
+                            imgElement.style.width = "18px";
+                            imgElement.style.height = "18px";
+                            imgElement.style.borderRadius = "50%";
+                            imgElement.title = `Read by User ${userId} (Username unavailable)`;
+                            images.appendChild(imgElement);
+                            readByWrapper.appendChild(images);
+                        }
+                    });
+            }).catch(error => {
+                console.error("Error fetching profile picture for user", userId, error);
+            });
+        }
+   }
+
+    async function displayReadByUsersFromRooms(roomId) {
         const roomRef = doc(db, "Rooms", roomId);
         const currentUserId = await fetchCurrentUserId();
 
         onSnapshot(roomRef, (roomSnapshot) => {
-            if (!roomSnapshot.exists()) return;
-            const roomData = roomSnapshot.data();
-            const lastReadMessageIdData = roomData.lastReadMessageId || {};
-
-            messagesContainer.querySelectorAll(".read-by-wrapper").forEach(el => el.remove());
-
-            for (const [userId, lastReadMessageId] of Object.entries(lastReadMessageIdData)) {
-                if (!lastReadMessageId) continue;
-                // *** THE CHECK IS HERE ***
-                if (userId === currentUserId.toString()) continue; // Skip if the user is the current user
-
-                const messageElement = document.querySelector(`[data-message-id="${lastReadMessageId}"]`);
-                if (!messageElement) continue;
-
-                let readByWrapper = messageElement.nextElementSibling;
-                if (!readByWrapper || !readByWrapper.classList.contains("read-by-wrapper")) {
-                    readByWrapper = document.createElement("div");
-                    readByWrapper.classList.add("read-by-wrapper", "justify-content-end");
-                    messageElement.insertAdjacentElement("afterend", readByWrapper);
-                }
-
-                readByWrapper.innerHTML = "";
-
-                getProfilePic(userId).then(userProfilePic => {
-                    if (userProfilePic) {
-                        const imgElement = document.createElement("img");
-                        imgElement.src = `data:image/png;base64,${userProfilePic}`;
-                        imgElement.classList.add("read-by-avatar");
-                        imgElement.style.width = "18px";
-                        imgElement.style.height = "18px";
-                        imgElement.style.borderRadius = "50%";
-                        imgElement.title = `Read by User ${userId}`;
-                        readByWrapper.appendChild(imgElement);
-                    }
-                }).catch(error => {
-                    console.error("Error fetching profile picture for user", userId, error);
-                });
-            }
+            showReadyByImages(roomSnapshot, currentUserId );
         });
     }
 

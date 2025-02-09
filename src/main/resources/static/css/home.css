@@ -400,6 +400,15 @@ body{
     gap: 3px;
 }
 
+.read-by-images{
+       gap: 5px;
+       background-color: rgba(128, 128, 128, 0.8);
+       display: flex;
+       padding: 5px;
+       border-radius: 10px;
+       margin-left: 2px;
+}
+
 .read-by-wrapper{
     display: flex;
     align-items: flex-start;
