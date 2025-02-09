@@ -216,6 +216,12 @@ body{
     transition: opacity 0.5s ease; /* Only fade-out transition */
 }
 
+
+.notification.error {
+     background-color: #dc3545;
+}
+
+
 .notification.hide {
     opacity: 0;
 }

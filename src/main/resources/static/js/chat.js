@@ -38,6 +38,9 @@
         // Create a new notification element
         const notification = document.createElement('div');
         notification.className = 'notification';
+        if(persistent == true){
+            notification.classList.add("error");
+        }
         notification.innerText = message;
 
         // Append the notification to the toast container
@@ -287,6 +290,7 @@
     let displayMessagesTimeout = null;
 
     async function handleNewMessages(snapshot, roomId) {
+     return new Promise(async (resolve, reject) => {
             const messagesContainer = document.getElementById("messages");
             if (!messagesContainer) return;
 
@@ -453,8 +457,8 @@
                             } catch (e) {
                                 console.error("Error fetching messages: ", e);
                             }
+                            resolve();
                         }, 300);
-
             }
             else{
                 let lastDisplayedDate = null;
@@ -586,20 +590,9 @@
                     messageWrapper.appendChild(messageContent);
                     messagesContainer.appendChild(messageWrapper);
                 })
+                resolve();
             }
-
-            // Auto-scroll to bottom
-            const chatMessagesBox = document.querySelector('.message-container');
-            const observer = new MutationObserver(() => {
-                chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
-            });
-            observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
-
-            // Mark new messages as read
-            markMessagesAsRead(roomId);
-
-            // **Display read receipts from Rooms table**
-            displayReadByUsersFromRooms(roomId, lastReadMessageIdData);
+       });
     }
 
     let currentMessagesSubscription = null;
@@ -612,10 +605,18 @@
             where("roomId", "==", localStorage.getItem("roomId")),
             orderBy("timestamp", "asc")
         );
-
-        onSnapshot(messagesQuery, (snapshot) => {
-           handleNewMessages(snapshot, roomId);
+        const messagesContainer = document.getElementById("messages");
+        const observer = new MutationObserver(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         });
+        observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
+        onSnapshot(messagesQuery, async (snapshot) => {
+            await handleNewMessages(snapshot, roomId);
+            markMessagesAsRead(localStorage.getItem("roomId"));
+            // **Display read receipts from Rooms table**
+            // displayReadByUsersFromRooms(roomId, lastReadMessageIdData);
+        });
+
 
         if (stompClient && stompClient.connected) {
             console.log('Resubscribing to new room');
@@ -741,43 +742,31 @@
         const messagesContainer = document.getElementById("messages");
         if (!messagesContainer) return;
 
+        const lastMessageElement = messagesContainer.querySelector(".message-wrapper:last-of-type");
+        if (!lastMessageElement) return;
+
+        const messageId = lastMessageElement.dataset.messageId;
+        if (!messageId) return;
+
         const roomRef = doc(db, "Rooms", roomId);
+        try {
 
-        const updateLastReadMessage = async () => {
-            const lastMessageElement = messagesContainer.querySelector(".message-wrapper:last-of-type");
-            if (!lastMessageElement) return; // No messages
+            const roomDoc = await getDoc(roomRef);
+            if (!roomDoc.exists()) return;
 
-            const messageId = lastMessageElement.dataset.messageId;
-            if (!messageId) return;
+            const roomData = roomDoc.data();
+            let lastReadMessageId = roomData.lastReadMessageId || {};
 
-            try {
-                const roomDoc = await getDoc(roomRef);
-                if (!roomDoc.exists()) return;
-
-                const roomData = roomDoc.data();
-                const lastReadMessageId = roomData.lastReadMessageId || {};
-
-                if (lastReadMessageId[currentUserId] !== messageId) {
-                    lastReadMessageId[currentUserId] = messageId;
-                    await updateDoc(roomRef, { lastReadMessageId });
-                    console.log(`Room ${roomId} updated: User ${currentUserId} read message ${messageId}`);
-                }
-            } catch (error) {
-                console.error("Error updating lastReadMessageId:", error);
+            if (lastReadMessageId[currentUserId] !== messageId) {
+                lastReadMessageId[currentUserId] = messageId;
+                await updateDoc(roomRef, { lastReadMessageId });
+                console.log(`Room ${roomId} updated: User ${currentUserId} read message ${messageId}`);
             }
-        };
-
-        // Call initially when component mounts or messages load
-        updateLastReadMessage();
-
-        // Call whenever new messages are added (you'll need to adapt this to your
-        // specific message adding logic)
-        // Example:
-        // messagesContainer.addEventListener('child_added', updateLastReadMessage);
-
-        // Or if you are using some other method to add messages, call updateLastReadMessage in that method.
-        // E.g., if you have a `loadMoreMessages()` function, call it at the end of that function.
+        } catch (error) {
+            console.error("Error updating lastReadMessageId:", error);
+        }
     }
+
 
 
     // Add jQuery event handlers

@@ -84,7 +84,7 @@ public class EmailService {
                 "    <div class=\"container\">\n" +
                 "        <h1>You're Invited to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
-                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>. We're excited to have you connect!</p>\n" +
+                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>. We're excited to have you !</p>\n" +
                 "        <p>To join the conversation, simply click the button below:</p>\n" +
                 "        <a href=\"" + chatLink + "\" class=\"button\">Join the Chat</a>\n" +
                 "        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>\n" +
