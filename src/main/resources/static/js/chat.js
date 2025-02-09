@@ -66,6 +66,56 @@
         showNotificationToast('You are currently offline. Please check your internet connection.', true);
     }
 
+    // Add a variable to track if the chat is loading
+    let isChatLoading = false;
+    const loadingChatClass = 'loading-chat-notification'; // CSS class for loading notification
+
+    // Function to show the "Loading Chat" notification
+    function showLoadingChatNotification() {
+        if (isChatLoading) return; // Prevent multiple notifications
+        isChatLoading = true;
+         showLoadingNotificationToast('Loading chat ... <span class="loading-indicator"></span>', true, loadingChatClass);
+    }
+
+    // Function to hide the "Loading Chat" notification
+    function hideLoadingChatNotification() {
+        isChatLoading = false;
+        hideNotificationToast(loadingChatClass); // Remove the loading chat notification with class
+    }
+
+
+   function showLoadingNotificationToast(messageHTML, persistent, className = '') {
+       const notification = document.createElement('div');
+       notification.classList.add('notification-toast'); // Base class
+       if (className) {
+           notification.classList.add(className); // Add the specific class
+       }
+       notification.innerHTML = messageHTML; // Use innerHTML to render the HTML
+
+       document.body.appendChild(notification);
+
+       if (!persistent) {
+           setTimeout(() => {
+               document.body.removeChild(notification);
+           }, 3000); // Example: Remove after 3 seconds
+       }
+       return notification;
+   }
+
+
+   function hideNotificationToast(className = '') {
+       // Find the specific notification to hide
+       const notifications = document.getElementsByClassName(className);
+
+       // Check if any notifications with the class name were found
+       if (notifications.length > 0) {
+           // Remove the first notification found with the specified class
+           document.body.removeChild(notifications[0]);
+       } else {
+           console.log("No notification found with class:", className);
+       }
+   }
+
     // Function to handle online state
     function handleOnline() {
         if (offlineNotification) {
@@ -315,6 +365,7 @@
                 }
             }
             if(sessionStorage.getItem("newChat") == "true"){
+                 showLoadingChatNotification();
                  // Clear any pending calls to displayMessages
                         if (displayMessagesTimeout) {
                             clearTimeout(displayMessagesTimeout);
@@ -443,18 +494,44 @@
                                 console.error("Error fetching messages: ", e);
                             }
                             resolve();
+                            sessionStorage.setItem("newChat", "false");
                         }, 300);
             }
-            else{
+            else {
                 let lastDisplayedDate = null;
+                let lastMessageTimestamp = null;
+
+                // Get the last message ID from the DOM
+                const messagesContainer = document.getElementById("messages");
+                const lastMessageWrapper = messagesContainer.querySelector(".message-wrapper:last-of-type");
+
+                if (lastMessageWrapper) {
+                    const lastMessageId = lastMessageWrapper.getAttribute("data-message-id");
+                    // Fetch the last message timestamp from firebase using lastMessageId
+                    if (lastMessageId) {
+                        const messageRef = doc(db, "Messages", lastMessageId);
+                        const messageDoc = await getDoc(messageRef);
+                        if (messageDoc.exists()) {
+                            lastMessageTimestamp = messageDoc.data().timestamp;
+                        }
+                    }
+                }
+
                 // Construct the Firestore query
                 let messagesQuery = query(
                     collection(db, "Messages"),
                     where("roomId", "==", localStorage.getItem("roomId")),
                     orderBy("timestamp", "asc")
                 );
+
+                // Add the timestamp filter if a last message ID exists
+                if (lastMessageTimestamp) {
+                    messagesQuery = query(messagesQuery, where("timestamp", ">", lastMessageTimestamp));
+                }
+
                 const newSnapshot = await getDocs(messagesQuery);
-                newSnapshot.forEach(async (change) => {
+
+                for (const change of newSnapshot.docs) {
                     const data = change.data();
                     const messageId = data.messageId;
                     const isCurrentUser = data.senderId === currentUserId;
@@ -502,8 +579,6 @@
                     // Find the last date header from the messages container
                     const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
 
-                    let lastDisplayedDate = null;
-
                     if (lastDateHeader) {
                         // Extract the date from the last date header's text content
                         try {
@@ -529,32 +604,30 @@
                         dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
                         messagesContainer.appendChild(dateHeader);
                     }
+
                     let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
                     const dateElement = document.createElement("div");
                     dateElement.classList.add("message-date");
                     dateElement.textContent = dateDisplay;
                     messageContent.appendChild(dateElement);
 
-                    /**
-                     * Parses the date string and returns a Date object.
-                     * @param {string} dateString - The date string from the date header.
-                     * @returns {Date|null} - The Date object or null if parsing fails.
-                     */
                     function parseDateFromHeader(dateString) {
                         try {
-                            // Split the date string into parts
                             const parts = dateString.split(' ');
                             const day = parseInt(parts[0], 10);
-                            const month = parts[1];
-                            const time = parts[2] + ' ' + parts[3]; // Combine time and AM/PM
+                            const monthString = parts[1];
+                            const time = parts[2] + ' ' + parts[3];
 
-                            // Create a date string that can be parsed by Date
-                            const dateStr = `${month} ${day}, ${new Date().getFullYear()} ${time}`;
+                            const monthMap = {
+                                'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+                                'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+                            };
 
-                            // Parse the date string
+                            const month = monthMap[monthString];
+
+                            const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
                             const parsedDate = new Date(dateStr);
 
-                            // Check if the parsed date is valid
                             if (isNaN(parsedDate.getTime())) {
                                 console.error('Invalid date parsed');
                                 return null;
@@ -566,7 +639,6 @@
                             return null;
                         }
                     }
-
                     if (!isCurrentUser) {
                         const profilePicBase64 = await getProfilePic(data.senderId);
                         if (profilePicBase64) {
@@ -581,9 +653,10 @@
                     messageContent.appendChild(actionsMenu);
                     messageWrapper.appendChild(messageContent);
                     messagesContainer.appendChild(messageWrapper);
-                })
+                }
                 resolve();
             }
+
        });
     }
 
@@ -604,10 +677,14 @@
         });
         observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
         onSnapshot(messagesQuery, async (snapshot) => {
-            await handleNewMessages(snapshot, roomId);
-            markMessagesAsRead(localStorage.getItem("roomId"));
-            // **Display read receipts from Rooms table**
-            // displayReadByUsersFromRooms(roomId, lastReadMessageIdData);
+            try {
+                await handleNewMessages(snapshot, roomId);
+                markMessagesAsRead(localStorage.getItem("roomId"));
+                // **Display read receipts from Rooms table**
+                // displayReadByUsersFromRooms(roomId, lastReadMessageIdData);
+            } finally {
+                hideLoadingChatNotification(); // Hide loading notification after completion (success or failure)
+            }
         });
 
 
@@ -645,38 +722,180 @@
     // const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Function to send a message
-    async function sendMessage(roomId) {
-        const messageInput = document.getElementById("messageInput");
-        const messageText = messageInput.value;
-        messageInput.value = ""; // Clear the input field
+    // Function to send a messagef
+   async function sendMessage(roomId) {
+       const messageInput = document.getElementById("messageInput");
+       const messageText = messageInput.value;
+       if (!messageText) return; // Prevent empty messages
+       messageInput.value = ""; // Clear the input field
 
-        try {
-            const senderId = await fetch(`/api/users/currentUser/getId`)
-                .then(response => response.json())
-                .catch(error => {
-                    console.error('Error fetching current user', error);
-                    return -1;
-                });
+       const messagesContainer = document.getElementById("messages"); // Get messages container
 
+       try {
+           const senderId = await fetch(`/api/users/currentUser/getId`)
+               .then(response => response.json())
+               .catch(error => {
+                   console.error('Error fetching current user', error);
+                   return -1;
+               });
+
+           if (senderId === -1) {
+               console.error("Could not get user ID");
+               return;
+           }
+
+           // 1. Create the message data (including a Firestore-generated ID):
+           const messageRef = doc(collection(db, "Messages")); // Get a reference with a new ID
+           const messageData = {
+               roomId: roomId,
+               senderId: senderId,
+               text: messageText,
+               timestamp: new Date(),
+               messageId: messageRef.id // Use the ID from the reference
+           };
+
+           //2. Optimistically add the message to the UI
+
+           // Create new message element (same as in your handleNewMessages function)
+           const messageElement = document.createElement("div");
+           const isCurrentUser = true; // It's the current user sending
+
+           const messageWrapper = document.createElement("div");
+           messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+           messageWrapper.setAttribute("data-message-id", messageData.messageId); // Store message ID
+
+           // Create a hidden div to store messageId and senderId
+           const hiddenDataDiv = document.createElement("div");
+           hiddenDataDiv.classList.add("message-metadata");
+           hiddenDataDiv.style.display = "none"; // Hide the div
+
+           hiddenDataDiv.dataset.messageId = messageData.messageId;
+           hiddenDataDiv.dataset.senderId = messageData.senderId;
+           messageElement.dataset.timestamp = new Date().getTime();
+
+           hiddenDataDiv.textContent = `messageId: ${messageData.messageId}, senderId: ${messageData.senderId}`;
+           messageWrapper.appendChild(hiddenDataDiv);
+
+           const messageContent = document.createElement("div");
+           messageContent.classList.add("message-content");
+
+           // Add message actions button
+           const actionsButton = document.createElement("div");
+           actionsButton.classList.add("message-actions-btn");
+           actionsButton.innerHTML = `
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <circle cx="12" cy="12" r="1"></circle>
+                   <circle cx="12" cy="5" r="1"></circle>
+                   <circle cx="12" cy="19" r="1"></circle>
+               </svg>
+           `;
+
+           // Add message actions menu
+           const actionsMenu = document.createElement("div");
+           actionsMenu.classList.add("message-actions-menu");
+           actionsMenu.innerHTML = `
+               <div class="action-item" data-action="copy">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                   </svg>
+                   Copy
+               </div>
+           `;
+           let lastDisplayedDate = null;
+
+           // before adding dateElement check if a date element already exists, if then don't create
+           const messageDate = new Date(messageData.timestamp);
+           const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+
+           // Find the last date header from the messages container
+           const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
+
+            function parseDateFromHeader(dateString) {
+                try {
+                    const parts = dateString.split(' ');
+                    const day = parseInt(parts[0], 10);
+                    const monthString = parts[1];
+                    const time = parts[2] + ' ' + parts[3];
+
+                    const monthMap = {
+                        'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+                        'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+                    };
+
+                    const month = monthMap[monthString];
+
+                    const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
+                    const parsedDate = new Date(dateStr);
+
+                    if (isNaN(parsedDate.getTime())) {
+                        console.error('Invalid date parsed');
+                        return null;
+                    }
+
+                    return parsedDate;
+                } catch (error) {
+                    console.error('Error parsing date:', error);
+                    return null;
+                }
+            }
+           if (lastDateHeader) {
+               // Extract the date from the last date header's text content
+               try {
+                   const lastDateHeaderText = lastDateHeader.textContent;
+                   // Parse the date from the string (e.g., "10 February 1:30 PM")
+                   lastDisplayedDate = parseDateFromHeader(lastDateHeaderText); // Function to parse the date string
+               } catch (error) {
+                   console.error("Error parsing date from header:", error);
+                   // Handle the error appropriately, e.g., set lastDisplayedDate to null or a default value
+                   lastDisplayedDate = null; // Or some default value, depending on your logic
+               }
+           }
+
+           // Use toLocalDateString to compare only date and not consider timezone
+           const displayDateHeader = !lastDisplayedDate ||
+               messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
+
+           if (displayDateHeader) {
+               lastDisplayedDate = messageDate;
+               const dateHeader = document.createElement("h4");
+               dateHeader.classList.add("date-header");
+               const month = messageDate.toLocaleString('default', { month: 'long' });
+               dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+               messagesContainer.appendChild(dateHeader);
+           }
+
+           let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+
+           const dateElement = document.createElement("div");
+           dateElement.classList.add("message-date");
+           dateElement.textContent = dateDisplay;
+           messageContent.appendChild(dateElement);
+
+           const textElement = document.createElement("span");
+           textElement.textContent = messageData.text;
+           messageContent.appendChild(textElement);
+
+           messageContent.appendChild(actionsButton);
+           messageContent.appendChild(actionsMenu);
+           messageWrapper.appendChild(messageContent);
+           messagesContainer.appendChild(messageWrapper);
+
+           //3. Scroll to the bottom
+           messagesContainer.scrollTop = messagesContainer.scrollHeight;
+           //4. Update Firebase
            const batch = writeBatch(db);
-           const messageRef = doc(collection(db, "Messages")); // Let Firestore generate the ID
-
-           batch.set(messageRef, {
-             roomId: roomId,
-             senderId: senderId,
-             text: messageText,
-             timestamp: new Date(),
-             messageId: messageRef.id // Include messageId directly
-           });
+           batch.set(messageRef, messageData); // Use the messageRef and data
 
            await batch.commit();
            console.log("Document written");
+       } catch (e) {
+           console.error("Error adding document: ", e);
+       }
+   }
 
-        } catch (e) {
-            console.error("Error adding document: ", e);
-        }
-    }
+
+
 
     async function displayReadByUsersFromRooms(roomId) {
         const messagesContainer = document.getElementById("messages");

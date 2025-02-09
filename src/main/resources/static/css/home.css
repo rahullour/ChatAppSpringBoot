@@ -406,3 +406,41 @@ body{
     border-radius: 50%;
 }
 
+.loading-chat-notification {
+    background-color: #2cd173;
+    color: white;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7);
+    opacity: 1;
+    transition: opacity 0.5s ease; /* Only fade-out transition */
+    position: fixed; /* Stay in place on the screen */
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%); /* Center horizontally */
+    z-index: 1000;
+}
+
+.loading-indicator {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.message-error {
+    color: red;
+    font-size: 0.8em;
+    margin-bottom: 5px;
+}
