@@ -505,7 +505,7 @@
                                     messageContent.appendChild(dateElement);
 
                                     const textElement = document.createElement("span");
-                                    textElement.textContent = data.text;
+                                    textElement.innerHTML  = data.text;
                                     messageContent.appendChild(textElement);
 
                                     if (!isCurrentUser) {
@@ -593,7 +593,7 @@
                     messageContent.classList.add("message-content");
 
                     const textElement = document.createElement("span");
-                    textElement.textContent = data.text;
+                    textElement.innerHTML  = data.text;
                     messageContent.appendChild(textElement);
 
                     // Add message actions button
@@ -774,22 +774,17 @@
     // Function to send a messagef
    async function sendMessage(roomId) {
        const messageContentInput = document.getElementById("message-content");
-
+        const trixEditor = document.querySelector("trix-editor");
        // Check if messageContentInput exists (DOM loaded, element present)
        if (!messageContentInput) {
            console.error("message-content element not found in the DOM.");
            return; // Exit if element doesn't exist
        }
-
        let messageText = messageContentInput.value; // Get text from hidden input
-
        if (!messageText) return; // Prevent empty messages
-
-       messageContentInput.value = ""; // Clear the hidden input field
-
-
+       trixEditor.editor.loadHTML("");
+       messageContentInput.value = "";
        const messagesContainer = document.getElementById("messages"); // Get messages container
-
        try {
            const senderId = await fetch(`/api/users/currentUser/getId`)
                .then(response => response.json())
@@ -1084,7 +1079,7 @@
             const action = $(this).data('action');
             const messageElement = $(this).closest('.message-content');
             const messageMetadataElement = $(this).closest('.message-metadata');
-            const messageText = messageElement.find('span').text();
+            const messageText = messageElement.find('span').html();
 
             switch(action) {
                 case 'copy':
@@ -1155,7 +1150,7 @@
 
     localStorage.setItem("roomId", 0);
     document.getElementById("sendMessage").addEventListener("click", () => sendMessage(localStorage.getItem("roomId")));
-
+    let messageInput = document.getElementById("message-content");
     messageInput.addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
             event.preventDefault(); // Prevent default action (like adding a new line)
@@ -1187,44 +1182,3 @@
             target = target.parentNode; // Move to the parent element
         }
     });
-
- document.addEventListener('DOMContentLoaded', function() {
-            const messagesContainer = document.getElementById('messages');
-            const messageInput = document.getElementById('message-content');
-            const sendButton = document.getElementById('sendMessage');
-            const editor = document.querySelector('trix-editor');
-
-            // Disable file uploads
-            addEventListener("trix-file-accept", function(event) {
-                event.preventDefault();
-            });
-
-            // Handle sending messages
-            function sendMessage() {
-                const content = messageInput.value.trim();
-                if (content) {
-                    // Create message element
-                    const messageDiv = document.createElement('div');
-                    messageDiv.innerHTML = content;
-                    messageDiv.style.marginBottom = '10px';
-                    messagesContainer.appendChild(messageDiv);
-
-                    // Clear input
-                    editor.value = '';
-
-                    // Scroll to bottom
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-            }
-
-            // Send button click handler
-            sendButton.addEventListener('click', sendMessage);
-
-            // Enter key handler (Shift+Enter for new line)
-            editor.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
-        });

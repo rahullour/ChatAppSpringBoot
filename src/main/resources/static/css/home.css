@@ -173,7 +173,7 @@ body{
 }
 
  .message-container {
-    height: 70vh;
+    height: 75vh;
     overflow-y: scroll;
     padding: 10px;
     border: 1px solid #ccc;
@@ -181,16 +181,19 @@ body{
     margin-bottom: 10px;
 }
 
-trix-toolbar .trix-button-group--file-tools {
-    display: none;
-}
-
 trix-editor {
-    min-height: 100px;
-    max-height: 200px;
-    overflow-y: auto;
+    min-height: 2em !important; /* Important for a minimum size */
+    max-height: 500px;        /* Set your desired fixed height */
+    overflow-y: auto;         /* Enable vertical scrolling */
     border: 1px solid #ccc;
     border-radius: 5px;
+    resize: vertical;       /* Allow vertical resizing, optional */
+}
+
+trix-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .h-fit-content{
@@ -202,7 +205,7 @@ trix-editor {
         display: flex;
         margin: auto;
         button{
-            margin-top: 45px;
+            margin-top: 53px;
             margin-left: 10px;
         }
 }
