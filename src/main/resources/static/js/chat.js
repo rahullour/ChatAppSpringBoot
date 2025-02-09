@@ -773,10 +773,20 @@
 
     // Function to send a messagef
    async function sendMessage(roomId) {
-       const messageInput = document.getElementById("messageInput");
-       const messageText = messageInput.value;
+       const messageContentInput = document.getElementById("message-content");
+
+       // Check if messageContentInput exists (DOM loaded, element present)
+       if (!messageContentInput) {
+           console.error("message-content element not found in the DOM.");
+           return; // Exit if element doesn't exist
+       }
+
+       let messageText = messageContentInput.value; // Get text from hidden input
+
        if (!messageText) return; // Prevent empty messages
-       messageInput.value = ""; // Clear the input field
+
+       messageContentInput.value = ""; // Clear the hidden input field
+
 
        const messagesContainer = document.getElementById("messages"); // Get messages container
 
@@ -844,7 +854,7 @@
            actionsMenu.classList.add("message-actions-menu");
            actionsMenu.innerHTML = `
                <div class="action-item" data-action="copy">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <svg xmlns="http://www.w3.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                    </svg>
@@ -860,34 +870,34 @@
            // Find the last date header from the messages container
            const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
 
-            function parseDateFromHeader(dateString) {
-                try {
-                    const parts = dateString.split(' ');
-                    const day = parseInt(parts[0], 10);
-                    const monthString = parts[1];
-                    const time = parts[2] + ' ' + parts[3];
+           function parseDateFromHeader(dateString) {
+               try {
+                   const parts = dateString.split(' ');
+                   const day = parseInt(parts[0], 10);
+                   const monthString = parts[1];
+                   const time = parts[2] + ' ' + parts[3];
 
-                    const monthMap = {
-                        'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
-                        'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
-                    };
+                   const monthMap = {
+                       'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+                       'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+                   };
+                   const month = monthMap[monthString];
 
-                    const month = monthMap[monthString];
+                   const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
+                   const parsedDate = new Date(dateStr);
 
-                    const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
-                    const parsedDate = new Date(dateStr);
+                   if (isNaN(parsedDate.getTime())) {
+                       console.error('Invalid date parsed');
+                       return null;
+                   }
 
-                    if (isNaN(parsedDate.getTime())) {
-                        console.error('Invalid date parsed');
-                        return null;
-                    }
+                   return parsedDate;
+               } catch (error) {
+                   console.error('Error parsing date:', error);
+                   return null;
+               }
+           }
 
-                    return parsedDate;
-                } catch (error) {
-                    console.error('Error parsing date:', error);
-                    return null;
-                }
-            }
            if (lastDateHeader) {
                // Extract the date from the last date header's text content
                try {
@@ -922,7 +932,7 @@
            messageContent.appendChild(dateElement);
 
            const textElement = document.createElement("span");
-           textElement.textContent = messageData.text;
+           textElement.innerHTML = messageData.text; // Use innerHTML instead of textContent
            messageContent.appendChild(textElement);
 
            messageContent.appendChild(actionsButton);
@@ -1178,3 +1188,43 @@
         }
     });
 
+ document.addEventListener('DOMContentLoaded', function() {
+            const messagesContainer = document.getElementById('messages');
+            const messageInput = document.getElementById('message-content');
+            const sendButton = document.getElementById('sendMessage');
+            const editor = document.querySelector('trix-editor');
+
+            // Disable file uploads
+            addEventListener("trix-file-accept", function(event) {
+                event.preventDefault();
+            });
+
+            // Handle sending messages
+            function sendMessage() {
+                const content = messageInput.value.trim();
+                if (content) {
+                    // Create message element
+                    const messageDiv = document.createElement('div');
+                    messageDiv.innerHTML = content;
+                    messageDiv.style.marginBottom = '10px';
+                    messagesContainer.appendChild(messageDiv);
+
+                    // Clear input
+                    editor.value = '';
+
+                    // Scroll to bottom
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }
+
+            // Send button click handler
+            sendButton.addEventListener('click', sendMessage);
+
+            // Enter key handler (Shift+Enter for new line)
+            editor.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
