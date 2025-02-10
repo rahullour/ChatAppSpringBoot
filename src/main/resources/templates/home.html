@@ -290,13 +290,21 @@
             <div id="messages" class="message-container">
                 <!-- Chat messages will appear here -->
             </div>
-            <div class="input-box d-flex">
-                <div class="input-group mt-3 d-block">
-                    <input id="message-content" type="hidden" name="content">
-                    <trix-editor input="message-content" placeholder="Enter a message..."></trix-editor>
-                </div>
-                <div class="send-btn-box">
-                    <button class="btn btn-primary h-fit-content" id="sendMessage">Send</button>
+            <div class="input-box position-relative bg-white rounded-3 shadow-sm mt-4">
+                <div class="input-group w-100">
+                    <div class="editor-wrapper w-100">
+                        <input id="message-content" type="hidden" name="content">
+                        <trix-editor
+                                input="message-content"
+                                placeholder="Enter a message..."
+                                class="form-control border-0"
+                                data-direct-upload-url="/rails/active_storage/direct_uploads"
+                                data-blob-url-template="/rails/active_storage/blobs/redirect/:signed_id/:filename">
+                        </trix-editor>
+                        <div class="send-btn-box d-flex">
+                            <button class="btn btn-primary" id="sendMessage">Send</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

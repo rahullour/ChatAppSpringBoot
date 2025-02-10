@@ -1200,4 +1200,77 @@
       }
     });
 
+    document.addEventListener('DOMContentLoaded', function() {
+        const toolbar = document.querySelector('trix-toolbar');
+        const toolbarToggle = document.createElement('button');
+        const editor = document.querySelector('trix-editor');
 
+        toolbarToggle.className = 'btn btn-outline-secondary toolbar-toggle-btn me-2';
+        toolbarToggle.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M3 20h5M12 4h9M3 4h5M3 12h18"/></svg>';
+
+        const sendBtnBox = document.querySelector('.send-btn-box');
+        sendBtnBox.insertBefore(toolbarToggle, sendBtnBox.firstChild);
+
+        let isToolbarVisible = false;
+
+        toolbarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isToolbarVisible = !isToolbarVisible;
+            toolbar.classList.toggle('show');
+            toolbarToggle.classList.toggle('active');
+        });
+
+        // Close toolbar when clicking outside editor and toolbar
+        document.addEventListener('click', (e) => {
+            if (!editor.contains(e.target) &&
+                !toolbar.contains(e.target) &&
+                !toolbarToggle.contains(e.target) &&
+                isToolbarVisible) {
+                isToolbarVisible = false;
+                toolbar.classList.remove('show');
+                toolbarToggle.classList.remove('active');
+            }
+        });
+
+        // Prevent event bubbling from toolbar
+        toolbar.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    });
+
+    // Add this JavaScript to handle attachments
+    document.addEventListener('trix-file-accept', function(event) {
+        // Optional: Limit file types
+        const acceptedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        // Optional: Limit file size (e.g., 5MB)
+        const maxFileSize = 5 * 1024 * 1024; // 5MB
+        if (event.file.size > maxFileSize) {
+            event.preventDefault();
+            alert('File size must be less than 5MB');
+        }
+    });
+
+    // Optional: Handle successful attachment
+    document.addEventListener('trix-attachment-add', function(event) {
+        const attachment = event.attachment;
+        if (attachment.file) {
+            // Here you can upload the file to your server
+            // For example:
+            /*
+            const formData = new FormData();
+            formData.append('file', attachment.file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                attachment.setAttributes({
+                    url: result.url,
+                    href: result.url
+                });
+            });
+            */
+        }
+    });

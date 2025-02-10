@@ -173,7 +173,7 @@ body{
 }
 
  .message-container {
-    height: 75vh;
+    height: 80vh;
     overflow-y: scroll;
     padding: 10px;
     border: 1px solid #ccc;
@@ -181,19 +181,128 @@ body{
     margin-bottom: 10px;
 }
 
-trix-editor {
-    min-height: 2em !important; /* Important for a minimum size */
-    max-height: 500px;        /* Set your desired fixed height */
-    overflow-y: auto;         /* Enable vertical scrolling */
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    resize: vertical;       /* Allow vertical resizing, optional */
+trix-toolbar {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bs-white);
+    border-radius: var(--bs-border-radius);
+    padding: 0.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    transform: translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
 }
 
 trix-toolbar {
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bs-white);
+    border-radius: var(--bs-border-radius);
+    padding: 0.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    transform: translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+trix-toolbar.show {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.editor-wrapper {
+    position: relative;
+    padding-right: 100px; /* Space for buttons */
+}
+
+trix-toolbar {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bs-white);
+    border-radius: var(--bs-border-radius);
+    padding: 0.5rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    transform: translateY(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+trix-toolbar.show {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.editor-wrapper {
+    position: relative;
+    padding-right: 100px; /* Space for buttons */
+}
+
+trix-editor {
+    min-height: 60px;
+    max-height: 200px;
+    width: 97% !important;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    background: transparent;
+}
+
+trix-editor:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
+}
+
+.trix-button-group {
+    border: none !important;
+    margin: 0 0.5rem 0 0 !important;
+}
+
+.trix-button {
+    border: none !important;
+    background: none !important;
+    padding: 0.25rem 0.5rem !important;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.trix-button:hover {
+    opacity: 1;
+}
+
+.toolbar-toggle-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0.25rem !important;
+}
+
+.toolbar-toggle-btn.active {
+    background-color: var(--bs-gray-200);
+    border-color: var(--bs-gray-400);
+}
+
+.send-btn-box {
+    position: absolute !important;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    z-index: 20;
 }
 
 .h-fit-content{
@@ -205,10 +314,74 @@ trix-toolbar {
         display: flex;
         margin: auto;
         button{
-            margin-top: 53px;
+            margin-top: auto;
             margin-left: 10px;
         }
 }
+
+/* Add these styles to your existing CSS */
+.trix-content figure.attachment {
+    margin: 0;
+    max-width: 100px !important;
+    display: inline-block;
+}
+
+.trix-content figure.attachment img {
+    width: 100px !important;
+    height: 100px !important;
+    object-fit: cover;
+}
+
+trix-editor .attachment{
+  width: 100px;
+}
+
+.attachment__progress {
+   top: calc(15% - 10px) !important;
+   display: none;
+}
+
+.attachment__caption-editor{
+    display: none !important;
+}
+
+.attachment__caption{
+    .attachment__size{
+        color: blue !important;
+        margin-top: 5px !important;
+        display: block;
+    }
+}
+
+/* Style for attachment previews */
+.attachment__preview {
+    width: 100px !important;
+    height: 100px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.attachment__preview-icon {
+    width: 24px;
+    height: 24px;
+}
+
+/* Container for multiple attachments */
+.attachment-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+
+
+
+
+
 .message-content {
     max-width: 70%; /* Limit message width */
     padding: 7px;
