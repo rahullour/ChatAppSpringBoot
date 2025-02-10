@@ -771,7 +771,7 @@
     // const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
-    // Function to send a messagef
+    // Function to send a message
    async function sendMessage(roomId) {
        const messageContentInput = document.getElementById("message-content");
         const trixEditor = document.querySelector("trix-editor");
@@ -1182,3 +1182,22 @@
             target = target.parentNode; // Move to the parent element
         }
     });
+
+    document.addEventListener("trix-paste", async function(event) {
+      event.preventDefault();
+      const editor = document.querySelector("trix-editor").editor;
+        // Clear the existing content of the Trix editor
+        editor.loadHTML("");
+
+      try {
+        const pastedText = await navigator.clipboard.readText();
+
+
+        // Insert the pasted text as HTML
+        editor.insertHTML(pastedText);
+      } catch (err) {
+        console.error("Failed to read clipboard contents: ", err);
+      }
+    });
+
+
