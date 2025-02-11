@@ -18,7 +18,7 @@ public class FirebaseConfig {
     @Bean
     public Firestore firestore() throws IOException {
         // Path to your service account key file
-        String serviceAccountPath = "C:\\Users\\Rahul\\my_projects\\ChatAppSpringBoot\\src\\main\\resources\\wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json";
+        String serviceAccountPath = "/home/rahullour/ChatAppSpringBoot/src/main/resources/wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json";
 
         // Use a service account
         try (InputStream serviceAccount = new FileInputStream(serviceAccountPath)) {

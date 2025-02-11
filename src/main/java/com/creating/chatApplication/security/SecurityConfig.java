@@ -105,7 +105,10 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(configurer -> configurer.accessDeniedPage("/access-denied"))
                 .logout(logout -> logout.permitAll())
-                .oauth2Login(Customizer.withDefaults());
+                .oauth2Login(Customizer.withDefaults())
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/api/files/upload")
+                );
         return http.build();
     }
 }
