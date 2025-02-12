@@ -595,8 +595,8 @@ async function handleNewMessages(snapshot, roomId) {
             let lastMessageTimestamp = null;
 
             // Get the last message ID from the DOM
-            const messagesContainer = document.getElementById("messages");
-            const lastMessageWrapper = messagesContainer.querySelector(".message-wrapper:last-of-type");
+            const messageWrappers = messagesContainer.querySelectorAll(".message-wrapper");
+            const lastMessageWrapper = messageWrappers[messageWrappers.length - 1] || null;
 
             if (lastMessageWrapper) {
                 const lastMessageId = lastMessageWrapper.getAttribute("data-message-id");
@@ -624,7 +624,9 @@ async function handleNewMessages(snapshot, roomId) {
 
             const newSnapshot = await getDocs(messagesQuery);
             // **1. Extract Message IDs for the new messages**
-            const newMessageIds = newSnapshot.docs.map(doc => doc.data().messageId);
+           const newMessageIds = newSnapshot.docs
+               .map(doc => doc.data().messageId) // Extract messageId
+               .filter(Boolean);
 
             // **2. Fetch All Attachments for the new messages**
             const attachmentsByMessageId = await fetchAttachmentsForMessages(newMessageIds);
@@ -1581,7 +1583,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Scroll content upward
       const editorWrapper = editor.closest('.editor-wrapper');
-      editorWrapper.scrollTop = editorWrapper.scrollHeight;
     }
   });
 });
