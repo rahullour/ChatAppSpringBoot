@@ -837,6 +837,28 @@ function renderAttachments(attachments, messageContent) {
     });
 
     messageContent.appendChild(AttachmentsBox);
+    const messageWrapper = messageContent.closest('.message-wrapper');
+
+    if (messageWrapper) {
+        const messageId = messageWrapper.getAttribute('data-message-id'); // Get message ID
+
+        // Find the `message-actions-btn` div
+        const actionsMenu = messageContent.querySelector('.message-actions-menu');
+
+        if (actionsMenu) {
+            // Append the new action item
+            actionsMenu.innerHTML += `
+                <div class="action-item" data-action="download" onclick="downloadFile('${messageId}')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Attachments
+                </div>
+            `;
+        }
+    }
 }
 
 
@@ -1140,14 +1162,6 @@ async function sendMessage(roomId) {
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
                 Copy
-            </div>
-            <div class="action-item" data-action="download" onclick="downloadFile('${messageData.messageId}')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download Attachments
             </div>
         `;
         let lastDisplayedDate = null; // before adding dateElement check if a date element already exists, if then don't create
