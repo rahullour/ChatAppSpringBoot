@@ -157,7 +157,7 @@ function hideNotificationToast(className = '') {
 
 function centerNotification(notification) {
  const chatMessages = document.querySelector('.chat-messages');
- const sidebar = document.querySelector('.sidebar'); // Replace '.sidebar' with the actual class of your sidebar
+ const sidebar = document.querySelector('.sidebar');
 
  if (chatMessages && notification) {
    const chatRect = chatMessages.getBoundingClientRect();
@@ -168,9 +168,9 @@ function centerNotification(notification) {
    const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
 
    const top = 70; // Account for scrolling
-   const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 50;   // Account for scrolling and sidebar
+   const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 50;
 
-   notification.style.position = 'absolute'; // Ensure absolute positioning
+   notification.style.position = 'absolute';
    notification.style.top = top + 'px';
    notification.style.left = left + 'px';
  }
@@ -973,7 +973,7 @@ function showAttachmentLimitNotification() {
 
     const notification = document.createElement("div");
     notification.classList.add("attachment-limit-notification");
-    notification.textContent = "You can only attach up to 5 files at a time.";
+    notification.textContent = "You can only attach up to 5 files at a time !";
 
     document.body.appendChild(notification);
 
@@ -985,8 +985,8 @@ function showAttachmentLimitNotification() {
     const notificationWidth = notification.offsetWidth;
     const notificationHeight = notification.offsetHeight;
 
-    const left = (viewportWidth / 2) - (notificationWidth / 2);
-    const top = (viewportHeight * 0.1); // 10% from the top
+    const left = (viewportWidth / 2);
+    const top = (viewportHeight * 0.12); // 10% from the top
     notification.style.position = 'absolute';
     notification.style.left = `${left}px`;
     notification.style.top = `${top}px`;
@@ -1543,4 +1543,45 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('File size must be less than 5MB');
         }
     });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const editor = document.querySelector('trix-editor');
+  const sendButton = document.getElementById('sendMessage');
+
+  // Function to send message
+  const sendMessage = () => {
+    if (editor.value.trim()) {
+      sendButton.click();
+    }
+  };
+
+  // Handle enter key press
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.altKey && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+
+    // Handle Alt+Enter for new line
+    if (e.key === 'Enter' && e.altKey) {
+      e.preventDefault();
+      const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const br = document.createElement('br');
+
+      // Insert line break at cursor position
+      range.insertNode(br);
+
+      // Move cursor after the break
+      range.setStartAfter(br);
+      range.setEndAfter(br);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Scroll content upward
+      const editorWrapper = editor.closest('.editor-wrapper');
+      editorWrapper.scrollTop = editorWrapper.scrollHeight;
+    }
+  });
 });
