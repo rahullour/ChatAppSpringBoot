@@ -1,6 +1,38 @@
-let stompClient = null; // Declare stompClient in the appropriate scope
-let notificationCount = 0; // Initialize notification count
-let offlineNotification; // Variable to hold the offline notification
+let stompClient = null;
+let notificationCount = 0;
+let offlineNotification;
+let currentReplyMessageId = null;
+
+
+window.parseDateFromHeader = function(dateString) {
+    try {
+        const parts = dateString.split(' ');
+        const day = parseInt(parts[0], 10);
+        const monthString = parts[1];
+        const time = parts[2] + ' ' + parts[3];
+
+        const monthMap = {
+            'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
+            'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
+        };
+
+        const month = monthMap[monthString];
+
+        const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
+        const parsedDate = new Date(dateStr);
+
+        if (isNaN(parsedDate.getTime())) {
+            console.error('Invalid date parsed');
+            return null;
+        }
+
+        return parsedDate;
+    } catch (error) {
+        console.error('Error parsing date:', error);
+        return null;
+    }
+}
+
 
 window.downloadFile = async function (messageId) {
     const messageWrapper = document.querySelector(`.message-wrapper[data-message-id="${messageId}"]`);
@@ -37,6 +69,91 @@ window.downloadFile = async function (messageId) {
     }
 };
 
+window.messageReply = async function(messageId) {
+    const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageWrapper) return;
+
+    const messageContent = messageWrapper.querySelector('.message-content');
+    const editorWrapper = document.querySelector('.editor-wrapper');
+    const senderId = messageWrapper.querySelector('.message-metadata').innerText.match(/senderId:\s*(\d+)/)[1];
+    var senderName = null;
+
+    fetch(`/api/users/getUsername?id=${Number(senderId)}`)
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to fetch username");
+            return response.text();
+        })
+        .then(username => {
+            senderName = username;
+            const timestamp = messageWrapper.querySelector('.message-date')?.textContent || "Unknown Time"; // Extract timestamp
+
+                // Remove existing reply preview if any
+                const existingPreview = document.querySelector('.message-reply-preview');
+                if (existingPreview) {
+                    existingPreview.remove();
+                }
+
+                // Extract only the allowed elements from `messageContent`
+                const messageText = document.createElement("div");
+
+                // Keep `.attachments-container`
+                const attachmentsContainer = messageContent.querySelector('.attachments-container');
+                if (attachmentsContainer) {
+                    messageText.appendChild(attachmentsContainer.cloneNode(true));
+                }
+
+                // Keep `<span>` elements (actual message text)
+                const textSpans = messageContent.querySelectorAll('span');
+                textSpans.forEach(span => {
+                    messageText.appendChild(span.cloneNode(true));
+                });
+
+                // Create reply preview
+                const replyPreview = document.createElement('div');
+                replyPreview.className = 'message-reply-preview active';
+                replyPreview.innerHTML = `
+                    <div class="reply-container">
+                        <div class="reply-indicator">↩</div>
+                        <div class="close-reply" onclick="closeReply()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20   " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </div>
+                        <div class="reply-content">
+                            ${messageText.innerHTML}
+                            <div class="reply-meta">${senderName}, ${timestamp}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Insert preview before the editor
+                editorWrapper.insertBefore(replyPreview, editorWrapper.firstChild);
+                editorWrapper.classList.add('reply-active');
+
+                // Store reply message ID
+                currentReplyMessageId = messageId;
+
+                // Focus the editor
+                document.querySelector('trix-editor').focus();
+        })
+        .catch(error => {
+            console.error("Error fetching username:", error);
+        });
+};
+
+
+
+window.closeReply = function() {
+    const replyPreview = document.querySelector('.message-reply-preview');
+    const editorWrapper = document.querySelector('.editor-wrapper');
+
+    if (replyPreview) {
+        replyPreview.remove();
+        editorWrapper.classList.remove('reply-active');
+        currentReplyMessageId = null;
+    }
+};
 
 
 function connectWebSocket() {
@@ -521,7 +638,13 @@ async function handleNewMessages(snapshot, roomId) {
                                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                         </svg>
-                                        Copy
+                                        Copy Text
+                                    </div>
+                                    <div class="action-item" data-action="reply" onclick="messageReply('${data.messageId}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
+                                        </svg>
+                                        Reply
                                     </div>
                                 `;
 
@@ -667,7 +790,13 @@ async function handleNewMessages(snapshot, roomId) {
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
-                        Copy
+                        Copy Text
+                    </div>
+                    <div class="action-item" data-action="reply" onclick="messageReply('${data.messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
+                        </svg>
+                        Reply
                     </div>
                 `;
 
@@ -711,34 +840,6 @@ async function handleNewMessages(snapshot, roomId) {
                 dateElement.textContent = dateDisplay;
                 messageContent.appendChild(dateElement);
 
-                function parseDateFromHeader(dateString) {
-                    try {
-                        const parts = dateString.split(' ');
-                        const day = parseInt(parts[0], 10);
-                        const monthString = parts[1];
-                        const time = parts[2] + ' ' + parts[3];
-
-                        const monthMap = {
-                            'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
-                            'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
-                        };
-
-                        const month = monthMap[monthString];
-
-                        const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
-                        const parsedDate = new Date(dateStr);
-
-                        if (isNaN(parsedDate.getTime())) {
-                            console.error('Invalid date parsed');
-                            return null;
-                        }
-
-                        return parsedDate;
-                    } catch (error) {
-                        console.error('Error parsing date:', error);
-                        return null;
-                    }
-                }
                 if (!isCurrentUser) {
                     const profilePicBase64 = await getProfilePic(data.senderId);
                     if (profilePicBase64) {
@@ -1034,7 +1135,7 @@ async function sendMessage(roomId) {
 
     let messageText = messageContentInput.value;
 
-    // **NEW: Attachment Handling**
+    // Attachment Handling
     const attachments = trixEditor.editor.getDocument().getAttachments();
     const fileAttachments = attachments.filter(attachment => attachment.file);
     // Show error notification if more than 4 attachments
@@ -1059,21 +1160,26 @@ async function sendMessage(roomId) {
             return;
         }
 
-        const messageRef = doc(collection(db, "Messages")); // Create the message document anyway
-        const messageId = messageRef.id; // Get the message ID
+        const messageRef = doc(collection(db, "Messages"));
+        const messageId = messageRef.id;
 
+        // Create message data with reply information if exists
         const messageData = {
             roomId: roomId,
             senderId: senderId,
             text: messageText,
             timestamp: new Date(),
-            messageId: messageId
+            messageId: messageId,
+            replyTo: currentReplyMessageId ? {
+                messageId: currentReplyMessageId,
+                timestamp: new Date()
+            } : null
         };
 
         const batch = writeBatch(db);
         batch.set(messageRef, messageData);
 
-        // Upload Attachments to Backend, which uploads to R2
+        // Upload Attachments to Backend
         if (fileAttachments.length > 0) {
             await Promise.all(
                 fileAttachments.map(async (attachment, index) => {
@@ -1095,10 +1201,9 @@ async function sendMessage(roomId) {
 
                         const downloadUrl = await response.text();
 
-                        // Create Attachment data for firestore
                         const attachmentData = {
-                            attachmentId: doc(collection(db, "Attachments")).id, // Generate unique ID for attachment
-                            messageId: messageId, // Associate with the message
+                            attachmentId: doc(collection(db, "Attachments")).id,
+                            messageId: messageId,
                             senderId: senderId,
                             fileName: file.name,
                             fileSize: file.size,
@@ -1107,8 +1212,8 @@ async function sendMessage(roomId) {
                             timestamp: new Date()
                         };
 
-                        const attachmentRef = doc(collection(db, "Attachments")); // Generate a new document reference for the attachment
-                        batch.set(attachmentRef, attachmentData); // Add attachment to the batch
+                        const attachmentRef = doc(collection(db, "Attachments"));
+                        batch.set(attachmentRef, attachmentData);
 
                     } catch (uploadError) {
                         console.error("Error uploading to backend:", uploadError);
@@ -1117,26 +1222,25 @@ async function sendMessage(roomId) {
             );
         }
 
+        // Clear editor and input
         trixEditor.editor.loadHTML("");
         messageContentInput.value = "";
 
-        // Create new message element (same as in your handleNewMessages function)
+        // Create message element
         const messageElement = document.createElement("div");
-        const isCurrentUser = true; // It's the current user sending
+        const isCurrentUser = true;
 
         const messageWrapper = document.createElement("div");
         messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-        messageWrapper.setAttribute("data-message-id", messageData.messageId); // Store message ID
+        messageWrapper.setAttribute("data-message-id", messageData.messageId);
 
-        // Create a hidden div to store messageId and senderId
+        // Add metadata div
         const hiddenDataDiv = document.createElement("div");
         hiddenDataDiv.classList.add("message-metadata");
-        hiddenDataDiv.style.display = "none"; // Hide the div
-
+        hiddenDataDiv.style.display = "none";
         hiddenDataDiv.dataset.messageId = messageData.messageId;
         hiddenDataDiv.dataset.senderId = messageData.senderId;
         messageElement.dataset.timestamp = new Date().getTime();
-
         hiddenDataDiv.textContent = `messageId: ${messageData.messageId}, senderId: ${messageData.senderId}`;
         messageWrapper.appendChild(hiddenDataDiv);
 
@@ -1153,6 +1257,7 @@ async function sendMessage(roomId) {
                 <circle cx="12" cy="19" r="1"></circle>
             </svg>
         `;
+
         const actionsMenu = document.createElement("div");
         actionsMenu.classList.add("message-actions-menu");
         actionsMenu.innerHTML = `
@@ -1161,57 +1266,24 @@ async function sendMessage(roomId) {
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
-                Copy
+                Copy Text
+            </div>
+            <div class="action-item" data-action="reply" onclick="messageReply('${messageData.messageId}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
+                </svg>
+                Reply
             </div>
         `;
-        let lastDisplayedDate = null; // before adding dateElement check if a date element already exists, if then don't create
+
+        // Handle date display
         const messageDate = new Date(messageData.timestamp);
         const options = { hour: 'numeric', minute: 'numeric', hour12: true };
 
-        // Find the last date header from the messages container
+        // Find last date header
         const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
+        let lastDisplayedDate = lastDateHeader ? parseDateFromHeader(lastDateHeader.textContent) : null;
 
-        function parseDateFromHeader(dateString) {
-            try {
-                const parts = dateString.split(' ');
-                const day = parseInt(parts[0], 10);
-                const monthString = parts[1];
-                const time = parts[2] + ' ' + parts[3];
-                const monthMap = {
-                    'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
-                    'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
-                };
-                const month = monthMap[monthString];
-
-                const dateStr = `${monthString} ${day}, ${new Date().getFullYear()} ${time}`;
-                const parsedDate = new Date(dateStr);
-
-                if (isNaN(parsedDate.getTime())) {
-                    console.error('Invalid date parsed');
-                    return null;
-                }
-
-                return parsedDate;
-            } catch (error) {
-                console.error('Error parsing date:', error);
-                return null;
-            }
-        }
-
-        if (lastDateHeader) {
-            // Extract the date from the last date header's text content
-            try {
-                const lastDateHeaderText = lastDateHeader.textContent;
-                // Parse the date from the string (e.g., "10 February 1:30 PM")
-                lastDisplayedDate = parseDateFromHeader(lastDateHeaderText); // Function to parse the date string
-            } catch (error) {
-                console.error("Error parsing date from header:", error);
-                // Handle the error appropriately, e.g., set lastDisplayedDate to null or a default value
-                lastDisplayedDate = null; // Or some default value, depending on your logic
-            }
-        }
-
-        // Use toLocalDateString to compare only date and not consider timezone
         const displayDateHeader = !lastDisplayedDate ||
             messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
 
@@ -1229,10 +1301,36 @@ async function sendMessage(roomId) {
         dateElement.classList.add("message-date");
         dateElement.textContent = dateDisplay;
         messageContent.appendChild(dateElement);
-        const textElement = document.createElement("span");
-        textElement.innerHTML = messageData.text; // Use innerHTML instead of textContent
-        messageContent.appendChild(textElement);
 
+        const textElement = document.createElement("span");
+        textElement.innerHTML = messageData.text;
+
+        // Add reply preview if it exists
+        if (messageData.replyTo) {
+            const replyPreview = document.createElement("div");
+            replyPreview.classList.add("message-reply-reference");
+            const replyMessageWrapper = document.querySelector(`.message-wrapper[data-message-id="${messageData.replyTo?.messageId}"]`);
+            const replyContent = replyMessageWrapper.querySelector(".message-content");
+            if (replyMessageWrapper) {
+                    // Extract only the `.attachments-container`, spans
+                    const attachmentsContainer = replyMessageWrapper.querySelector(".attachments-container");
+                    const textContent = replyMessageWrapper.querySelector("span");
+
+                    const replyIndicator = document.createElement("div");
+                    replyIndicator.classList.add("reply-indicator");
+                    replyIndicator.innerHTML = "↩";
+                    replyPreview.appendChild(replyIndicator);
+                    if (attachmentsContainer) {
+                        replyPreview.appendChild(attachmentsContainer.cloneNode(true));
+                    }
+                    if (textContent) {
+                        replyPreview.appendChild(textContent.cloneNode(true));
+                    }
+                }
+            messageContent.appendChild(replyPreview);
+        }
+
+        messageContent.appendChild(textElement);
         messageContent.appendChild(actionsButton);
         messageContent.appendChild(actionsMenu);
         messageWrapper.appendChild(messageContent);
@@ -1249,11 +1347,13 @@ async function sendMessage(roomId) {
 
         messagesContainer.appendChild(messageWrapper);
 
-        //3. Scroll to the bottom
+        // Scroll to bottom and clear reply preview
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        //4. Update Firebase : Attachment Batch Commit Finally
+        closeReply();
+
+        // Update Firebase
         markMessagesAsRead(localStorage.getItem("roomId"));
-        await batch.commit(); // Commit all batched writes
+        await batch.commit();
 
         console.log("Document written");
     } catch (e) {
@@ -1395,9 +1495,6 @@ $(document).ready(function() {
         switch(action) {
             case 'copy':
                 navigator.clipboard.writeText(messageText);
-                break;
-            case 'reply':
-                console.log('Reply to:', messageText);
                 break;
             case 'forward':
                 console.log('Forward:', messageText);

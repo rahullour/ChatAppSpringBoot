@@ -255,14 +255,18 @@ trix-editor {
     line-height: 1.5;
     border: var(--bs-border-width) solid var(--bs-border-color);
     border-radius: var(--bs-border-radius);
-    background: transparent;
+    background-color: rgba(240, 240, 240, 1) !important;
 }
+
+/*
 
 trix-editor:focus {
     border-color: #86b7fe;
     outline: 0;
     box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%);
 }
+
+*/
 
 .trix-button-group {
     border: none !important;
@@ -689,7 +693,7 @@ trix-editor .attachment{
     gap: 10px;
     margin-top: 8px;
     grid-template-columns: auto auto;
-
+    margin: 0px !important;
 }
 
 /* Image Wrapper */
@@ -839,4 +843,84 @@ trix-editor .attachment{
     text-align: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
+}
+
+/* message reply */
+/* Reply Container */
+.message-reply-preview {
+    display: flex;
+    align-items: center;
+    background-color: rgba(240, 240, 240, 1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    position: relative;
+}
+
+/* Reply Metadata */
+.reply-meta {
+    font-size: 12px;
+    color: #777;
+    margin-top: 4px;
+}
+
+
+/* Reply Indicator (↩) */
+.reply-indicator {
+    font-size: 16px;
+    margin-right: 8px;
+    color: #5f6368;
+}
+
+.form-control:focus{
+    box-shadow: unset !important;
+}
+
+.message-reply-preview.active {
+    display: flex;
+}
+
+.message-reply-reference{
+    background-color: #b0f2ff;
+    padding: 10px;
+}
+
+.reply-container{
+    width: 100%;
+}
+
+/* Reply Content */
+.reply-content {
+    flex-grow: 1;
+    font-size: 14px;
+    color: #333;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 200px;
+}
+
+/* Close Button (X) */
+.close-reply {
+    cursor: pointer;
+    margin-left: 8px;
+    float: right;
+}
+
+.close-reply svg {
+    cursor: pointer;
+    margin-left: 8px;
+    float: right;
+    top: -30px;
+    position: relative;
+}
+
+.close-reply:hover {
+    opacity: 1;
+}
+
+/* Add border radius to top of editor when reply is active */
+.reply-active trix-editor {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
 }
