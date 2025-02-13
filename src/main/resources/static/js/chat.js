@@ -225,10 +225,10 @@ let isChatLoading = false;
 const loadingChatClass = 'loading-chat-notification'; // CSS class for loading notification
 
 // Function to show the "Loading Chat" notification
-function showLoadingChatNotification() {
+function showLoadingChatNotification(text) {
  if (isChatLoading) return; // Prevent multiple notifications
  isChatLoading = true;
- showLoadingNotificationToast('Loading chat <span class="loading-indicator"></span>', true, loadingChatClass);
+ showLoadingNotificationToast(text + ' chat <span class="loading-indicator"></span>', true, loadingChatClass);
 }
 
 // Function to hide the "Loading Chat" notification
@@ -285,7 +285,7 @@ function centerNotification(notification) {
    const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
 
    const top = 70; // Account for scrolling
-   const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 50;
+   const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 60;
 
    notification.style.position = 'absolute';
    notification.style.top = top + 'px';
@@ -527,7 +527,7 @@ async function displayInvites(invites, type) {
 let displayMessagesTimeout = null;
 
 async function handleNewMessages(snapshot, roomId) {
- return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         const messagesContainer = document.getElementById("messages");
         if (!messagesContainer) return;
 
@@ -544,176 +544,236 @@ async function handleNewMessages(snapshot, roomId) {
 
         if (lastMessageWrapper) {
             const lastMessageId = lastMessageWrapper.getAttribute("data-message-id");
-        // Fetch the last message timestamp from firebase using lastMessageId
+            // Fetch the last message timestamp from firebase using lastMessageId
             const messageRef = doc(db, "Messages", lastMessageId);
             const messageDoc = await getDoc(messageRef);
-            if(messageDoc.exists()){
+            if (messageDoc.exists()) {
                 lastMessageTimestamp = messageDoc.data().timestamp;
             }
         }
-        if(sessionStorage.getItem("newChat") == "true"){
-             showLoadingChatNotification();
-             // Clear any pending calls to displayMessages
-                    if (displayMessagesTimeout) {
-                        clearTimeout(displayMessagesTimeout);
+
+        // Helper function to create reply preview
+        const createReplyPreview = async (messageData, messageContent) => {
+            if (messageData.replyTo) {
+                const replyPreview = document.createElement("div");
+                replyPreview.classList.add("message-reply-reference");
+                replyPreview.dataset.originalMessageId = messageData.replyTo.messageId;
+                // Fetch the reply message data from Firestore
+                const replyMessageRef = doc(db, "Messages", messageData.replyTo.messageId);
+                const replyMessageDoc = await getDoc(replyMessageRef);
+
+                if (replyMessageDoc.exists()) {
+                    const replyIndicator = document.createElement("div");
+                    replyIndicator.classList.add("reply-indicator");
+                    replyIndicator.innerHTML = "↩";
+                    replyPreview.appendChild(replyIndicator);
+
+                    const replyData = replyMessageDoc.data();
+
+                    // Add text content if it exists
+                    if (replyData.text) {
+                        const textElement = document.createElement("span");
+                        textElement.innerHTML = replyData.text;
+                        replyPreview.appendChild(textElement);
                     }
 
-                    // Set a new timeout
-                    displayMessagesTimeout = setTimeout(async () => {
-                        console.log("displaying messages");
-                        // Check if chat is open for the roomId
-                        if (localStorage.getItem("roomId") != roomId) {
-                            console.log("Chat is open for a different room, setting new message count");
-                            showNotificationToast('You have new messages in other chats');
-                            return;
+                    // Fetch and add attachments if they exist
+                    const attachments = await fetchAttachmentsForMessages([messageData.replyTo.messageId]);
+                    if (attachments[messageData.replyTo.messageId]) {
+                        renderAttachments(attachments[messageData.replyTo.messageId], replyPreview);
+                    }
+                }
+
+                // Insert reply preview at the beginning of message content
+                messageContent.insertBefore(replyPreview, messageContent.firstChild);
+
+                replyPreview.onclick = function () {
+                    const originalMessageId = this.getAttribute("data-original-message-id");
+                    if (!originalMessageId) return;
+
+                    const targetMessage = document.querySelector(`.message-wrapper[data-message-id="${originalMessageId}"]`);
+                    if (!targetMessage) return;
+
+                    const messageContainer = document.querySelector(".message-container");
+                    if (messageContainer) {
+                        messageContainer.scrollTo({
+                            top: targetMessage.offsetTop - messageContainer.offsetTop - 12,
+                            behavior: "smooth"
+                        });
+                    }
+
+                    // Optional: Highlight the target message
+                    targetMessage.classList.add("highlight-message");
+                    setTimeout(() => targetMessage.classList.remove("highlight-message"), 1500);
+                };
+
+            }
+            // Add reply preview if it exists
+        };
+
+        if (sessionStorage.getItem("newChat") == "true") {
+            showLoadingChatNotification("Loading");
+            // Clear any pending calls to displayMessages
+            if (displayMessagesTimeout) {
+                clearTimeout(displayMessagesTimeout);
+            }
+
+            // Set a new timeout
+            displayMessagesTimeout = setTimeout(async () => {
+                console.log("displaying messages");
+                // Check if chat is open for the roomId
+                if (localStorage.getItem("roomId") != roomId) {
+                    console.log("Chat is open for a different room, setting new message count");
+                    showNotificationToast('You have new messages in other chats');
+                    return;
+                }
+                try {
+                    // Get a reference to the Messages collection and order by timestamp in ascending order
+                    const messagesQuery = query(
+                        collection(db, "Messages"),
+                        where("roomId", "==", roomId),
+                        orderBy("timestamp", "asc")
+                    );
+
+                    const querySnapshot = await getDocs(messagesQuery);
+                    const messages = [];
+
+                    querySnapshot.forEach((doc) => {
+                        const data = doc.data();
+                        messages.push(data);
+                    });
+
+                    const currentUserId = await fetchCurrentUserId();
+                    const now = new Date();
+                    let lastDisplayedDate = null;
+                    const messagesContainer = document.getElementById("messages");
+                    messagesContainer.innerHTML = "";
+
+                    // **1. Extract Message IDs**
+                    const messageIds = messages.map(message => message.messageId);
+
+                    // **2. Fetch All Attachments in ONE Query**
+                    const attachmentsByMessageId = await fetchAttachmentsForMessages(messageIds);
+
+                    for (const data of messages) {
+                        const messageElement = document.createElement("div");
+                        const isCurrentUser = data.senderId === currentUserId;
+
+                        const messageWrapper = document.createElement("div");
+                        messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+                        messageWrapper.setAttribute("data-message-id", data.messageId); // Store message ID
+
+                        // Create a hidden div to store messageId and senderId
+                        const hiddenDataDiv = document.createElement("div");
+                        hiddenDataDiv.classList.add("message-metadata");
+                        hiddenDataDiv.style.display = "none"; // Hide the div
+
+                        hiddenDataDiv.dataset.messageId = data.messageId;
+                        hiddenDataDiv.dataset.senderId = data.senderId;
+                        messageElement.dataset.timestamp = new Date().getTime();
+
+                        hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
+                        messageWrapper.appendChild(hiddenDataDiv);
+
+                        const messageContent = document.createElement("div");
+                        messageContent.classList.add("message-content");
+
+                        // Add reply preview if exists
+                        await createReplyPreview(data, messageContent);
+
+                        // Add message actions button
+                        const actionsButton = document.createElement("div");
+                        actionsButton.classList.add("message-actions-btn");
+                        actionsButton.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="12" cy="5" r="1"></circle>
+                                <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                        `;
+
+                        // Add message actions menu
+                        const actionsMenu = document.createElement("div");
+                        actionsMenu.classList.add("message-actions-menu");
+                        actionsMenu.innerHTML = `
+                            <div class="action-item" data-action="copy">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy Text
+                            </div>
+                            <div class="action-item" data-action="reply" onclick="messageReply('${data.messageId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
+                                </svg>
+                                Reply
+                            </div>
+                        `;
+
+                        const messageDate = new Date(data.timestamp.toDate());
+                        const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+
+                        const displayDateHeader = !lastDisplayedDate ||
+                            messageDate.toDateString() !== lastDisplayedDate.toDateString();
+
+                        if (displayDateHeader) {
+                            lastDisplayedDate = messageDate;
+                            const dateHeader = document.createElement("h4");
+                            dateHeader.classList.add("date-header");
+                            const month = messageDate.toLocaleString('default', { month: 'long' });
+                            dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                            messagesContainer.appendChild(dateHeader);
                         }
-                        try {
-                            // Get a reference to the Messages collection and order by timestamp in ascending order
-                            const messagesQuery = query(
-                                collection(db, "Messages"),
-                                where("roomId", "==", roomId),
-                                orderBy("timestamp", "asc")
-                            );
 
-                            const querySnapshot = await getDocs(messagesQuery);
-                            const messages = [];
+                        let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
 
-                            querySnapshot.forEach((doc) => {
-                                const data = doc.data();
-                                messages.push(data);
-                            });
+                        const dateElement = document.createElement("div");
+                        dateElement.classList.add("message-date");
+                        dateElement.textContent = dateDisplay;
+                        messageContent.appendChild(dateElement);
 
-                            const currentUserId = await fetchCurrentUserId();
-                            const now = new Date();
-                            let lastDisplayedDate = null;
-                            const messagesContainer = document.getElementById("messages");
-                            messagesContainer.innerHTML = "";
+                        const textElement = document.createElement("span");
+                        textElement.innerHTML = data.text;
+                        messageContent.appendChild(textElement);
 
-                             // **1. Extract Message IDs**
-                            const messageIds = messages.map(message => message.messageId);
-
-                            // **2. Fetch All Attachments in ONE Query**
-                            const attachmentsByMessageId = await fetchAttachmentsForMessages(messageIds);
-
-                            for (const data of messages) {
-                                const messageElement = document.createElement("div");
-                                const isCurrentUser = data.senderId === currentUserId;
-
-                                const messageWrapper = document.createElement("div");
-                                messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-                                messageWrapper.setAttribute("data-message-id", data.messageId); // Store message ID
-
-                                // Create a hidden div to store messageId and senderId
-                                const hiddenDataDiv = document.createElement("div");
-                                hiddenDataDiv.classList.add("message-metadata");
-                                hiddenDataDiv.style.display = "none"; // Hide the div
-
-                                hiddenDataDiv.dataset.messageId = data.messageId;
-                                hiddenDataDiv.dataset.senderId = data.senderId;
-                                messageElement.dataset.timestamp = new Date().getTime();
-
-                                hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
-                                messageWrapper.appendChild(hiddenDataDiv);
-
-                                const messageContent = document.createElement("div");
-                                messageContent.classList.add("message-content");
-
-                                // Add message actions button
-                                const actionsButton = document.createElement("div");
-                                actionsButton.classList.add("message-actions-btn");
-                                actionsButton.innerHTML = `
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="12" cy="12" r="1"></circle>
-                                        <circle cx="12" cy="5" r="1"></circle>
-                                        <circle cx="12" cy="19" r="1"></circle>
-                                    </svg>
-                                `;
-
-                                // Add message actions menu
-                                const actionsMenu = document.createElement("div");
-                                actionsMenu.classList.add("message-actions-menu");
-                                actionsMenu.innerHTML = `
-                                    <div class="action-item" data-action="copy">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                        Copy Text
-                                    </div>
-                                    <div class="action-item" data-action="reply" onclick="messageReply('${data.messageId}')">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
-                                        </svg>
-                                        Reply
-                                    </div>
-                                `;
-
-
-                                const messageDate = new Date(data.timestamp.toDate());
-                                const options = { hour: 'numeric', minute: 'numeric', hour12: true };
-
-                                const displayDateHeader = !lastDisplayedDate ||
-                                    messageDate.toDateString() !== lastDisplayedDate.toDateString();
-
-                                if (displayDateHeader) {
-                                    lastDisplayedDate = messageDate;
-                                    const dateHeader = document.createElement("h4");
-                                    dateHeader.classList.add("date-header");
-                                    const month = messageDate.toLocaleString('default', { month: 'long' });
-                                    dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                                    messagesContainer.appendChild(dateHeader);
-                                }
-
-                                let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-
-                                const dateElement = document.createElement("div");
-                                dateElement.classList.add("message-date");
-                                dateElement.textContent = dateDisplay;
-                                messageContent.appendChild(dateElement);
-
-                                const textElement = document.createElement("span");
-                                textElement.innerHTML  = data.text;
-                                messageContent.appendChild(textElement);
-
-                                if (!isCurrentUser) {
-                                    const profilePicBase64 = await getProfilePic(data.senderId);
-                                    const imgElement = document.createElement("img");
-                                    imgElement.src = `data:image/png;base64,${profilePicBase64}`;
-                                    imgElement.classList.add("profile-pic");
-                                    messageWrapper.appendChild(imgElement);
-                                }
-
-                                messageContent.appendChild(actionsButton);
-                                messageContent.appendChild(actionsMenu);
-                                messageWrapper.appendChild(messageContent);
-                                // 3. Render Attachments for this Message
-                                renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent); // Pass the attachments for this message
-                                messagesContainer.appendChild(messageWrapper);
-
-                            }
-                        } catch (e) {
-                            console.error("Error fetching messages: ", e);
+                        if (!isCurrentUser) {
+                            const profilePicBase64 = await getProfilePic(data.senderId);
+                            const imgElement = document.createElement("img");
+                            imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                            imgElement.classList.add("profile-pic");
+                            messageWrapper.appendChild(imgElement);
                         }
-                         // show ready by (run this on handleNewMessages finishes )
-                        if (!messagesContainer) return;
-                        const roomRef = doc(db, "Rooms", roomId);
-                        try {
-                            const roomDoc = await getDoc(roomRef);
-                            if (roomDoc.exists()) {
-                                const currentUserId = await fetchCurrentUserId();
-                                await showReadyByImages(roomDoc, currentUserId);
-                            } else {
-                                console.log("Room does not exists.")
-                            }
-                        } catch (error) {
-                            console.error("Error fetching room:", error);
-                        }
-                        markMessagesAsRead(localStorage.getItem("roomId"));
-                        resolve();
-                        sessionStorage.setItem("newChat", "false");
-                    }, 300);
-        }
-        else {
+
+                        messageContent.appendChild(actionsButton);
+                        messageContent.appendChild(actionsMenu);
+                        messageWrapper.appendChild(messageContent);
+                        // 3. Render Attachments for this Message
+                        renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent);
+                        messagesContainer.appendChild(messageWrapper);
+                    }
+                } catch (e) {
+                    console.error("Error fetching messages: ", e);
+                }
+                // show ready by (run this on handleNewMessages finishes )
+                if (!messagesContainer) return;
+                const roomRef = doc(db, "Rooms", roomId);
+                try {
+                    const roomDoc = await getDoc(roomRef);
+                    if (roomDoc.exists()) {
+                        const currentUserId = await fetchCurrentUserId();
+                        await showReadyByImages(roomDoc, currentUserId);
+                    } else {
+                        console.log("Room does not exists.")
+                    }
+                } catch (error) {
+                    console.error("Error fetching room:", error);
+                }
+                markMessagesAsRead(localStorage.getItem("roomId"));
+                resolve();
+                sessionStorage.setItem("newChat", "false");
+            }, 300);
+        } else {
             let lastDisplayedDate = null;
             let lastMessageTimestamp = null;
 
@@ -747,9 +807,9 @@ async function handleNewMessages(snapshot, roomId) {
 
             const newSnapshot = await getDocs(messagesQuery);
             // **1. Extract Message IDs for the new messages**
-           const newMessageIds = newSnapshot.docs
-               .map(doc => doc.data().messageId) // Extract messageId
-               .filter(Boolean);
+            const newMessageIds = newSnapshot.docs
+                .map(doc => doc.data().messageId)
+                .filter(Boolean);
 
             // **2. Fetch All Attachments for the new messages**
             const attachmentsByMessageId = await fetchAttachmentsForMessages(newMessageIds);
@@ -766,8 +826,11 @@ async function handleNewMessages(snapshot, roomId) {
                 const messageContent = document.createElement("div");
                 messageContent.classList.add("message-content");
 
+                // Add reply preview if exists
+                await createReplyPreview(data, messageContent);
+
                 const textElement = document.createElement("span");
-                textElement.innerHTML  = data.text;
+                textElement.innerHTML = data.text;
                 messageContent.appendChild(textElement);
 
                 // Add message actions button
@@ -799,7 +862,6 @@ async function handleNewMessages(snapshot, roomId) {
                         Reply
                     </div>
                 `;
-
 
                 // before adding dateElement check if a date element already exists, if then don't create
                 const messageDate = new Date(data.timestamp.toDate());
@@ -859,8 +921,7 @@ async function handleNewMessages(snapshot, roomId) {
             }
             resolve();
         }
-
-   });
+    });
 }
 
 async function fetchAttachmentsForMessages(messageIds) {
@@ -895,7 +956,6 @@ async function fetchAttachmentsForMessages(messageIds) {
 
     return attachmentsByMessageId;
 }
-
 
 function renderAttachments(attachments, messageContent) {
     if (!attachments || attachments.length === 0) {
@@ -1309,6 +1369,7 @@ async function sendMessage(roomId) {
         if (messageData.replyTo) {
             const replyPreview = document.createElement("div");
             replyPreview.classList.add("message-reply-reference");
+            replyPreview.dataset.originalMessageId = messageData.replyTo?.messageId;
             const replyMessageWrapper = document.querySelector(`.message-wrapper[data-message-id="${messageData.replyTo?.messageId}"]`);
             const replyContent = replyMessageWrapper.querySelector(".message-content");
             if (replyMessageWrapper) {
@@ -1328,6 +1389,25 @@ async function sendMessage(roomId) {
                     }
                 }
             messageContent.appendChild(replyPreview);
+            replyPreview.onclick = function () {
+                const originalMessageId = this.getAttribute("data-original-message-id");
+                if (!originalMessageId) return;
+
+                const targetMessage = document.querySelector(`.message-wrapper[data-message-id="${originalMessageId}"]`);
+                if (!targetMessage) return;
+
+                const messageContainer = document.querySelector(".message-container");
+                if (messageContainer) {
+                    messageContainer.scrollTo({
+                        top: targetMessage.offsetTop - messageContainer.offsetTop - 12,
+                        behavior: "smooth"
+                    });
+                }
+
+                // Optional: Highlight the target message
+                targetMessage.classList.add("highlight-message");
+                setTimeout(() => targetMessage.classList.remove("highlight-message"), 1500);
+            };
         }
 
         messageContent.appendChild(textElement);
@@ -1434,6 +1514,7 @@ async function displayReadByUsersFromRooms(roomId) {
 }
 
 async function markMessagesAsRead(roomId) {
+    showLoadingChatNotification("Updating");
     const currentUserId = await fetchCurrentUserId();
     if (!currentUserId || currentUserId === -1) return;
 
@@ -1489,12 +1570,17 @@ $(document).ready(function() {
         e.stopPropagation();
         const action = $(this).data('action');
         const messageElement = $(this).closest('.message-content');
-        const messageMetadataElement = $(this).closest('.message-metadata');
-        const messageText = messageElement.find('span').html();
+
+        // Get all span elements and join their text
+        const messageText = messageElement.find('span').map(function() {
+            return $(this).html(); // Get text content of each <span>
+        }).get().join(' '); // Join all spans into a single string
 
         switch(action) {
             case 'copy':
-                navigator.clipboard.writeText(messageText);
+                navigator.clipboard.writeText(messageText).then(() => {
+                    console.log("Copied to clipboard:", messageText);
+                }).catch(err => console.error("Copy failed", err));
                 break;
             case 'forward':
                 console.log('Forward:', messageText);
@@ -1506,6 +1592,7 @@ $(document).ready(function() {
 
         $(this).closest('.message-actions-menu').hide();
     });
+
 });
 
 // Function to fetch the current user email
