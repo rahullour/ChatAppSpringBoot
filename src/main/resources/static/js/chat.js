@@ -392,6 +392,107 @@ function fetchInvites(endpoint) {
         });
 }
 
+let currentOpenPicker = null; // Global variable to track the currently open picker
+
+const createReactionFeature = (messageWrapper, messageData) => {
+    const messageContent = messageWrapper.querySelector(".message-content");
+
+    // Reaction button (visible on hover)
+    const reactionBtn = document.createElement("div");
+    reactionBtn.classList.add("reaction-btn");
+    reactionBtn.innerHTML = "😊"; // Smiley icon
+
+    // Reaction picker (hidden initially)
+    const reactionPicker = document.createElement("div");
+    reactionPicker.classList.add("reaction-picker", messageWrapper.classList.contains("current-user") ? "reaction-picker-right" : "reaction-picker-left");
+    const reactions = ["👍", "👌", "✔️", "😂", "😭", "❤️"];
+    reactions.forEach(reaction => {
+        const emoji = document.createElement("span");
+        emoji.textContent = reaction;
+        emoji.onclick = async () => {
+            await addReactionToMessage(messageData.messageId, reaction);
+            renderReactions(messageWrapper, messageData.messageId);
+        };
+        reactionPicker.appendChild(emoji);
+    });
+
+    // Reaction display container
+    const reactionDisplay = document.createElement("div");
+    reactionDisplay.classList.add("reaction-display");
+
+    messageContent.appendChild(reactionBtn);
+    messageContent.appendChild(reactionPicker);
+    messageContent.appendChild(reactionDisplay);
+
+    let isPickerOpen = false; // Track if picker is open
+
+    // Show/hide reaction picker on click
+    reactionBtn.onclick = (event) => {
+        // If there is already an open picker, close it
+        if (currentOpenPicker && currentOpenPicker !== reactionPicker) {
+            currentOpenPicker.style.display = "none";
+            isPickerOpen = false;
+        }
+
+        // Toggle the current picker
+        isPickerOpen = !isPickerOpen;
+        reactionPicker.style.display = isPickerOpen ? "flex" : "none";
+
+        // Update the global variable to track the currently open picker
+        currentOpenPicker = isPickerOpen ? reactionPicker : null;
+
+        // Prevent click event from propagating to document click handler
+        event.stopPropagation();
+    };
+
+    // Close the reaction picker if the user clicks anywhere outside of it
+    document.onclick = (event) => {
+        // If the click was outside of the current picker and button
+        if (currentOpenPicker && !messageWrapper.contains(event.target)) {
+            currentOpenPicker.style.display = "none";
+            isPickerOpen = false; // Ensure picker is closed when clicked outside
+            currentOpenPicker = null; // Reset the global variable
+        }
+    };
+
+    // Render existing reactions
+    renderReactions(messageWrapper, messageData.messageId);
+};
+
+
+const addReactionToMessage = async (messageId, reaction) => {
+    const messageRef = doc(db, "Messages", messageId);
+    try {
+        await updateDoc(messageRef, {
+            reactions: arrayUnion(reaction) // Adds reaction to the array
+        });
+    } catch (error) {
+        console.error("Error adding reaction:", error);
+    }
+};
+
+
+const renderReactions = async (messageWrapper, messageId) => {
+    const messageRef = doc(db, "Messages", messageId);
+    const messageDoc = await getDoc(messageRef);
+
+    if (messageDoc.exists()) {
+        const reactions = messageDoc.data().reactions || [];
+        const reactionDisplay = messageWrapper.querySelector(".reaction-display");
+        reactionDisplay.innerHTML = ""; // Clear previous reactions
+
+        if (reactions.length > 0) {
+            reactions.forEach(reaction => {
+                const emoji = document.createElement("span");
+                emoji.textContent = reaction;
+                reactionDisplay.appendChild(emoji);
+            });
+        }
+    }
+};
+
+
+
 async function displayInvites(invites, type) {
     const listId = type === 'single' ? 'single-list' : 'group-list';
     const inviteList = document.getElementById(listId);
@@ -751,6 +852,7 @@ async function handleNewMessages(snapshot, roomId) {
                         // 3. Render Attachments for this Message
                         renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent);
                         messagesContainer.appendChild(messageWrapper);
+                        createReactionFeature(messageWrapper, data);
                     }
                 } catch (e) {
                     console.error("Error fetching messages: ", e);
@@ -1129,7 +1231,7 @@ async function openChat(roomId) {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-import { writeBatch, getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { arrayUnion, writeBatch, getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 

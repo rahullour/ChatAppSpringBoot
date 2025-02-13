@@ -933,3 +933,59 @@ trix-editor .attachment{
     border-top-left-radius: 0 !important;
     border-top-right-radius: 0 !important;
 }
+
+
+/* reactions */
+
+.reaction-btn {
+    position: absolute;
+    right: -25px;
+    top: 10%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+}
+
+.message-content:hover .reaction-btn {
+    opacity: 1;
+}
+
+.reaction-picker {
+    position: absolute;
+    bottom: 100%; /* Positions the picker above the button */
+    transform: translateX(-50%);
+    background: white;
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    display: none;
+    z-index: 10;
+    gap: 5px;
+    white-space: nowrap; /* Prevents emojis from breaking into multiple lines */
+}
+
+/* Adjust left/right alignment for different users */
+.reaction-picker-left {
+    left: 0;
+    transform: translateX(-10%);
+}
+
+.reaction-picker-right {
+    right: 0;
+    transform: translateX(10%);
+}
+
+.reaction-picker span {
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+}
+
+.reaction-display {
+    display: flex !important;
+    gap: 5px;
+    margin-top: 5px;
+    font-size: 16px;
+}
