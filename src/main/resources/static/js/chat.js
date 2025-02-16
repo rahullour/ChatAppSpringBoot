@@ -101,13 +101,11 @@ window.messageReply = async function(messageId) {
                 if (attachmentsContainer) {
                     messageText.appendChild(attachmentsContainer.cloneNode(true));
                 }
-
                 // Keep `<span>` elements (actual message text)
-                const textSpans = messageContent.querySelectorAll('span');
+                const textSpans = messageContent.querySelectorAll('span:not(.reaction-picker span)');
                 textSpans.forEach(span => {
                     messageText.appendChild(span.cloneNode(true));
                 });
-
                 // Create reply preview
                 const replyPreview = document.createElement('div');
                 replyPreview.className = 'message-reply-preview active';
@@ -285,7 +283,7 @@ function centerNotification(notification) {
    const sidebarWidth = sidebar ? sidebar.offsetWidth : 0;
 
    const top = 70; // Account for scrolling
-   const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 60;
+   const left = chatRect.left + (chatRect.width / 2) - (notificationWidth / 2) + (sidebarWidth / 2) - 70;
 
    notification.style.position = 'absolute';
    notification.style.top = top + 'px';
@@ -459,13 +457,53 @@ const createReactionFeature = (messageWrapper, messageData) => {
     renderReactions(messageWrapper, messageData.messageId);
 };
 
-
 const addReactionToMessage = async (messageId, reaction) => {
-    const messageRef = doc(db, "Messages", messageId);
+    const currentUserId = await fetchCurrentUserId(); // Get the user ID
+    if (!currentUserId) {
+        console.error("User ID could not be fetched.");
+        return;
+    }
+
     try {
-        await updateDoc(messageRef, {
-            reactions: arrayUnion(reaction) // Adds reaction to the array
+        // Fetch username using the user ID
+        const usernameResponse = await fetch(`api/users/getUsername?id=${currentUserId}`);
+        if (!usernameResponse.ok) {
+            throw new Error('getUserName response was not ok');
+        }
+        const username = await usernameResponse.text();
+
+        const messageRef = doc(db, "Messages", messageId);
+
+        await runTransaction(db, async (transaction) => {
+            const messageDoc = await transaction.get(messageRef);
+            if (!messageDoc.exists()) return;
+
+            let reactions = messageDoc.data().reactions || {};
+
+            // Ensure reactions are stored as an object
+            if (Array.isArray(reactions)) {
+                reactions = {};
+            }
+
+            // If the reaction doesn't exist, create an empty array
+            if (!reactions[reaction]) {
+                reactions[reaction] = [];
+            }
+
+            // Toggle reaction: Remove if already present, otherwise add
+            if (reactions[reaction].includes(username)) {
+                reactions[reaction] = reactions[reaction].filter(user => user !== username);
+                if (reactions[reaction].length === 0) {
+                    delete reactions[reaction]; // Remove empty reactions
+                }
+            } else {
+                reactions[reaction].push(username);
+            }
+
+            transaction.update(messageRef, { reactions });
         });
+
+        renderReactions(document.querySelector(`[data-message-id="${messageId}"]`), messageId);
     } catch (error) {
         console.error("Error adding reaction:", error);
     }
@@ -477,20 +515,93 @@ const renderReactions = async (messageWrapper, messageId) => {
     const messageDoc = await getDoc(messageRef);
 
     if (messageDoc.exists()) {
-        const reactions = messageDoc.data().reactions || [];
+        let reactions = messageDoc.data().reactions || {};
+
+//        console.log("🔥 Reactions from Firestore:", reactions);
+//        console.log("🧐 Type of reactions:", typeof reactions);
+//        console.log("📌 Exact type:", Object.prototype.toString.call(reactions));
+
+        if (typeof reactions !== "object" || reactions === null || Array.isArray(reactions)) {
+            console.error("❌ Reactions format is incorrect:", reactions);
+            return;
+        }
+
         const reactionDisplay = messageWrapper.querySelector(".reaction-display");
         reactionDisplay.innerHTML = ""; // Clear previous reactions
 
-        if (reactions.length > 0) {
-            reactions.forEach(reaction => {
-                const emoji = document.createElement("span");
-                emoji.textContent = reaction;
-                reactionDisplay.appendChild(emoji);
-            });
-        }
+        // Debug each reaction entry
+        Object.entries(reactions).forEach(([reaction, usernames]) => {
+//            console.log(`➡️ Processing reaction: "${reaction}" with data:`, usernames);
+
+            if (!Array.isArray(usernames)) {
+                console.error(`⚠️ Invalid data format for reaction: "${reaction}"`, usernames);
+                return;
+            }
+
+            const emojiWrapper = document.createElement("span");
+            emojiWrapper.textContent = reaction;
+
+            // Add count if more than 1 person reacted
+            if (usernames.length > 1) {
+                const countSpan = document.createElement("sup");
+                countSpan.textContent = usernames.length;
+                emojiWrapper.appendChild(countSpan);
+            }
+
+            // Show usernames on hover
+            emojiWrapper.title = usernames.join(", ");
+
+            reactionDisplay.appendChild(emojiWrapper);
+        });
     }
 };
 
+
+const clearReactionsForAllMessages = async () => {
+    const messagesRef = collection(db, "Messages");
+    try {
+        const querySnapshot = await getDocs(messagesRef);
+
+        const batch = writeBatch(db); // Use batch for efficiency
+
+        querySnapshot.forEach((doc) => {
+            const messageRef = doc.ref;
+            batch.update(messageRef, { reactions: {} }); // Reset reactions
+        });
+
+        await batch.commit(); // Execute all updates at once
+        console.log("✅ Cleared reactions for all messages in Firestore.");
+    } catch (error) {
+        console.error("❌ Error clearing reactions for all messages:", error);
+    }
+};
+
+
+// Fetch usernames from API
+const getUserNames = async (emails) => {
+    if (!Array.isArray(emails)) {
+        console.error("Emails is not an array:", emails);
+        return [];
+    }
+
+    const usernamePromises = emails.map(async (email) => {
+        try {
+            const response = await fetch(`api/users/getUserNameByEmail?email=${email}`);
+            if (!response.ok) throw new Error('getUserNameByEmail response was not ok');
+            return await response.text();
+        } catch (error) {
+            console.error(`Failed to fetch username for ${email}:`, error);
+            return "Unknown";
+        }
+    });
+
+    return await Promise.all(usernamePromises);
+};
+
+// Mock function to get logged-in user email
+const getCurrentUserEmail = () => {
+    return "user1@example.com"; // Replace with actual authentication logic
+};
 
 
 async function displayInvites(invites, type) {
@@ -1020,6 +1131,7 @@ async function handleNewMessages(snapshot, roomId) {
                 // 3. Render Attachments for this Message
                 renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent); // Pass the attachments for this message
                 messagesContainer.appendChild(messageWrapper);
+                createReactionFeature(messageWrapper, data);
             }
             resolve();
         }
@@ -1231,7 +1343,7 @@ async function openChat(roomId) {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-import { arrayUnion, writeBatch, getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { runTransaction, arrayUnion, writeBatch, getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -1516,6 +1628,7 @@ async function sendMessage(roomId) {
         messageContent.appendChild(actionsButton);
         messageContent.appendChild(actionsMenu);
         messageWrapper.appendChild(messageContent);
+       createReactionFeature(messageWrapper, messageData);
 
         // Render attachments
         if (fileAttachments.length > 0) {
