@@ -400,14 +400,19 @@ const createReactionFeature = (messageWrapper, messageData) => {
     reactionBtn.classList.add("reaction-btn");
     reactionBtn.innerHTML = "😊"; // Smiley icon
 
+    let isPickerOpen = false; // Track if picker is open
+
     // Reaction picker (hidden initially)
     const reactionPicker = document.createElement("div");
     reactionPicker.classList.add("reaction-picker", messageWrapper.classList.contains("current-user") ? "reaction-picker-right" : "reaction-picker-left");
-    const reactions = ["👍", "👌", "✔️", "😂", "😭", "❤️"];
+    const reactions = ["👍", "👌", "🤙", "🙏", "✍️", "✅", "❌", "🎉", "🤩", "😂", "😄", "😁", "😊", "🥰", "🤗", "🫡", "😮‍💨", "🥳", "😭", "🙆", "💯", "❤️"];
     reactions.forEach(reaction => {
         const emoji = document.createElement("span");
         emoji.textContent = reaction;
         emoji.onclick = async () => {
+            currentOpenPicker.style.display = "none";
+            isPickerOpen = false; // Ensure picker is closed when clicked outside
+            currentOpenPicker = null; // Reset the global variable
             await addReactionToMessage(messageData.messageId, reaction);
             renderReactions(messageWrapper, messageData.messageId);
         };
@@ -416,13 +421,12 @@ const createReactionFeature = (messageWrapper, messageData) => {
 
     // Reaction display container
     const reactionDisplay = document.createElement("div");
-    reactionDisplay.classList.add("reaction-display");
+    reactionDisplay.classList.add("reaction-display", messageWrapper.classList.contains("current-user") ? "reaction-display-right" : "reaction-display-left");
 
     messageContent.appendChild(reactionBtn);
     messageContent.appendChild(reactionPicker);
     messageContent.appendChild(reactionDisplay);
 
-    let isPickerOpen = false; // Track if picker is open
 
     // Show/hide reaction picker on click
     reactionBtn.onclick = (event) => {
@@ -446,7 +450,7 @@ const createReactionFeature = (messageWrapper, messageData) => {
     // Close the reaction picker if the user clicks anywhere outside of it
     document.onclick = (event) => {
         // If the click was outside of the current picker and button
-        if (currentOpenPicker && !messageWrapper.contains(event.target)) {
+        if (currentOpenPicker) {
             currentOpenPicker.style.display = "none";
             isPickerOpen = false; // Ensure picker is closed when clicked outside
             currentOpenPicker = null; // Reset the global variable

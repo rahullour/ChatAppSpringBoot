@@ -392,6 +392,8 @@ trix-editor .attachment{
 
 .message-date {
     position: absolute;
+    border-radius: 2px !important;
+    padding: 0px 5px;
     top: -20px;
     right: 0;
     font-size: 0.8em;
@@ -399,7 +401,6 @@ trix-editor .attachment{
     background-color: rgba(0, 0, 0, 0.2);
     color: #fff;
     text-align: center;
-    padding: 0px 2px;
     margin: 0px;
     border-radius: 0px;
     margin-left: auto;
@@ -961,39 +962,52 @@ trix-editor .attachment{
 
 .reaction-picker {
     position: absolute;
-    bottom: 100%; /* Positions the picker above the button */
+    width: 228px;
+    overflow-y: scroll;
+    bottom: 100%;
+    top: -68px;
     transform: translateX(-50%);
     background: white;
     padding: 5px;
+    height: fit-content;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     display: none;
     z-index: 10;
     gap: 5px;
-    white-space: nowrap; /* Prevents emojis from breaking into multiple lines */
+    white-space: nowrap;
+    scrollbar-color: black grey;
+    scrollbar-width: none;
 }
 
-/* Adjust left/right alignment for different users */
+.reaction-display-left {
+    left: 0px;
+}
+
+.reaction-display-right {
+   right: 0px;
+}
+
 .reaction-picker-left {
-    left: 0;
-    transform: translateX(-10%);
+    left: 70px;
 }
 
 .reaction-picker-right {
-    right: 0;
-    transform: translateX(10%);
+   right: -115px;
 }
 
 .reaction-picker span {
     cursor: pointer;
     font-size: 18px;
     padding: 5px;
+    &:hover{
+        background-color: beige;
+    }
 }
 
 .reaction-display {
     display: flex !important;
     gap: 5px;
-    left: 0px;
     margin-top: 8px;
     padding: 0px;
     border-radius: 0px;
