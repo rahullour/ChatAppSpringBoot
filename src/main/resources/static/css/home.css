@@ -883,7 +883,7 @@ trix-editor .attachment{
 }
 
 .message-reply-reference{
-    background-color: rgb(251 251 0 / 50%);
+    background-color: rgba(113, 237, 180, 0.5);
     padding: 10px;
     cursor: pointer;
 }
