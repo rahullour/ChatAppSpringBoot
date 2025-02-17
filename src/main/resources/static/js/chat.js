@@ -531,6 +531,7 @@ const renderReactions = async (messageWrapper, messageId) => {
         }
 
         const reactionDisplay = messageWrapper.querySelector(".reaction-display");
+
         reactionDisplay.innerHTML = ""; // Clear previous reactions
 
         // Debug each reaction entry
@@ -548,6 +549,7 @@ const renderReactions = async (messageWrapper, messageId) => {
             // Add count if more than 1 person reacted
             if (usernames.length > 1) {
                 const countSpan = document.createElement("sup");
+                countSpan.classList.add("reaction-count");
                 countSpan.textContent = usernames.length;
                 emojiWrapper.appendChild(countSpan);
             }
@@ -556,6 +558,12 @@ const renderReactions = async (messageWrapper, messageId) => {
             emojiWrapper.title = usernames.join(", ");
 
             reactionDisplay.appendChild(emojiWrapper);
+            // Check if reactionDisplay contains any <span> elements
+            if (reactionDisplay.querySelector("span")) {
+                reactionDisplay.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+            } else {
+                reactionDisplay.style.backgroundColor = "transparent"; // Reset if empty
+            }
         });
     }
 };

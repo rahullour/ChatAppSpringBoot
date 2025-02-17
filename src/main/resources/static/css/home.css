@@ -86,8 +86,8 @@ body{
 .message-wrapper {
     display: flex;
     align-items: flex-start;
-    margin: 5px 0;
-    padding: 20px 40px;
+    margin: 10px 0;
+    padding: 22px 40px;
 }
 
 .current-user {
@@ -948,7 +948,7 @@ trix-editor .attachment{
     display: none;
     position: absolute;
     right: -25px;
-    top: -5px;
+    top: -12px;
     transform: translateY(-50%);
     font-size: 16px;
     cursor: pointer;
@@ -1009,10 +1009,27 @@ trix-editor .attachment{
     display: flex !important;
     gap: 5px;
     margin-top: 8px;
-    padding: 0px;
+    padding: 2px;
     border-radius: 0px;
     font-size: 17px;
     border-radius: 5px;
     display: flex;
     position: absolute;
+    span{
+        display: flex;
+    }
+    padding: 5px 5px 0px 5px;
+}
+
+.reaction-count{
+       position: relative;
+       font-size: 0.75em;
+       font-weight: bold;
+       background-color: white;
+       margin: auto;
+       height: 17px;
+       padding: 8px 0px 0px 0px;
+       text-align: center;
+       width: 17px;
+       border-radius: 50%;
 }
