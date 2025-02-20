@@ -2,6 +2,7 @@ let stompClient = null;
 let notificationCount = 0;
 let offlineNotification;
 let currentReplyMessageId = null;
+let currentEditingMessageId = null;
 
 
 window.parseDateFromHeader = function(dateString) {
@@ -101,17 +102,37 @@ window.messageReply = async function(messageId) {
                 if (attachmentsContainer) {
                     messageText.appendChild(attachmentsContainer.cloneNode(true));
                 }
-                // Keep `<span>` elements (actual message text)
-                const textSpans = messageContent.querySelectorAll('span:not(.reaction-picker span)');
-                textSpans.forEach(span => {
-                    messageText.appendChild(span.cloneNode(true));
-                });
+                // Keep `<span>` elements (actual message text) but NOT inside `.reaction-picker` or `.reaction-display`
+                const textSpans = messageContent.querySelector('span');
+                messageText.appendChild(textSpans.cloneNode(true));
+                // Find the parent div `.reaction-display`
+                const reactionDisplay = messageContent.querySelector(".reaction-display");
+
+                if (reactionDisplay) {
+                    // Clone the entire reaction-display and rename its class
+                    const reactionDisplayClone = reactionDisplay.cloneNode(true);
+                    reactionDisplayClone.classList.replace("reaction-display", "reaction-display-reply");
+                    reactionDisplayClone.classList.remove("reaction-display-right");
+
+                    // Append the modified reaction-display to messageText (after text spans)
+                    messageText.appendChild(reactionDisplayClone);
+                }
                 // Create reply preview
                 const replyPreview = document.createElement('div');
                 replyPreview.className = 'message-reply-preview active';
                 replyPreview.innerHTML = `
                     <div class="reply-container">
-                        <div class="reply-indicator">↩</div>
+                        <span class="reply-icon">
+                            <span class="reply-indicator">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="reply">
+                                   <linearGradient id="a" x1="169.657" x2="406.21" y1="131.461" y2="368.014" gradientTransform="matrix(1 0 0 -1 0 514)" gradientUnits="userSpaceOnUse">
+                                     <stop offset="0" stop-color="#332c81"></stop>
+                                     <stop offset="1" stop-color="#e21d73"></stop>
+                                   </linearGradient>
+                                   <path fill="url(#a)" d="M14.1 191.4 186 43c15-13 38.8-2.4 38.8 17.7v78.2C381.6 140.7 506 172.1 506 320.8c0 60-38.7 119.4-81.4 150.5-13.3 9.7-32.3-2.5-27.4-18.2 44.3-141.6-21-179.2-172.5-181.4v85.9c0 20.2-23.7 30.7-38.8 17.7L14.1 226.9c-10.8-9.4-10.8-26.2 0-35.5z"></path>
+                                 </svg> Replying Message
+                            </span>
+                        </span>
                         <div class="close-reply" onclick="closeReply()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20   " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -140,8 +161,6 @@ window.messageReply = async function(messageId) {
         });
 };
 
-
-
 window.closeReply = function() {
     const replyPreview = document.querySelector('.message-reply-preview');
     const editorWrapper = document.querySelector('.editor-wrapper');
@@ -152,6 +171,263 @@ window.closeReply = function() {
         currentReplyMessageId = null;
     }
 };
+
+window.editMessage = async function (messageId) {
+    const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageWrapper) return;
+
+    const messageContent = messageWrapper.querySelector(".message-content");
+    const editorWrapper = document.querySelector(".editor-wrapper");
+    const trixEditor = document.querySelector("trix-editor");
+    const messageHiddenInput = document.getElementById("message-content");
+
+    // Prevent multiple edits at once
+    const existingPreview = document.querySelector(".message-edit-preview");
+    if (existingPreview) {
+        existingPreview.remove();
+    }
+
+    // Extract sender name from metadata
+    const senderIdMatch = messageWrapper.querySelector(".message-metadata")?.innerText.match(/senderId:\s*(\d+)/);
+    if (!senderIdMatch) return;
+    const senderId = senderIdMatch[1];
+
+    try {
+        const response = await fetch(`/api/users/getUsername?id=${Number(senderId)}`);
+        if (!response.ok) throw new Error("Failed to fetch username");
+        const senderName = await response.text();
+
+        const timestamp = messageWrapper.querySelector(".message-date")?.textContent || "Unknown Time"; // Extract timestamp
+
+        // Extract message text (including rich text formatting)
+        const textSpan = messageContent.querySelector('span');
+        const messageHtml = textSpan.cloneNode(true);
+        // Extract attachments and remove the image hover text
+        const attachmentsContainer = messageContent.querySelector(".attachments-container");
+        let attachmentsHtml = "";
+        if (attachmentsContainer) {
+            // Remove image hover text before adding to the Trix editor
+            const imageWrappers = attachmentsContainer.querySelectorAll(".image-wrapper");
+            imageWrappers.forEach(wrapper => {
+                const hoverText = wrapper.querySelector(".image-hover-text");
+                if (hoverText) {
+                    hoverText.remove(); // Remove the "Preview Image" text
+                }
+            });
+            attachmentsHtml = attachmentsContainer.outerHTML;
+        }
+
+        // Load message content (with attachments) into the Trix editor
+        const fullContent = messageHtml.innerHTML + attachmentsHtml;
+        trixEditor.editor.loadHTML(fullContent);
+
+        // Create Edit Preview (Styled Similar to Reply)
+        const editPreview = document.createElement("div");
+        editPreview.className = "message-edit-preview active";
+        editPreview.innerHTML = `
+            <div class="edit-container">
+                <div class="edit-header">
+                    <span class="edit-icon">✏️ Editing Message</span>
+                    <button class="close-edit" onclick="closeEdit()">✖</button>
+                </div>
+                <div class="edit-meta">
+                    <strong>${senderName}</strong> • <span>${timestamp}</span>
+                </div>
+                <div class="edit-preview-content">${messageHtml.innerHTML}</div>
+            </div>
+        `;
+
+        // Insert preview before editor
+        editorWrapper.insertBefore(editPreview, editorWrapper.firstChild);
+        editorWrapper.classList.add("edit-active");
+
+        // Store editing message ID
+        currentEditingMessageId = messageId;
+
+        // Focus the editor
+        trixEditor.focus();
+    } catch (error) {
+        console.error("Error fetching username:", error);
+    }
+};
+
+window.saveEditedMessage = async function () {
+    if (!currentEditingMessageId) return;
+
+    const messageWrapper = document.querySelector(`[data-message-id="${currentEditingMessageId}"]`);
+    if (!messageWrapper) return;
+
+    const trixEditor = document.querySelector("trix-editor");
+    const messageContent = messageWrapper.querySelector(".message-content");
+
+     // Get the formatted message content
+    let newMessageHtml = trixEditor.firstChild.outerHTML;
+
+    // Step 1: Create a temporary container to parse the HTML string
+    const tempContainer = document.createElement('div');
+    tempContainer.innerHTML = newMessageHtml;
+
+    // Step 2: Extract content before the first <span>
+    const contentBeforeSpan = tempContainer.innerHTML.split('<span')[0];
+
+    // Step 3: Create a new div element and set its inner HTML
+    let newSpan = document.createElement('span');
+    newSpan.innerHTML = contentBeforeSpan;
+    newMessageHtml = newSpan.outerHTML;
+
+    if (newMessageHtml === "") {
+        alert("Message cannot be empty!");
+        return;
+    }
+
+    let textContent = messageContent.querySelector("span");
+    textContent.innerHTML = newMessageHtml.innerHTML;
+
+    const attachments = trixEditor.editor.getDocument().getAttachments();
+    const fileAttachments = attachments.filter(attachment => attachment.file);
+
+    closeEdit();
+
+    if (fileAttachments.length > 5) {
+        showAttachmentLimitNotification();
+        return;
+    }
+
+    try {
+        const senderId = await fetch(`/api/users/currentUser/getId`)
+            .then(response => response.json())
+            .catch(error => {
+                console.error('Error fetching current user', error);
+                return -1;
+            });
+        if (senderId === -1) return;
+
+        const batch = writeBatch(db);
+        const messageRef = doc(db, "Messages", currentEditingMessageId);
+        batch.update(messageRef, { text: newMessageHtml });
+
+        // Fetch existing attachments from Firebase
+        const existingAttachmentsSnapshot = await getDocs(
+            query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
+        );
+        const existingAttachments = existingAttachmentsSnapshot.docs.map(doc => ({
+            docId: doc.id, // Store Firestore document ID separately
+            ...doc.data()
+        }));
+        // Extract preview URLs from attachments
+        const previewUrls = new Set(
+            attachments.map(att => att.getAttributes().url ? att.getAttributes().url.trim().toLowerCase() : "")
+        );
+
+        const deletedAttachments = previewUrls.size == 0 ? existingAttachments : existingAttachments.filter(att => previewUrls.size > 0 && !previewUrls.has(att.downloadUrl.trim().toLowerCase()));
+        // Ensure deletedAttachments has the correct IDs
+        console.log("Deleted Attachments:", deletedAttachments);
+
+        await Promise.all(deletedAttachments.map(async (attachment) => {
+            batch.delete(doc(db, "Attachments", attachment.docId)); // Use Firestore doc ID
+            await fetch(`/api/files/delete?fileName=${encodeURIComponent(attachment.fileName)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+        }));
+
+        // Upload new attachments
+        if (fileAttachments.length > 0) {
+            await Promise.all(
+                fileAttachments.map(async (attachment) => {
+                    const file = attachment.file;
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error(`Upload failed! Status: ${response.status}`);
+                        const downloadUrl = await response.text();
+
+                        const attachmentData = {
+                            messageId: currentEditingMessageId,
+                            senderId: senderId,
+                            fileName: file.name,
+                            fileSize: file.size,
+                            fileType: file.type,
+                            downloadUrl: downloadUrl,
+                            timestamp: new Date()
+                        };
+                        batch.set(doc(collection(db, "Attachments")), attachmentData);
+                    } catch (error) {
+                        console.error("Error uploading to backend:", error);
+                    }
+                })
+            );
+        }
+
+        await batch.commit();
+
+        // Refetch updated attachments before rendering
+        const updatedAttachmentsSnapshot = await getDocs(
+            query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
+        );
+        const updatedAttachments = updatedAttachmentsSnapshot.docs.map(doc => doc.data());
+        renderAttachments(updatedAttachments, messageContent);
+        hideLoadingChatNotification();
+        currentEditingMessageId = null;
+        console.log("✅ Message updated successfully");
+    } catch (error) {
+        console.error("❌ Error updating message:", error);
+    }
+};
+
+// Close edit preview
+window.closeEdit = function () {
+    const editPreview = document.querySelector(".message-edit-preview");
+    const editorWrapper = document.querySelector(".editor-wrapper");
+
+    if (editPreview) {
+        editPreview.remove();
+        editorWrapper.classList.remove("edit-active");
+        const trixEditor = document.querySelector("trix-editor");
+        trixEditor.editor.loadHTML("");
+    }
+};
+
+window.deleteMessage = async function (messageId) {
+    if (!messageId) return;
+    try {
+        const batch = writeBatch(db);
+
+        // Delete message from Firebase
+        const messageRef = doc(db, "Messages", messageId);
+        batch.delete(messageRef);
+
+        // Fetch and delete attachments
+        const attachmentsSnapshot = await getDocs(
+            query(collection(db, "Attachments"), where("messageId", "==", messageId))
+        );
+        const attachments = attachmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        await Promise.all(attachments.map(async (attachment) => {
+            batch.delete(doc(db, "Attachments", attachment.id));
+            await fetch(`/api/files/delete?fileName=${encodeURIComponent(attachment.fileName)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+        }));
+
+        await batch.commit();
+
+        // Remove message from DOM
+        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (messageElement) {
+            messageElement.remove();
+        }
+
+        console.log("✅ Message and attachments deleted successfully");
+    } catch (error) {
+        console.error("❌ Error deleting message:", error);
+    }
+};
+
+
 
 
 function connectWebSocket() {
@@ -920,6 +1196,15 @@ async function handleNewMessages(snapshot, roomId) {
                         const actionsMenu = document.createElement("div");
                         actionsMenu.classList.add("message-actions-menu");
                         actionsMenu.innerHTML = `
+                            <div class="action-item ${messageWrapper.classList.contains('current-user') ? '' : 'd-none'}"
+                                 data-action="edit"
+                                 onclick="editMessage('${data.messageId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                                </svg>
+                                Edit
+                            </div>
                             <div class="action-item" data-action="copy">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -932,6 +1217,16 @@ async function handleNewMessages(snapshot, roomId) {
                                     <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
                                 </svg>
                                 Reply
+                            </div>
+                            <div class="action-item delete-chat" data-action="delete" onclick="deleteMessage('${data.messageId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    <path d="M10 11v6"></path>
+                                    <path d="M14 11v6"></path>
+                                    <path d="M5 6h14l-1 14H6Z"></path>
+                                </svg>
+                                Delete
                             </div>
                         `;
 
@@ -1073,6 +1368,15 @@ async function handleNewMessages(snapshot, roomId) {
                 const actionsMenu = document.createElement("div");
                 actionsMenu.classList.add("message-actions-menu");
                 actionsMenu.innerHTML = `
+                    <div class="action-item ${messageWrapper.classList.contains('current-user') ? '' : 'd-none'}"
+                         data-action="edit"
+                         onclick="editMessage('${data.messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                        </svg>
+                        Edit
+                    </div>
                     <div class="action-item" data-action="copy">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1085,6 +1389,16 @@ async function handleNewMessages(snapshot, roomId) {
                             <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
                         </svg>
                         Reply
+                    </div>
+                    <div class="action-item delete-chat" data-action="delete" onclick="deleteMessage('${data.messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M5 6h14l-1 14H6Z"></path>
+                        </svg>
+                        Delete
                     </div>
                 `;
 
@@ -1184,12 +1498,19 @@ async function fetchAttachmentsForMessages(messageIds) {
 }
 
 function renderAttachments(attachments, messageContent) {
+    // Remove existing attachments container if it exists
+    const existingAttachments = messageContent.querySelector(".attachments-container");
+    if (existingAttachments) {
+        existingAttachments.remove();
+    }
+
     if (!attachments || attachments.length === 0) {
         return;
     }
 
     const AttachmentsBox = document.createElement("div");
     AttachmentsBox.classList.add("attachments-container");
+    const messageWrapper = messageContent.closest('.message-wrapper');
 
     // Store all images from all message contents globally
     attachments.forEach(attachment => {
@@ -1222,10 +1543,13 @@ function renderAttachments(attachments, messageContent) {
             AttachmentsBox.appendChild(fileLink);
         }
     });
-
-    messageContent.appendChild(AttachmentsBox);
-    const messageWrapper = messageContent.closest('.message-wrapper');
-
+    const reactionDisplay = messageContent.querySelector(".reaction-display");
+    if (reactionDisplay) {
+        messageContent.insertBefore(AttachmentsBox, reactionDisplay);
+    } else {
+//        console.log("No .reaction-display found! Appending attachment at the end.");
+        messageContent.appendChild(AttachmentsBox);
+    }
     if (messageWrapper) {
         const messageId = messageWrapper.getAttribute('data-message-id'); // Get message ID
 
@@ -1233,18 +1557,23 @@ function renderAttachments(attachments, messageContent) {
         const actionsMenu = messageContent.querySelector('.message-actions-menu');
 
         if (actionsMenu) {
-            // Append the new action item
-            actionsMenu.innerHTML += `
-                <div class="action-item" data-action="download" onclick="downloadFile('${messageId}')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download Attachments
-                </div>
-            `;
+            const existingActionItem = actionsMenu.querySelector('.action-item[data-action="download"]');
+
+            if (!existingActionItem) {
+                // Append the new action item if it doesn't exist
+                actionsMenu.innerHTML += `
+                    <div class="action-item" data-action="download" onclick="downloadFile('${messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download Attachments
+                    </div>
+                `;
+            }
         }
+
     }
 }
 
@@ -1355,20 +1684,20 @@ async function openChat(roomId) {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-import { runTransaction, arrayUnion, writeBatch, getFirestore, collection, getDocs, getDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import { runTransaction, arrayUnion, writeBatch, getFirestore, collection, getDocs, getDoc, deleteDoc, doc, addDoc, query, orderBy, where, limit, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBGhQf-pYZx3ed6FASGo55RkrcVYS_SrIk",
-  authDomain: "wechat-5e447.firebaseapp.com",
-  projectId: "wechat-5e447",
-  storageBucket: "wechat-5e447.appspot.com",
-  messagingSenderId: "97550275374",
-  appId: "1:97550275374:web:bae6cd2ecd5f77bad160bf",
-  measurementId: "G-WCTTEX1QHQ"
+  apiKey: "AIzaSyA7bzHTKqFCMSzZfgNYWUC7Nf_RjJk_ALQ",
+  authDomain: "wechat-ec503.firebaseapp.com",
+  projectId: "wechat-ec503",
+  storageBucket: "wechat-ec503.firebasestorage.app",
+  messagingSenderId: "416052037332",
+  appId: "1:416052037332:web:c1880edd4030a59aa51d41",
+  measurementId: "G-6HPJM7WKSM"
 };
 
 // Initialize Firebase
@@ -1411,266 +1740,289 @@ function showAttachmentLimitNotification() {
 
 // Function to send a message
 async function sendMessage(roomId) {
-    const messageContentInput = document.getElementById("message-content");
-    const trixEditor = document.querySelector("trix-editor");
+    if(currentEditingMessageId == null){
+        const messageContentInput = document.getElementById("message-content");
+            const trixEditor = document.querySelector("trix-editor");
 
-    if (!messageContentInput) {
-        console.error("message-content element not found in the DOM.");
-        return;
-    }
+            if (!messageContentInput) {
+                console.error("message-content element not found in the DOM.");
+                return;
+            }
+            let messageText = messageContentInput.value;
 
-    let messageText = messageContentInput.value;
+            // Attachment Handling
+            const attachments = trixEditor.editor.getDocument().getAttachments();
+            const fileAttachments = attachments.filter(attachment => attachment.file);
+            // Show error notification if more than 4 attachments
+            if (fileAttachments.length > 5) {
+                showAttachmentLimitNotification();
+                return;
+            }
+            if (!messageText && fileAttachments.length === 0) return;
 
-    // Attachment Handling
-    const attachments = trixEditor.editor.getDocument().getAttachments();
-    const fileAttachments = attachments.filter(attachment => attachment.file);
-    // Show error notification if more than 4 attachments
-    if (fileAttachments.length > 5) {
-        showAttachmentLimitNotification();
-        return;
-    }
-    if (!messageText && fileAttachments.length === 0) return;
+            const messagesContainer = document.getElementById("messages");
 
-    const messagesContainer = document.getElementById("messages");
+            try {
+                const senderId = await fetch(`/api/users/currentUser/getId`)
+                    .then(response => response.json())
+                    .catch(error => {
+                        console.error('Error fetching current user', error);
+                        return -1;
+                    });
 
-    try {
-        const senderId = await fetch(`/api/users/currentUser/getId`)
-            .then(response => response.json())
-            .catch(error => {
-                console.error('Error fetching current user', error);
-                return -1;
-            });
+                if (senderId === -1) {
+                    console.error("Could not get user ID");
+                    return;
+                }
 
-        if (senderId === -1) {
-            console.error("Could not get user ID");
-            return;
-        }
+                const messageRef = doc(collection(db, "Messages"));
+                const messageId = messageRef.id;
 
-        const messageRef = doc(collection(db, "Messages"));
-        const messageId = messageRef.id;
+                // Create message data with reply information if exists
+                const messageData = {
+                    roomId: roomId,
+                    senderId: senderId,
+                    text: messageText,
+                    timestamp: new Date(),
+                    messageId: messageId,
+                    replyTo: currentReplyMessageId ? {
+                        messageId: currentReplyMessageId,
+                        timestamp: new Date()
+                    } : null
+                };
 
-        // Create message data with reply information if exists
-        const messageData = {
-            roomId: roomId,
-            senderId: senderId,
-            text: messageText,
-            timestamp: new Date(),
-            messageId: messageId,
-            replyTo: currentReplyMessageId ? {
-                messageId: currentReplyMessageId,
-                timestamp: new Date()
-            } : null
-        };
+                const batch = writeBatch(db);
+                batch.set(messageRef, messageData);
 
-        const batch = writeBatch(db);
-        batch.set(messageRef, messageData);
+                // Upload Attachments to Backend
+                if (fileAttachments.length > 0) {
+                    await Promise.all(
+                        fileAttachments.map(async (attachment, index) => {
+                            const file = attachment.file;
 
-        // Upload Attachments to Backend
-        if (fileAttachments.length > 0) {
-            await Promise.all(
-                fileAttachments.map(async (attachment, index) => {
-                    const file = attachment.file;
+                            try {
+                                const formData = new FormData();
+                                formData.append('file', file);
 
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', file);
+                                const response = await fetch('/api/files/upload', {
+                                    method: 'POST',
+                                    body: formData
+                                });
 
-                        const response = await fetch('/api/files/upload', {
-                            method: 'POST',
-                            body: formData
-                        });
+                                if (!response.ok) {
+                                    console.error("Error uploading to backend:", response.status, response.statusText);
+                                    throw new Error(`HTTP error! Status: ${response.status}`);
+                                }
 
-                        if (!response.ok) {
-                            console.error("Error uploading to backend:", response.status, response.statusText);
-                            throw new Error(`HTTP error! Status: ${response.status}`);
+                                const downloadUrl = await response.text();
+
+                                const attachmentData = {
+                                    messageId: messageId,
+                                    senderId: senderId,
+                                    fileName: file.name,
+                                    fileSize: file.size,
+                                    fileType: file.type,
+                                    downloadUrl: downloadUrl,
+                                    timestamp: new Date()
+                                };
+
+                                const attachmentRef = doc(collection(db, "Attachments"));
+                                batch.set(attachmentRef, attachmentData);
+
+                            } catch (uploadError) {
+                                console.error("Error uploading to backend:", uploadError);
+                            }
+                        })
+                    );
+                }
+
+                // Clear editor and input
+                trixEditor.editor.loadHTML("");
+                messageContentInput.value = "";
+
+                // Create message element
+                const messageElement = document.createElement("div");
+                const isCurrentUser = true;
+
+                const messageWrapper = document.createElement("div");
+                messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+                messageWrapper.setAttribute("data-message-id", messageData.messageId);
+
+                // Add metadata div
+                const hiddenDataDiv = document.createElement("div");
+                hiddenDataDiv.classList.add("message-metadata");
+                hiddenDataDiv.style.display = "none";
+                hiddenDataDiv.dataset.messageId = messageData.messageId;
+                hiddenDataDiv.dataset.senderId = messageData.senderId;
+                messageElement.dataset.timestamp = new Date().getTime();
+                hiddenDataDiv.textContent = `messageId: ${messageData.messageId}, senderId: ${messageData.senderId}`;
+                messageWrapper.appendChild(hiddenDataDiv);
+
+                const messageContent = document.createElement("div");
+                messageContent.classList.add("message-content");
+
+                // Add message actions button
+                const actionsButton = document.createElement("div");
+                actionsButton.classList.add("message-actions-btn");
+                actionsButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1"></circle>
+                        <circle cx="12" cy="5" r="1"></circle>
+                        <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                `;
+
+                const actionsMenu = document.createElement("div");
+                actionsMenu.classList.add("message-actions-menu");
+                actionsMenu.innerHTML = `
+                    <div class="action-item ${messageWrapper.classList.contains('current-user') ? '' : 'd-none'}"
+                         data-action="edit"
+                         onclick="editMessage('${messageData.messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                        </svg>
+                        Edit
+                    </div>
+                    <div class="action-item" data-action="copy">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy Text
+                    </div>
+                    <div class="action-item" data-action="reply" onclick="messageReply('${messageData.messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
+                        </svg>
+                        Reply
+                    </div>
+                    <div class="action-item delete-chat" data-action="delete" onclick="deleteMessage('${messageData.messageId}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M5 6h14l-1 14H6Z"></path>
+                        </svg>
+                        Delete
+                    </div>
+                `;
+
+                // Handle date display
+                const messageDate = new Date(messageData.timestamp);
+                const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+
+                // Find last date header
+                const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
+                let lastDisplayedDate = lastDateHeader ? parseDateFromHeader(lastDateHeader.textContent) : null;
+
+                const displayDateHeader = !lastDisplayedDate ||
+                    messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
+
+                if (displayDateHeader) {
+                    lastDisplayedDate = messageDate;
+                    const dateHeader = document.createElement("h4");
+                    dateHeader.classList.add("date-header");
+                    const month = messageDate.toLocaleString('default', { month: 'long' });
+                    dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                    messagesContainer.appendChild(dateHeader);
+                }
+
+                let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+                const dateElement = document.createElement("div");
+                dateElement.classList.add("message-date");
+                dateElement.textContent = dateDisplay;
+                messageContent.appendChild(dateElement);
+
+                const textElement = document.createElement("span");
+                textElement.innerHTML = messageData.text;
+
+                // Add reply preview if it exists
+                if (messageData.replyTo) {
+                    const replyPreview = document.createElement("div");
+                    replyPreview.classList.add("message-reply-reference");
+                    replyPreview.dataset.originalMessageId = messageData.replyTo?.messageId;
+                    const replyMessageWrapper = document.querySelector(`.message-wrapper[data-message-id="${messageData.replyTo?.messageId}"]`);
+                    const replyContent = replyMessageWrapper.querySelector(".message-content");
+                    if (replyMessageWrapper) {
+                            // Extract only the `.attachments-container`, spans
+                            const attachmentsContainer = replyMessageWrapper.querySelector(".attachments-container");
+                            const textContent = replyMessageWrapper.querySelector("span");
+
+                            const replyIndicator = document.createElement("div");
+                            replyIndicator.classList.add("reply-indicator");
+                            replyIndicator.innerHTML = "↩";
+                            replyPreview.appendChild(replyIndicator);
+                            if (attachmentsContainer) {
+                                replyPreview.appendChild(attachmentsContainer.cloneNode(true));
+                            }
+                            if (textContent) {
+                                replyPreview.appendChild(textContent.cloneNode(true));
+                            }
+                        }
+                    messageContent.appendChild(replyPreview);
+                    replyPreview.onclick = function () {
+                        const originalMessageId = this.getAttribute("data-original-message-id");
+                        if (!originalMessageId) return;
+
+                        const targetMessage = document.querySelector(`.message-wrapper[data-message-id="${originalMessageId}"]`);
+                        if (!targetMessage) return;
+
+                        const messageContainer = document.querySelector(".message-container");
+                        if (messageContainer) {
+                            messageContainer.scrollTo({
+                                top: targetMessage.offsetTop - messageContainer.offsetTop - 12,
+                                behavior: "smooth"
+                            });
                         }
 
-                        const downloadUrl = await response.text();
-
-                        const attachmentData = {
-                            attachmentId: doc(collection(db, "Attachments")).id,
-                            messageId: messageId,
-                            senderId: senderId,
-                            fileName: file.name,
-                            fileSize: file.size,
-                            fileType: file.type,
-                            downloadUrl: downloadUrl,
-                            timestamp: new Date()
-                        };
-
-                        const attachmentRef = doc(collection(db, "Attachments"));
-                        batch.set(attachmentRef, attachmentData);
-
-                    } catch (uploadError) {
-                        console.error("Error uploading to backend:", uploadError);
-                    }
-                })
-            );
-        }
-
-        // Clear editor and input
-        trixEditor.editor.loadHTML("");
-        messageContentInput.value = "";
-
-        // Create message element
-        const messageElement = document.createElement("div");
-        const isCurrentUser = true;
-
-        const messageWrapper = document.createElement("div");
-        messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-        messageWrapper.setAttribute("data-message-id", messageData.messageId);
-
-        // Add metadata div
-        const hiddenDataDiv = document.createElement("div");
-        hiddenDataDiv.classList.add("message-metadata");
-        hiddenDataDiv.style.display = "none";
-        hiddenDataDiv.dataset.messageId = messageData.messageId;
-        hiddenDataDiv.dataset.senderId = messageData.senderId;
-        messageElement.dataset.timestamp = new Date().getTime();
-        hiddenDataDiv.textContent = `messageId: ${messageData.messageId}, senderId: ${messageData.senderId}`;
-        messageWrapper.appendChild(hiddenDataDiv);
-
-        const messageContent = document.createElement("div");
-        messageContent.classList.add("message-content");
-
-        // Add message actions button
-        const actionsButton = document.createElement("div");
-        actionsButton.classList.add("message-actions-btn");
-        actionsButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="1"></circle>
-                <circle cx="12" cy="5" r="1"></circle>
-                <circle cx="12" cy="19" r="1"></circle>
-            </svg>
-        `;
-
-        const actionsMenu = document.createElement("div");
-        actionsMenu.classList.add("message-actions-menu");
-        actionsMenu.innerHTML = `
-            <div class="action-item" data-action="copy">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copy Text
-            </div>
-            <div class="action-item" data-action="reply" onclick="messageReply('${messageData.messageId}')">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
-                </svg>
-                Reply
-            </div>
-        `;
-
-        // Handle date display
-        const messageDate = new Date(messageData.timestamp);
-        const options = { hour: 'numeric', minute: 'numeric', hour12: true };
-
-        // Find last date header
-        const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
-        let lastDisplayedDate = lastDateHeader ? parseDateFromHeader(lastDateHeader.textContent) : null;
-
-        const displayDateHeader = !lastDisplayedDate ||
-            messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
-
-        if (displayDateHeader) {
-            lastDisplayedDate = messageDate;
-            const dateHeader = document.createElement("h4");
-            dateHeader.classList.add("date-header");
-            const month = messageDate.toLocaleString('default', { month: 'long' });
-            dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-            messagesContainer.appendChild(dateHeader);
-        }
-
-        let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-        const dateElement = document.createElement("div");
-        dateElement.classList.add("message-date");
-        dateElement.textContent = dateDisplay;
-        messageContent.appendChild(dateElement);
-
-        const textElement = document.createElement("span");
-        textElement.innerHTML = messageData.text;
-
-        // Add reply preview if it exists
-        if (messageData.replyTo) {
-            const replyPreview = document.createElement("div");
-            replyPreview.classList.add("message-reply-reference");
-            replyPreview.dataset.originalMessageId = messageData.replyTo?.messageId;
-            const replyMessageWrapper = document.querySelector(`.message-wrapper[data-message-id="${messageData.replyTo?.messageId}"]`);
-            const replyContent = replyMessageWrapper.querySelector(".message-content");
-            if (replyMessageWrapper) {
-                    // Extract only the `.attachments-container`, spans
-                    const attachmentsContainer = replyMessageWrapper.querySelector(".attachments-container");
-                    const textContent = replyMessageWrapper.querySelector("span");
-
-                    const replyIndicator = document.createElement("div");
-                    replyIndicator.classList.add("reply-indicator");
-                    replyIndicator.innerHTML = "↩";
-                    replyPreview.appendChild(replyIndicator);
-                    if (attachmentsContainer) {
-                        replyPreview.appendChild(attachmentsContainer.cloneNode(true));
-                    }
-                    if (textContent) {
-                        replyPreview.appendChild(textContent.cloneNode(true));
-                    }
-                }
-            messageContent.appendChild(replyPreview);
-            replyPreview.onclick = function () {
-                const originalMessageId = this.getAttribute("data-original-message-id");
-                if (!originalMessageId) return;
-
-                const targetMessage = document.querySelector(`.message-wrapper[data-message-id="${originalMessageId}"]`);
-                if (!targetMessage) return;
-
-                const messageContainer = document.querySelector(".message-container");
-                if (messageContainer) {
-                    messageContainer.scrollTo({
-                        top: targetMessage.offsetTop - messageContainer.offsetTop - 12,
-                        behavior: "smooth"
-                    });
+                        // Optional: Highlight the target message
+                        targetMessage.classList.add("highlight-message");
+                        setTimeout(() => targetMessage.classList.remove("highlight-message"), 1500);
+                    };
                 }
 
-                // Optional: Highlight the target message
-                targetMessage.classList.add("highlight-message");
-                setTimeout(() => targetMessage.classList.remove("highlight-message"), 1500);
-            };
-        }
+                messageContent.appendChild(textElement);
+                messageContent.appendChild(actionsButton);
+                messageContent.appendChild(actionsMenu);
+                messageWrapper.appendChild(messageContent);
+               createReactionFeature(messageWrapper, messageData);
 
-        messageContent.appendChild(textElement);
-        messageContent.appendChild(actionsButton);
-        messageContent.appendChild(actionsMenu);
-        messageWrapper.appendChild(messageContent);
-       createReactionFeature(messageWrapper, messageData);
+                // Render attachments
+                if (fileAttachments.length > 0) {
+                    const attachmentsData = fileAttachments.map(attachment => ({
+                        fileType: attachment.file.type,
+                        downloadUrl: URL.createObjectURL(attachment.file),
+                        fileName: attachment.file.name
+                    }));
+                    renderAttachments(attachmentsData, messageContent);
+                }
 
-        // Render attachments
-        if (fileAttachments.length > 0) {
-            const attachmentsData = fileAttachments.map(attachment => ({
-                fileType: attachment.file.type,
-                downloadUrl: URL.createObjectURL(attachment.file),
-                fileName: attachment.file.name
-            }));
-            renderAttachments(attachmentsData, messageContent);
-        }
+                messagesContainer.appendChild(messageWrapper);
 
-        messagesContainer.appendChild(messageWrapper);
+                // Scroll to bottom and clear reply preview
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                closeReply();
 
-        // Scroll to bottom and clear reply preview
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        closeReply();
+                // Update Firebase
+                markMessagesAsRead(localStorage.getItem("roomId"));
+                await batch.commit();
 
-        // Update Firebase
-        markMessagesAsRead(localStorage.getItem("roomId"));
-        await batch.commit();
-
-        console.log("Document written");
-    } catch (e) {
-        console.error("Error adding document: ", e);
+                console.log("Document written");
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+    }
+    else{
+        showLoadingChatNotification("Loading");
+        saveEditedMessage();
     }
 }
 
 async function showReadyByImages(roomSnapshot, currentUserId){
     const messagesContainer = document.getElementById("messages");
-    if (!messagesContainer) return;
+    if (!messagesContainer || roomSnapshot.data() == undefined) return;
     const roomData = roomSnapshot.data();
     const lastReadMessageIdData = roomData.lastReadMessageId || {};
 

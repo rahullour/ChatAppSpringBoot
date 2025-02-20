@@ -107,7 +107,7 @@ public class SecurityConfig {
                 .logout(logout -> logout.permitAll())
                 .oauth2Login(Customizer.withDefaults())
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/files/upload")
+                        .ignoringRequestMatchers("/api/files/upload", "/api/files/delete")
                 );
         return http.build();
     }

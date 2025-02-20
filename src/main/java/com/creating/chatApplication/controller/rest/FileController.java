@@ -1,5 +1,6 @@
 package com.creating.chatApplication.controller.rest;
 
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
@@ -64,4 +65,20 @@ public class FileController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PostMapping("/delete")
+    public ResponseEntity<Void> deleteFile(@RequestParam String fileName) {
+        try {
+            // Get object key using fileName from Firebase Attachments collection
+            String objectKey = fileService.getObjectKeyFromFileName(fileName);
+
+            // Delete file from Cloudflare R2
+            fileService.getR2Client().deleteObject(new DeleteObjectRequest(fileService.getBucket(), objectKey));
+
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
 }
