@@ -261,27 +261,37 @@ window.saveEditedMessage = async function () {
     const messageContent = messageWrapper.querySelector(".message-content");
 
      // Get the formatted message content
-    let newMessageHtml = trixEditor.firstChild.outerHTML;
+    const messageContentInput = document.getElementById("message-content");
+    let newMessageHtml = messageContentInput.value;
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = newMessageHtml;
 
-    // Step 1: Create a temporary container to parse the HTML string
-    const tempContainer = document.createElement('div');
-    tempContainer.innerHTML = newMessageHtml;
+    // Remove all <figure> elements
+    const figureElements = tempDiv.querySelectorAll('figure');
+    figureElements.forEach(figure => {
+        figure.remove();
+    });
 
-    // Step 2: Extract content before the first <span>
-    const contentBeforeSpan = tempContainer.innerHTML.split('<span')[0];
+    // Remove empty div elements
+    const divElements = tempDiv.querySelectorAll('div');
+    divElements.forEach(div => {
+        if (div.innerHTML.trim() === '') {
+            div.remove();
+        }
+    });
 
-    // Step 3: Create a new div element and set its inner HTML
-    let newSpan = document.createElement('span');
-    newSpan.innerHTML = contentBeforeSpan;
-    newMessageHtml = newSpan.outerHTML;
-
+    // Get the modified HTML without <figure> elements
+    newMessageHtml = tempDiv.innerHTML;
     if (newMessageHtml === "") {
         alert("Message cannot be empty!");
         return;
     }
 
     let textContent = messageContent.querySelector("span");
-    textContent.innerHTML = newMessageHtml.innerHTML;
+    // convert to html
+    const tempDiv2 = document.createElement('div');
+    tempDiv2.innerHTML = newMessageHtml;
+    textContent.innerHTML = tempDiv2.innerHTML;
 
     const attachments = trixEditor.editor.getDocument().getAttachments();
     const fileAttachments = attachments.filter(attachment => attachment.file);
@@ -1759,7 +1769,9 @@ async function sendMessage(roomId) {
                 return;
             }
             if (!messageText && fileAttachments.length === 0) return;
-
+            // Clear editor and input
+            trixEditor.editor.loadHTML("");
+            messageContentInput.value = "";
             const messagesContainer = document.getElementById("messages");
 
             try {
@@ -1836,11 +1848,7 @@ async function sendMessage(roomId) {
                     );
                 }
 
-                // Clear editor and input
-                trixEditor.editor.loadHTML("");
-                messageContentInput.value = "";
-
-                // Create message element
+                 // Create message element
                 const messageElement = document.createElement("div");
                 const isCurrentUser = true;
 
@@ -1947,16 +1955,16 @@ async function sendMessage(roomId) {
                     const replyContent = replyMessageWrapper.querySelector(".message-content");
                     if (replyMessageWrapper) {
                             // Extract only the `.attachments-container`, spans
-                            const attachmentsContainer = replyMessageWrapper.querySelector(".attachments-container");
+//                            const attachmentsContainer = replyMessageWrapper.querySelector(".attachments-container");
                             const textContent = replyMessageWrapper.querySelector("span");
 
                             const replyIndicator = document.createElement("div");
                             replyIndicator.classList.add("reply-indicator");
                             replyIndicator.innerHTML = "↩";
                             replyPreview.appendChild(replyIndicator);
-                            if (attachmentsContainer) {
-                                replyPreview.appendChild(attachmentsContainer.cloneNode(true));
-                            }
+//                            if (attachmentsContainer) {
+//                                replyPreview.appendChild(attachmentsContainer.cloneNode(true));
+//                            }
                             if (textContent) {
                                 replyPreview.appendChild(textContent.cloneNode(true));
                             }
