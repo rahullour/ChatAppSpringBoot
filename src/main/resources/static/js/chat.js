@@ -1722,7 +1722,6 @@ async function openChat(roomId) {
               messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
               currentDeletingMessageId = null;
-              currentEditingMessageId = null;
           });
       });
     });
@@ -1809,7 +1808,7 @@ function showAttachmentLimitNotification() {
 
 // Function to send a message
 async function sendMessage(roomId) {
-    if(currentEditingMessageId == null){
+    if(currentReplyMessageId != null){
         const messageContentInput = document.getElementById("message-content");
             const trixEditor = document.querySelector("trix-editor");
 
@@ -2080,6 +2079,7 @@ async function sendMessage(roomId) {
             } catch (e) {
                 console.error("Error adding document: ", e);
             }
+            currentReplyMessageId = null;
     }
     else{
         showLoadingChatNotification("Loading");
