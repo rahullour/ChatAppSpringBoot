@@ -3,7 +3,7 @@ let notificationCount = 0;
 let offlineNotification;
 let currentReplyMessageId = null;
 let currentEditingMessageId = null;
-
+let currentDeletingMessageId = null;
 
 window.parseDateFromHeader = function(dateString) {
     try {
@@ -377,7 +377,6 @@ window.saveEditedMessage = async function () {
         const updatedAttachments = updatedAttachmentsSnapshot.docs.map(doc => doc.data());
         renderAttachments(updatedAttachments, messageContent);
         hideLoadingChatNotification();
-        currentEditingMessageId = null;
         console.log("✅ Message updated successfully");
     } catch (error) {
         console.error("❌ Error updating message:", error);
@@ -399,6 +398,7 @@ window.closeEdit = function () {
 
 window.deleteMessage = async function (messageId) {
     if (!messageId) return;
+    currentDeletingMessageId = messageId
     try {
         const batch = writeBatch(db);
 
@@ -1128,12 +1128,6 @@ async function handleNewMessages(snapshot, roomId) {
             // Set a new timeout
             displayMessagesTimeout = setTimeout(async () => {
                 console.log("displaying messages");
-                // Check if chat is open for the roomId
-                if (localStorage.getItem("roomId") != roomId) {
-                    console.log("Chat is open for a different room, setting new message count");
-                    showNotificationToast('You have new messages in other chats');
-                    return;
-                }
                 try {
                     // Get a reference to the Messages collection and order by timestamp in ascending order
                     const messagesQuery = query(
@@ -1649,6 +1643,18 @@ function openImagePreview(currentImageUrl) {
     }
 }
 
+
+// Function to fetch rooms where the current user is a member
+async function fetchCurrentUserRooms() {
+  const currentUserId = await fetchCurrentUserId();
+  const roomsRef = collection(db, "Rooms");
+  const roomsQuery = query(roomsRef, where("userIds", "array-contains", currentUserId));
+  const roomsSnapshot = await getDocs(roomsQuery);
+  const currentUserRooms = roomsSnapshot.docs.map(doc => doc.id);
+  return currentUserRooms;
+}
+
+
 let currentMessagesSubscription = null;
 async function openChat(roomId) {
     console.log(`Opening chat for room ID: ${roomId}`);
@@ -1660,17 +1666,64 @@ async function openChat(roomId) {
         where("roomId", "==", localStorage.getItem("roomId")),
         orderBy("timestamp", "asc")
     );
+
+    const currentUserRooms = await fetchCurrentUserRooms();
+    // Loop through each room to check for new messages
+    currentUserRooms.forEach(async (roomId) => {
+      const messagesQueryForNewMessages = query(
+        collection(db, "Messages"),
+        where("roomId", "==", roomId),
+        orderBy("timestamp", "asc")
+      );
+
+     onSnapshot(messagesQueryForNewMessages, async (snapshot) => {
+       const roomRef = doc(db, "Rooms", roomId);
+       try {
+         const roomDoc = await getDoc(roomRef);
+         if (!roomDoc.exists()) return;
+
+         const roomData = roomDoc.data();
+         let lastReadMessageId = roomData.lastReadMessageId || {};
+         const currentUserId = await fetchCurrentUserId();
+         const currentUserLastReadMessageId = lastReadMessageId[currentUserId];
+
+         // Get the latest message in the snapshot
+         const latestMessage = snapshot.docs[snapshot.docs.length - 1];
+         const latestMessageId = latestMessage.id;
+
+         // Check if the current user has read the latest message
+         if (currentUserLastReadMessageId !== latestMessageId) {
+           // Get the readyByUsers data from the latest message
+           const latestMessageData = latestMessage.data();
+           const readyByUsers = latestMessageData.readyByUsers || [];
+
+           // Check if the current user is in the readyByUsers list
+           if (!readyByUsers.includes(currentUserId)) {
+             // Check if the chat is open for a different room
+             if (localStorage.getItem("roomId") !== roomId) {
+               console.log("Chat is open for a different room, setting new message count");
+               showNotificationToast('You have new messages in ' + roomId);
+             }
+           }
+         }
+       } catch (error) {
+         console.error("Error checking new messages:", error);
+       }
+     });
+    });
+
     const messagesContainer = document.getElementById("messages");
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          // Check if the added node is an element and has class 'message-wrapper'
-          if (node.nodeType === Node.ELEMENT_NODE &&
-              node.tagName === 'DIV' &&
-              node.classList.contains('message-wrapper')) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          }
-        });
+          mutation.addedNodes.forEach((node) => {
+            // Check if the added node is an element and has class 'message-wrapper'
+            if (node.nodeType === Node.ELEMENT_NODE &&
+                node.tagName === 'DIV' && currentEditingMessageId == null && currentDeletingMessageId == null) {
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+              currentDeletingMessageId = null;
+              currentEditingMessageId = null;
+          });
       });
     });
     observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
