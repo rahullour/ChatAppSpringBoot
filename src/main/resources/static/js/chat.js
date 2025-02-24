@@ -73,7 +73,6 @@ window.downloadFile = async function (messageId) {
 window.messageReply = async function(messageId) {
     const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
     if (!messageWrapper) return;
-
     const messageContent = messageWrapper.querySelector('.message-content');
     const editorWrapper = document.querySelector('.editor-wrapper');
     const senderId = messageWrapper.querySelector('.message-metadata').innerText.match(/senderId:\s*(\d+)/)[1];
@@ -179,7 +178,6 @@ window.editMessage = async function (messageId) {
     const messageContent = messageWrapper.querySelector(".message-content");
     const editorWrapper = document.querySelector(".editor-wrapper");
     const trixEditor = document.querySelector("trix-editor");
-    const messageHiddenInput = document.getElementById("message-content");
 
     // Prevent multiple edits at once
     const existingPreview = document.querySelector(".message-edit-preview");
@@ -200,7 +198,7 @@ window.editMessage = async function (messageId) {
         const timestamp = messageWrapper.querySelector(".message-date")?.textContent || "Unknown Time"; // Extract timestamp
 
         // Extract message text (including rich text formatting)
-        const textSpan = messageContent.querySelector('span');
+        const textSpan = messageContent.querySelector('span:not(.message-reply-reference > span)');
         const messageHtml = textSpan.cloneNode(true);
         // Extract attachments and remove the image hover text
         const attachmentsContainer = messageContent.querySelector(".attachments-container");
@@ -282,12 +280,7 @@ window.saveEditedMessage = async function () {
 
     // Get the modified HTML without <figure> elements
     newMessageHtml = tempDiv.innerHTML;
-    if (newMessageHtml === "") {
-        alert("Message cannot be empty!");
-        return;
-    }
-
-    let textContent = messageContent.querySelector("span");
+    let textContent = messageContent.querySelector('span:not(.message-reply-reference > span)');
     // convert to html
     const tempDiv2 = document.createElement('div');
     tempDiv2.innerHTML = newMessageHtml;
@@ -295,6 +288,10 @@ window.saveEditedMessage = async function () {
 
     const attachments = trixEditor.editor.getDocument().getAttachments();
     const fileAttachments = attachments.filter(attachment => attachment.file);
+    if (newMessageHtml === "" && attachments.length == 0) {
+        alert("Message cannot be empty!");
+        return;
+    }
 
     closeEdit();
 
