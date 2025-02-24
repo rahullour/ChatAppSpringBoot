@@ -1664,8 +1664,17 @@ async function openChat(roomId) {
         orderBy("timestamp", "asc")
     );
     const messagesContainer = document.getElementById("messages");
-    const observer = new MutationObserver(() => {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          // Check if the added node is an element and has class 'message-wrapper'
+          if (node.nodeType === Node.ELEMENT_NODE &&
+              node.tagName === 'DIV' &&
+              node.classList.contains('message-wrapper')) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        });
+      });
     });
     observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
     onSnapshot(messagesQuery, async (snapshot) => {
