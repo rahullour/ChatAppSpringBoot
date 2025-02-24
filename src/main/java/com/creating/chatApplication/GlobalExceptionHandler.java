@@ -1,5 +1,6 @@
 package com.creating.chatApplication;
 
+import com.creating.chatApplication.config.RequestUrlFilter;
 import com.creating.chatApplication.service.NotificationManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -14,7 +15,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public String handleMaxSizeException(MaxUploadSizeExceededException exc, RedirectAttributes redirectAttributes) {
-        notificationManager.sendFlashNotification("File size exceeds the maximum limit of 2 MB!", "alert-danger", "short-noty");
-        return "redirect:/signup-form"; // Redirect to the signup form
+        notificationManager.sendFlashNotification("File size exceeds the maximum limit of 2 MB !", "alert-danger", "short-noty");
+
+        // Get the current URL from the filter
+        String currentUrl = RequestUrlFilter.getCurrentUrl();
+
+        // Redirect to the current URL
+        return "redirect:" + currentUrl;
     }
 }

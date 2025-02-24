@@ -1702,7 +1702,7 @@ async function openChat(roomId) {
              // Check if the chat is open for a different room
              if (localStorage.getItem("roomId") !== roomId) {
                console.log("Chat is open for a different room, setting new message count");
-               showNotificationToast('You have new messages in ' + roomId);
+               showNotificationToast('New messages in ' + roomId);
              }
            }
          }
