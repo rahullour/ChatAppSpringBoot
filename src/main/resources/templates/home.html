@@ -323,7 +323,7 @@
 <script th:type="module" th:src="@{/js/chat.js}"></script>
 <script th:src="@{/js/home.js}"></script>
 <script>
-    function previewProfileImage(event) {
+function previewProfileImage(event) {
     var reader = new FileReader();
     reader.onload = function() {
         var output = document.getElementById('previewImage');

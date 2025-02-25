@@ -13,14 +13,14 @@ public class GlobalExceptionHandler {
     @Autowired
     private NotificationManager notificationManager;
 
-    @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public String handleMaxSizeException(MaxUploadSizeExceededException exc, RedirectAttributes redirectAttributes) {
-        notificationManager.sendFlashNotification("File size exceeds the maximum limit of 2 MB !", "alert-danger", "short-noty");
-
-        // Get the current URL from the filter
-        String currentUrl = RequestUrlFilter.getCurrentUrl();
-
-        // Redirect to the current URL
-        return "redirect:" + currentUrl;
-    }
+//    @ExceptionHandler(MaxUploadSizeExceededException.class)
+//    public String handleMaxSizeException(MaxUploadSizeExceededException exc, RedirectAttributes redirectAttributes) {
+//        notificationManager.sendFlashNotification("File size exceeds the maximum limit of 2 MB !", "alert-danger", "short-noty");
+//
+//        // Get the current URL from the filter
+//        String currentUrl = RequestUrlFilter.getCurrentUrl();
+//
+//        // Redirect to the current URL
+//        return "redirect:" + currentUrl;
+//    }
 }

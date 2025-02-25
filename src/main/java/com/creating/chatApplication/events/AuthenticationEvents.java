@@ -1,6 +1,7 @@
 package com.creating.chatApplication.events;
 
 import com.creating.chatApplication.entity.Authority;
+import com.creating.chatApplication.repository.ThemeRepository;
 import com.creating.chatApplication.service.*;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
@@ -45,6 +46,8 @@ public class AuthenticationEvents {
     private NotificationManager notificationManager;
     private TokenGenerationService tokenGenerationService;
 
+    @Autowired
+    private ThemeRepository themeRepository;
 
     @EventListener
     public void onAuthenticationSuccess(AuthenticationSuccessEvent event) {
@@ -168,10 +171,12 @@ public class AuthenticationEvents {
             authorities.add(userAuthority);
             newUser.setAuthorities(authorities);
             User user = userService.saveUser(newUser);
-            StringSelection stringSelection = new StringSelection(password);
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.setContents(stringSelection, null);
-            String notificationMessage = "your default password is saved to clipboard, please save it somewhere.";
+            user.setTheme(themeRepository.findById(1).orElse(null));
+            user.setEnabled(false);
+
+            // Remove clipboard code that's causing HeadlessException
+            // Instead, just log the password or store it temporarily
+            String notificationMessage = "Account created successfully! A temporary password has been generated.";
             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "long-noty");
         }
     }

@@ -82,8 +82,12 @@ public class SecurityConfig {
         http
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/loginPage", "/signup-form", "/signup", "/verifyEmail", "/verifyInviteUser", "/verifyResetEmail", "/resetPassword", "/passwordResetFormSubmit").permitAll()
-                        .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers(
+                                "/loginPage", "/signup-form", "/signup", "/verifyEmail", "/verifyInviteUser",
+                                "/verifyResetEmail", "/resetPassword", "/passwordResetFormSubmit",
+                                "/static/**", "/css/**", "/js/**", "/images/**",
+                                "/oauth2/**", "/login/oauth2/**" // OAuth2-related endpoints
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -96,11 +100,11 @@ public class SecurityConfig {
                 .exceptionHandling(configurer -> configurer.accessDeniedPage("/access-denied"))
                 .logout(logout -> logout.permitAll())
                 .oauth2Login(oauth2 -> oauth2
-                .loginPage("/loginPage")
-                .defaultSuccessUrl("/", true)
-                .failureUrl("/loginPage?error")
-                .authorizationEndpoint(authorization -> authorization
-                        .baseUri("/oauth2/authorization"))
+                        .loginPage("/loginPage")
+                        .successHandler(customAuthenticationSuccessHandler()) // Add success handler here
+                        .failureHandler(customAuthenticationFailureHandler()) // Add failure handler for consistency
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/oauth2/authorization")).permitAll()
                 )
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers("/api/files/upload", "/api/files/delete")
