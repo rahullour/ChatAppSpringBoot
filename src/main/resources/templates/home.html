@@ -60,8 +60,8 @@
                 <li class="nav-item d-flex">
                     <img id="profilePic" class="profile-pic" src="" alt="No Profile Picture">
                     <span style="margin: auto;" th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
-                                            #authentication.principal.attributes['name'] :
-                                            #authentication.principal.username}"></span>
+                                         (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
+                                         #authentication.principal.email}"></span>
                 </li>
                 <li>
                     <div class="invite-btn">
@@ -245,9 +245,10 @@
                                         </div>
                                     </div>
                                 </div>
-                                <input type="hidden" name="senderEmail" th:value="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
-                                        #authentication.principal.attributes['email'] :
-                                        #authentication.principal.email}"/>
+                                <input type="hidden" name="senderEmail"
+                                       th:value="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
+                                         (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
+                                         #authentication.principal.email}"/>
                                 <select id="emailInput" class="form-control" multiple="multiple" required>
                                     <!-- Options will be populated dynamically -->
                                 </select>

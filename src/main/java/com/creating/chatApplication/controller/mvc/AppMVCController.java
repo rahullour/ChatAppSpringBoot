@@ -85,6 +85,9 @@ public class AppMVCController {
             } else if (authentication.getPrincipal() instanceof OAuth2User) {
                 OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
                 email = oauthUser.getAttribute("email");
+                if (email == null) {
+                    email = oauthUser.getAttribute("id") + "@github.com";
+                }
                 User user = userService.getUserByEmail(email);
                 isEnabled = user.isEnabled();
             }

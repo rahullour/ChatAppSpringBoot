@@ -68,6 +68,9 @@ public class UserServiceImpl implements UserService{
             if (principal instanceof DefaultOAuth2User) {
                 DefaultOAuth2User oauth2User = (DefaultOAuth2User) principal;
                 String email = oauth2User.getAttribute("email");
+                if (email == null) {
+                    email = oauth2User.getAttribute("id") + "@github.com";
+                }
                 return getUserByEmail(email);
             } else if(principal instanceof CustomUserDetails) {
                 CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();

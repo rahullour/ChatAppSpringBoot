@@ -57,6 +57,9 @@ public class AuthenticationEvents {
             OAuth2LoginAuthenticationToken oauthToken = (OAuth2LoginAuthenticationToken) authentication;
             OAuth2User oauthUser = oauthToken.getPrincipal();
             String email = oauthUser.getAttribute("email");
+            if (email == null) {
+                email = oauthUser.getAttribute("id") + "@github.com";
+            }
             createUserIfNotPresent(email);
             logUserActivityByEmail(email, true);
             String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
