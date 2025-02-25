@@ -170,13 +170,14 @@ public class AuthenticationEvents {
             List<Authority> authorities = new ArrayList<>();
             authorities.add(userAuthority);
             newUser.setAuthorities(authorities);
+            newUser.setTheme(themeRepository.findById(1).orElse(null));
+            newUser.setEnabled(true);
             User user = userService.saveUser(newUser);
-            user.setTheme(themeRepository.findById(1).orElse(null));
-            user.setEnabled(false);
-
-            // Remove clipboard code that's causing HeadlessException
-            // Instead, just log the password or store it temporarily
-            String notificationMessage = "Account created successfully! A temporary password has been generated.";
+            String notificationMessage = "Account created successfully !";
+            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
+            notificationMessage = "A temporary password has been generated. Please save it locally if you wish to login again normally !";
+            notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "long-noty");
+            notificationMessage = "Password: "+password;
             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "long-noty");
         }
     }
