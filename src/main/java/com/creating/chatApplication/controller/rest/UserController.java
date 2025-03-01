@@ -1,9 +1,6 @@
 package com.creating.chatApplication.controller.rest;
 
-import com.creating.chatApplication.entity.Invite;
-import com.creating.chatApplication.entity.InviteGroup;
-import com.creating.chatApplication.entity.User;
-import com.creating.chatApplication.entity.UserGroup;
+import com.creating.chatApplication.entity.*;
 import com.creating.chatApplication.service.UserGroupService;
 import com.creating.chatApplication.service.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;

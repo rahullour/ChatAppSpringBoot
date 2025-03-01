@@ -2,7 +2,7 @@ package com.creating.chatApplication.entity;
 
 
 import jakarta.persistence.*;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,6 +25,7 @@ public class UserData {
     private int id;
 
     @Column(name="created_at")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     @Column(name="type")

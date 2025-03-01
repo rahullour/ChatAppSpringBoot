@@ -88,11 +88,8 @@
                                                         <li class="nav-item" onclick="loadContent('theme', this)">
                                                             <a class="nav-link" href="#">Theme</a>
                                                         </li>
-                                                        <li class="nav-item" onclick="loadContent('blocked-users', this)">
-                                                            <a class="nav-link" href="#">Blocked Users</a>
-                                                        </li>
-                                                        <li class="nav-item" onclick="loadContent('account-settings', this)">
-                                                            <a class="nav-link" href="#">Account Settings</a>
+                                                        <li class="nav-item" onclick="loadContent('login-history', this)">
+                                                            <a class="nav-link" href="#">Login History</a>
                                                         </li>
                                                     </ul>
                                                 </div>
@@ -178,14 +175,23 @@
                                                         <!-- Add your theme settings content here -->
                                                     </div>
 
-                                                    <div id="blocked-users-settings" style="display: none;"> <!-- Initially hidden -->
-                                                        <h4 class="text-center mb-4 form-heading app-color">Blocked Users Settings</h4>
-                                                        <!-- Add your blocked users content here -->
-                                                    </div>
+                                                    <div id="login-history-settings" style="display: none;"> <!-- Initially hidden -->
+                                                        <h4 class="text-center mb-4 form-heading app-color">Login History</h4>
 
-                                                    <div id="account-settings" style="display: none;"> <!-- Initially hidden -->
-                                                        <h4 class="text-center mb-4 form-heading app-color">Account Settings</h4>
-                                                        <!-- Add your account settings content here -->
+                                                        <table class="table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>Date & Time</th>
+                                                                <th>Type</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            <tr th:each="history : ${loginHistory}">
+                                                                <td th:text="${history.createdAt}"></td>
+                                                                <td th:text="${history.type}"></td>
+                                                            </tr>
+                                                            </tbody>
+                                                        </table>
                                                     </div>
                                                 </div>
                                             </div>

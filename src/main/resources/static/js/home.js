@@ -140,8 +140,7 @@ function loadContent(option, element) {
     // Hide all sections initially
     document.getElementById('profile-settings').style.display = 'none';
     document.getElementById('theme-settings').style.display = 'none';
-    document.getElementById('blocked-users-settings').style.display = 'none';
-    document.getElementById('account-settings').style.display = 'none';
+    document.getElementById('login-history-settings').style.display = 'none';
     const navItems = document.querySelectorAll('#settings-modal .nav-item');
     navItems.forEach(item => {
         item.classList.remove('selected');
@@ -159,11 +158,24 @@ function loadContent(option, element) {
         case 'theme':
             document.getElementById('theme-settings').style.display = 'block';
             break;
-        case 'blocked-users':
-            document.getElementById('blocked-users-settings').style.display = 'block';
-            break;
-        case 'account-settings':
-            document.getElementById('account-settings').style.display = 'block';
+        case 'login-history':
+            document.getElementById('login-history-settings').style.display = 'block';
+             // Fetch login history if "login-history" tab is clicked
+            fetch('/api/userdata/login-history')
+                .then(response => response.json())
+                .then(data => {
+                    let tableBody = document.querySelector("#login-history-settings tbody");
+                    tableBody.innerHTML = ''; // Clear previous entries
+
+                    data.forEach(entry => {
+                        let row = `<tr>
+                            <td>${entry.type}</td>
+                            <td>${new Date(entry.createdAt).toLocaleString()}</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error('Error fetching login history:', error));
             break;
         default:
             // Optionally handle default case

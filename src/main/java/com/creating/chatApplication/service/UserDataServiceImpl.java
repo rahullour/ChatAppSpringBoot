@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class UserDataServiceImpl implements UserDataService {
@@ -39,5 +40,13 @@ public class UserDataServiceImpl implements UserDataService {
             userData.setUser(user);
             userDataRepository.save(userData);
         }
+    }
+
+    public UserDataRepository getUserDataRepository() {
+        return userDataRepository;
+    }
+
+    public List<UserData> getLoginHistory(int userId) {
+        return userDataRepository.findLoginHistoryByUserId(userId);
     }
 }
