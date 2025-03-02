@@ -74,7 +74,7 @@
                             <div class="modal-content">
                                 <div class="modal-area w-100">
                                     <div class="modal-header">
-                                        <h5 class="modal-title" id="settings-modal-label">Settings</h5>
+                                        <div class="text-center w-100"><h4 class="modal-title" id="settings-modal-label">Settings</h4></div>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body pt-0">
@@ -219,8 +219,8 @@
             <div class="modal fade" id="inviteModal" tabindex="-1" aria-labelledby="inviteModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="inviteModalLabel">Invite Users</h5>
+                        <div class="modal-header text-center w-100">
+                            <div class="w-100"><h4  class="modal-title" id="inviteModalLabel">Invite Users</h4></div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form action="#" th:action="@{/api/invites}" method="post" id="inviteForm" enctype="multipart/form-data">

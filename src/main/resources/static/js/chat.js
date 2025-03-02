@@ -1090,7 +1090,6 @@ async function handleNewMessages(snapshot, roomId) {
                         renderAttachments(attachments[messageData.replyTo.messageId], replyPreview);
                     }
                 }
-
                 // Insert reply preview at the beginning of message content
                 messageContent.insertBefore(replyPreview, messageContent.firstChild);
 
@@ -1343,6 +1342,17 @@ async function handleNewMessages(snapshot, roomId) {
                 const messageWrapper = document.createElement("div");
                 messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
                 messageWrapper.setAttribute("data-message-id", messageId);
+
+                // Create a hidden div to store messageId and senderId
+                const hiddenDataDiv = document.createElement("div");
+                hiddenDataDiv.classList.add("message-metadata");
+                hiddenDataDiv.style.display = "none"; // Hide the div
+
+                hiddenDataDiv.dataset.messageId = data.messageId;
+                hiddenDataDiv.dataset.senderId = data.senderId;
+
+                hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
+                messageWrapper.appendChild(hiddenDataDiv);
 
                 const messageContent = document.createElement("div");
                 messageContent.classList.add("message-content");
@@ -1689,10 +1699,13 @@ async function openChat(roomId) {
 
          // Get the latest message in the snapshot
          const latestMessage = snapshot.docs[snapshot.docs.length - 1];
-         const latestMessageId = latestMessage.id;
+         let latestMessageId = null;
+         if(latestMessage != undefined){
+           latestMessageId = latestMessage.id;
+         }
 
          // Check if the current user has read the latest message
-         if (currentUserLastReadMessageId !== latestMessageId) {
+         if (latestMessageId != null && currentUserLastReadMessageId !== latestMessageId) {
            // Get the readyByUsers data from the latest message
            const latestMessageData = latestMessage.data();
            const readyByUsers = latestMessageData.readyByUsers || [];
@@ -1808,7 +1821,7 @@ function showAttachmentLimitNotification() {
 
 // Function to send a message
 async function sendMessage(roomId) {
-    if(currentReplyMessageId != null){
+    if(currentReplyMessageId != null || (currentReplyMessageId == null && currentEditingMessageId == null)){
         const messageContentInput = document.getElementById("message-content");
             const trixEditor = document.querySelector("trix-editor");
 
@@ -2224,8 +2237,11 @@ $(document).ready(function() {
 
         switch(action) {
             case 'copy':
-                navigator.clipboard.writeText(messageText).then(() => {
-                    console.log("Copied to clipboard:", messageText);
+                // Find the first div using regex
+                const firstDivMatch = messageText.match(/<div>([\s\S]*?)<\/div>/);
+                const firstDiv = firstDivMatch ? firstDivMatch[0] : '';
+                navigator.clipboard.writeText(firstDiv).then(() => {
+                    console.log("Copied to clipboard:", firstDiv);
                 }).catch(err => console.error("Copy failed", err));
                 break;
             case 'forward':

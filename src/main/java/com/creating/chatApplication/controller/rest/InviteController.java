@@ -162,7 +162,7 @@ public class InviteController {
                         }
                         String token = tokenGenerationService.generateToken(userService.getUserByEmail(senderEmail), "invite");
                         String verificationLink = "http://www.localhost:8080/verifyInviteUser?token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&user_id=" + user.getId() + "&groupName=" + groupName;
-                        String notificationMessage = "Chat with " + emailAddress + " will be enabled after email verification of joinee!";
+                        String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification by joinee via their email!";
                         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
                         emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), verificationLink, type);
                     }
