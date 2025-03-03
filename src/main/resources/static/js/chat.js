@@ -382,6 +382,7 @@ window.saveEditedMessage = async function () {
         renderAttachments(updatedAttachments, messageContent);
         hideLoadingChatNotification();
         console.log("✅ Message updated successfully");
+        currentEditingMessageId = null;
     } catch (error) {
         console.error("❌ Error updating message:", error);
     }
@@ -1354,196 +1355,200 @@ async function handleNewMessages(snapshot, roomId) {
               .filter(Boolean);
             // **2. Fetch All Attachments for the new messages**
             const editedAttachmentsByMessageId = await fetchAttachmentsForMessages(newEditedMessageIds);
-            // Process all new messages from the snapshot
-            for (const change of newEditedSnapshot.docs) {
-                const data = change.data();
-                const messageId = data.messageId;
-                const isCurrentUser = data.senderId === currentUserId;
+            if(newEditedSnapshot.docs.length > 0){
+                // Process all new messages from the snapshot
+                for (const change of newEditedSnapshot.docs) {
+                    const data = change.data();
+                    const messageId = data.messageId;
+                    const isCurrentUser = data.senderId === currentUserId;
 
-                // Check if this is an edited message by looking for the edited flag
-                // This is an edited message, find the existing message in the DOM
-                const existingMessageElement = document.querySelector(`.message-wrapper[data-message-id="${messageId}"]`);
+                    // Check if this is an edited message by looking for the edited flag
+                    // This is an edited message, find the existing message in the DOM
+                    const existingMessageElement = document.querySelector(`.message-wrapper[data-message-id="${messageId}"]`);
 
-                if (existingMessageElement) {
-                    // Update the text content
-                    const textSpan = existingMessageElement.querySelector('.message-content span:not(.message-reply-reference > span)');
-                    if (textSpan) {
-                        textSpan.innerHTML = data.text;
-
-                        // Add edited indicator if it doesn't exist
-                        if (!textSpan.querySelector('.edited-indicator')) {
-                            const editedIndicator = document.createElement('small');
-                            editedIndicator.classList.add('edited-indicator');
-                            editedIndicator.textContent = ' (edited)';
-                            editedIndicator.style.opacity = '0.7';
-                            textSpan.appendChild(editedIndicator);
+                    if (existingMessageElement) {
+                        // Update the text content
+                        const textSpan = existingMessageElement.querySelector('.message-content span:not(.message-reply-reference > span)');
+                        const messageContent = existingMessageElement.querySelector('.message-content');
+                        if (messageContent) {
+                            // Add edited indicator if it doesn't exist
+                            if (!messageContent.querySelector('.edited-indicator')) {
+                                const editedIndicator = document.createElement('small');
+                                editedIndicator.classList.add('edited-indicator');
+                                editedIndicator.textContent = ' (edited)';
+                                editedIndicator.style.opacity = '0.7';
+                                messageContent.appendChild(editedIndicator);
+                            }
                         }
-                    }
 
-                    // Update attachments
-                    const messageContent = existingMessageElement.querySelector('.message-content');
 
-                    // Remove existing attachments container if it exists
-                    const existingAttachmentsContainer = messageContent.querySelector('.attachments-container');
-                    if (existingAttachmentsContainer) {
-                        existingAttachmentsContainer.remove();
+                        // Update attachments
+                        // Remove existing attachments container if it exists
+                        const existingAttachmentsContainer = messageContent.querySelector('.attachments-container');
+                        if (existingAttachmentsContainer) {
+                            existingAttachmentsContainer.remove();
+                        }
+                        // Re-render the attachments
+                        renderAttachments(editedAttachmentsByMessageId[messageId] || [], messageContent);
+
+                        // Reset the edited flag in Firestore
+                        const messageRef = doc(db, "Messages", messageId);
+                        await updateDoc(messageRef, { edited: 0 });
                     }
-                    // Re-render the attachments
-                    renderAttachments(editedAttachmentsByMessageId[messageId] || [], messageContent);
-                    // Skip to the next message
-                    continue;
                 }
             }
+            else{
+                // Process all messages from the snapshot
+                for (const change of newSnapshot.docs) {
+                  const data = change.data();
+                  const messageId = data.messageId;
+                  const isCurrentUser = data.senderId === currentUserId;
 
-            // Process all messages from the snapshot
-            for (const change of newSnapshot.docs) {
-              const data = change.data();
-              const messageId = data.messageId;
-              const isCurrentUser = data.senderId === currentUserId;
+                  // If we reach here, this is a new message or the message wasn't found in the DOM
+                  // Create new message element
+                  const messageWrapper = document.createElement("div");
+                  messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
+                  messageWrapper.setAttribute("data-message-id", messageId);
 
-              // If we reach here, this is a new message or the message wasn't found in the DOM
-              // Create new message element
-              const messageWrapper = document.createElement("div");
-              messageWrapper.classList.add("message-wrapper", isCurrentUser ? "current-user" : "other-user");
-              messageWrapper.setAttribute("data-message-id", messageId);
+                  // Create a hidden div to store messageId and senderId
+                  const hiddenDataDiv = document.createElement("div");
+                  hiddenDataDiv.classList.add("message-metadata");
+                  hiddenDataDiv.style.display = "none"; // Hide the div
 
-              // Create a hidden div to store messageId and senderId
-              const hiddenDataDiv = document.createElement("div");
-              hiddenDataDiv.classList.add("message-metadata");
-              hiddenDataDiv.style.display = "none"; // Hide the div
+                  hiddenDataDiv.dataset.messageId = data.messageId;
+                  hiddenDataDiv.dataset.senderId = data.senderId;
 
-              hiddenDataDiv.dataset.messageId = data.messageId;
-              hiddenDataDiv.dataset.senderId = data.senderId;
+                  hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
+                  messageWrapper.appendChild(hiddenDataDiv);
 
-              hiddenDataDiv.textContent = `messageId: ${data.messageId}, senderId: ${data.senderId}`;
-              messageWrapper.appendChild(hiddenDataDiv);
+                  const messageContent = document.createElement("div");
+                  messageContent.classList.add("message-content");
 
-              const messageContent = document.createElement("div");
-              messageContent.classList.add("message-content");
+                  // Add reply preview if exists
+                  await createReplyPreview(data, messageContent);
 
-              // Add reply preview if exists
-              await createReplyPreview(data, messageContent);
+                  const textElement = document.createElement("span");
+                  textElement.innerHTML = data.text;
 
-              const textElement = document.createElement("span");
-              textElement.innerHTML = data.text;
+                    // Add edited indicator if it was previously edited
+                    if (data.edited === 0) {
+                      const editedIndicator = document.createElement('small');
+                      editedIndicator.classList.add('edited-indicator');
+                      editedIndicator.textContent = ' (edited)';
+                      editedIndicator.style.opacity = '0.7';
+                      textElement.appendChild(editedIndicator);
+                    }
 
-                // Add edited indicator if it was previously edited
-                if (data.edited === 0) {
-                  const editedIndicator = document.createElement('small');
-                  editedIndicator.classList.add('edited-indicator');
-                  editedIndicator.textContent = ' (edited)';
-                  editedIndicator.style.opacity = '0.7';
-                  textElement.appendChild(editedIndicator);
+                    messageContent.appendChild(textElement);
+
+                    // Add message actions button
+                    const actionsButton = document.createElement("div");
+                    actionsButton.classList.add("message-actions-btn");
+                    actionsButton.innerHTML = `
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="1"></circle>
+                          <circle cx="12" cy="5" r="1"></circle>
+                          <circle cx="12" cy="19" r="1"></circle>
+                      </svg>
+                    `;
+
+                    // Add message actions menu
+                    const actionsMenu = document.createElement("div");
+                    actionsMenu.classList.add("message-actions-menu");
+                    actionsMenu.innerHTML = `
+                      <div class="action-item ${messageWrapper.classList.contains('current-user') ? '' : 'd-none'}"
+                           data-action="edit"
+                           onclick="editMessage('${data.messageId}')">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M12 20h9"></path>
+                              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                          </svg>
+                          Edit
+                      </div>
+                      <div class="action-item" data-action="copy">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                          </svg>
+                          Copy Text
+                      </div>
+                      <div class="action-item" data-action="reply" onclick="messageReply('${data.messageId}')">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
+                          </svg>
+                          Reply
+                      </div>
+                      <div class="action-item delete-chat" data-action="delete" onclick="deleteMessage('${data.messageId}')">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              <path d="M10 11v6"></path>
+                              <path d="M14 11v6"></path>
+                              <path d="M5 6h14l-1 14H6Z"></path>
+                          </svg>
+                          Delete
+                      </div>
+                    `;
+                  // before adding dateElement check if a date element already exists, if then don't create
+                  const messageDate = new Date(data.timestamp.toDate());
+                  const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+
+                  // Find the last date header from the messages container
+                  const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
+
+                  if (lastDateHeader) {
+                      // Extract the date from the last date header's text content
+                      try {
+                          const lastDateHeaderText = lastDateHeader.textContent;
+                          // Parse the date from the string (e.g., "10 February 1:30 PM")
+                          lastDisplayedDate = parseDateFromHeader(lastDateHeaderText); // Function to parse the date string
+                      } catch (error) {
+                          console.error("Error parsing date from header:", error);
+                          // Handle the error appropriately, e.g., set lastDisplayedDate to null or a default value
+                          lastDisplayedDate = null; // Or some default value, depending on your logic
+                      }
+                  }
+
+                  // Use toLocalDateString to compare only date and not consider timezone
+                  const displayDateHeader = !lastDisplayedDate ||
+                      messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
+
+                  if (displayDateHeader) {
+                      lastDisplayedDate = messageDate;
+                      const dateHeader = document.createElement("h4");
+                      dateHeader.classList.add("date-header");
+                      const month = messageDate.toLocaleString('default', { month: 'long' });
+                      dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
+                      messagesContainer.appendChild(dateHeader);
+                  }
+
+                  let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
+                  const dateElement = document.createElement("div");
+                  dateElement.classList.add("message-date");
+                  dateElement.textContent = dateDisplay;
+                  messageContent.appendChild(dateElement);
+
+                  if (!isCurrentUser) {
+                      const profilePicBase64 = await getProfilePic(data.senderId);
+                      if (profilePicBase64) {
+                          const imgElement = document.createElement("img");
+                          imgElement.src = `data:image/png;base64,${profilePicBase64}`;
+                          imgElement.classList.add("profile-pic");
+                          messageWrapper.appendChild(imgElement);
+                      }
+                  }
+
+                  messageContent.appendChild(actionsButton);
+                  messageContent.appendChild(actionsMenu);
+                  messageWrapper.appendChild(messageContent);
+                  // 3. Render Attachments for this Message
+                  renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent); // Pass the attachments for this message
+                  messagesContainer.appendChild(messageWrapper);
+                  createReactionFeature(messageWrapper, data);
                 }
 
-                messageContent.appendChild(textElement);
-
-                // Add message actions button
-                const actionsButton = document.createElement("div");
-                actionsButton.classList.add("message-actions-btn");
-                actionsButton.innerHTML = `
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="1"></circle>
-                      <circle cx="12" cy="5" r="1"></circle>
-                      <circle cx="12" cy="19" r="1"></circle>
-                  </svg>
-                `;
-
-                // Add message actions menu
-                const actionsMenu = document.createElement("div");
-                actionsMenu.classList.add("message-actions-menu");
-                actionsMenu.innerHTML = `
-                  <div class="action-item ${messageWrapper.classList.contains('current-user') ? '' : 'd-none'}"
-                       data-action="edit"
-                       onclick="editMessage('${data.messageId}')">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M12 20h9"></path>
-                          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                      </svg>
-                      Edit
-                  </div>
-                  <div class="action-item" data-action="copy">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                      </svg>
-                      Copy Text
-                  </div>
-                  <div class="action-item" data-action="reply" onclick="messageReply('${data.messageId}')">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"></path>
-                      </svg>
-                      Reply
-                  </div>
-                  <div class="action-item delete-chat" data-action="delete" onclick="deleteMessage('${data.messageId}')">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M3 6h18"></path>
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          <path d="M10 11v6"></path>
-                          <path d="M14 11v6"></path>
-                          <path d="M5 6h14l-1 14H6Z"></path>
-                      </svg>
-                      Delete
-                  </div>
-                `;
-              // before adding dateElement check if a date element already exists, if then don't create
-              const messageDate = new Date(data.timestamp.toDate());
-              const options = { hour: 'numeric', minute: 'numeric', hour12: true };
-
-              // Find the last date header from the messages container
-              const lastDateHeader = messagesContainer.querySelector('.date-header:last-of-type');
-
-              if (lastDateHeader) {
-                  // Extract the date from the last date header's text content
-                  try {
-                      const lastDateHeaderText = lastDateHeader.textContent;
-                      // Parse the date from the string (e.g., "10 February 1:30 PM")
-                      lastDisplayedDate = parseDateFromHeader(lastDateHeaderText); // Function to parse the date string
-                  } catch (error) {
-                      console.error("Error parsing date from header:", error);
-                      // Handle the error appropriately, e.g., set lastDisplayedDate to null or a default value
-                      lastDisplayedDate = null; // Or some default value, depending on your logic
-                  }
-              }
-
-              // Use toLocalDateString to compare only date and not consider timezone
-              const displayDateHeader = !lastDisplayedDate ||
-                  messageDate.toLocaleDateString() !== lastDisplayedDate.toLocaleDateString();
-
-              if (displayDateHeader) {
-                  lastDisplayedDate = messageDate;
-                  const dateHeader = document.createElement("h4");
-                  dateHeader.classList.add("date-header");
-                  const month = messageDate.toLocaleString('default', { month: 'long' });
-                  dateHeader.textContent = `${messageDate.getDate()} ${month} ${messageDate.toLocaleTimeString(undefined, options)}`;
-                  messagesContainer.appendChild(dateHeader);
-              }
-
-              let dateDisplay = messageDate.toLocaleTimeString(undefined, options);
-              const dateElement = document.createElement("div");
-              dateElement.classList.add("message-date");
-              dateElement.textContent = dateDisplay;
-              messageContent.appendChild(dateElement);
-
-              if (!isCurrentUser) {
-                  const profilePicBase64 = await getProfilePic(data.senderId);
-                  if (profilePicBase64) {
-                      const imgElement = document.createElement("img");
-                      imgElement.src = `data:image/png;base64,${profilePicBase64}`;
-                      imgElement.classList.add("profile-pic");
-                      messageWrapper.appendChild(imgElement);
-                  }
-              }
-
-              messageContent.appendChild(actionsButton);
-              messageContent.appendChild(actionsMenu);
-              messageWrapper.appendChild(messageContent);
-              // 3. Render Attachments for this Message
-              renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent); // Pass the attachments for this message
-              messagesContainer.appendChild(messageWrapper);
-              createReactionFeature(messageWrapper, data);
             }
-              resolve();
+            resolve();
         }
     });
 }
@@ -1894,17 +1899,6 @@ function showAttachmentLimitNotification() {
 
 // Function to send a message
 async function sendMessage(roomId) {
-    // Reset the edited flag in Firestore
-    const messagesCollection = collection(db, "Messages");
-    // Query to get all messages where edited = 1
-    const q = query(messagesCollection, where("edited", "==", 1));
-    // Fetch matching messages
-    const querySnapshot = await getDocs(q);
-    // Loop through each document and update "edited" to 0
-    querySnapshot.forEach(async (docSnap) => {
-       await updateDoc(docSnap.ref, { edited: 0 });
-    });
-
     if(currentReplyMessageId != null || (currentReplyMessageId == null && currentEditingMessageId == null)){
         const messageContentInput = document.getElementById("message-content");
             const trixEditor = document.querySelector("trix-editor");
