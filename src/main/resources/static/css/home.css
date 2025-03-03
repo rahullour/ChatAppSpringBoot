@@ -196,6 +196,10 @@ trix-toolbar {
     visibility: hidden;
     transition: all 0.3s ease;
     z-index: 1000;
+    border: 3px solid #000000;
+    .trix-button-row{
+        overflow-x: unset !important;
+    }
 }
 
 trix-toolbar.show {
@@ -618,6 +622,10 @@ trix-editor .attachment{
 }
 
 .input-group .btn {
+    position: relative;
+    z-index: 2;
+    background-color: #000000;
+    color: white;
 }
 
 @keyframes spin {
@@ -726,7 +734,7 @@ trix-editor .attachment{
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 0px;
 }
 
 /* Modal Image */
@@ -1105,4 +1113,21 @@ trix-editor .attachment{
     cursor: pointer;
     font-size: 16px;
     color: #ff4444;
+}
+.navbar-nav{
+    li{
+        vertical-align: middle;
+        margin: auto;
+    }
+}
+.menu-bar{
+    li::before {
+      content: '''';
+      position: absolute;
+      left: 10px; /* Space from the left */
+      right: 10px; /* Space from the right */
+      bottom: 0; /* Position at the bottom */
+      height: 1px; /* Height of the border */
+      background-color: grey; /* Color of the border */
+  }
 }

@@ -51,24 +51,29 @@
                         </button>
                     </div>
                 </li>
-                <li>
-                    <form class="d-flex" role="search">
-                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-                        <button class="btn btn-outline-success" type="submit">Search</button>
-                    </form>
-                </li>
-                <li class="nav-item d-flex">
-                    <img id="profilePic" class="profile-pic" src="" alt="No Profile Picture">
-                    <span style="margin: auto;" th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
-                                         (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
-                                         #authentication.principal.email}"></span>
-                </li>
-                <li>
-                    <div class="invite-btn">
-                        <button type="button" class="btn p-0" onclick="loadContent('profile-settings', null)" data-bs-toggle="modal" data-bs-target="#settings-modal">
-                            <img th:src="@{/images/settings_icon.jpg}" width="35px" height="35px">
-                        </button>
-                    </div>
+                <!-- Dropdown for Profile, Settings, and Logout -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img id="profilePic" class="profile-pic me-2" src="" alt="No Profile Picture" width="35" height="35" style="border-radius: 50%;">
+                        <span th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
+                                 (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
+                                 #authentication.principal.email}"></span>
+                    </a>
+                    <ul class="dropdown-menu shadow border-0 mt-2 p-2 w-100">
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="#" onclick="loadContent('profile-settings', null)" data-bs-toggle="modal" data-bs-target="#settings-modal">
+                                <img th:src="@{/images/settings_icon.jpg}" class="me-2" width="20" height="20" alt="Settings"> Settings
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="POST" class="d-flex align-items-center">
+                                <button type="submit" class="dropdown-item d-flex align-items-center" onclick="return confirm('Are you sure?')">
+                                    <img th:src="@{/images/logout.png}" class="me-2" width="20" height="20" alt="Logout"> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
                     <div id="settings-modal" class="modal fade" tabindex="-1" aria-labelledby="settings-modal-label" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-scrollable">
                             <div class="modal-content">
@@ -201,13 +206,6 @@
                             </div>
                         </div>
                     </div>
-                </li>
-                <li class="nav-item">
-                    <form th:action="@{/logout}" method="POST">
-                        <button type="submit" class="btn p-0" onclick="return confirm('Are you sure?')">
-                            <img th:src="@{/images/logout.png}" alt="Logout" width="40px" height="40px"/>
-                        </button>
-                    </form>
                 </li>
             </ul>
         </div>
