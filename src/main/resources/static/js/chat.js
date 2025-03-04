@@ -1384,6 +1384,7 @@ async function handleNewMessages(snapshot, roomId) {
                                 editedIndicator.classList.add('edited-indicator');
                                 editedIndicator.textContent = ' (edited)';
                                 editedIndicator.style.opacity = '0.7';
+                                messageContent.querySelector('.reaction-display').style.marginTop = '32px';
                                 messageContent.appendChild(editedIndicator);
                             }
                         }
