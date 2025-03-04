@@ -429,22 +429,9 @@ function togglePasswordFields() {
     }
 }
 
-// Function to enable/disable email field based on checkbox state
-function toggleEmailField() {
-    const emailField = document.getElementById('email');
-    const updateEmailCheckbox = document.getElementById('updateEmailCheckbox');
-
-    if (updateEmailCheckbox.checked) {
-        emailField.disabled = false;
-    } else {
-        emailField.disabled = true;
-    }
-}
-
 // Initially disable password and email fields
 document.addEventListener('DOMContentLoaded', function() {
     togglePasswordFields();
-    toggleEmailField();
 });
 
 // Call the initialize function when the DOM is ready

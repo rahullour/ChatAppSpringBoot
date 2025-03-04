@@ -264,7 +264,7 @@ trix-editor:focus {
 
 .send-btn-box {
     position: absolute !important;
-    right: 0.5rem;
+    left: 0rem;
     bottom: 0.5rem;
     z-index: 20;
 }
@@ -457,6 +457,7 @@ trix-editor .attachment{
         .modal-area{
             height: 100%;
             .modal-body{
+                padding: 0px 12px;
                 height: 58vh;
                 .row{
                     height: 100%;
@@ -465,7 +466,8 @@ trix-editor .attachment{
         }
     }
     .nav-item.selected {
-        background-color: #ff7c18;
+        border-left: 4px solid #000000;
+        background-color: #2076a9;
         a{
             color: white;
         }
@@ -1121,13 +1123,8 @@ trix-editor .attachment{
     }
 }
 .menu-bar{
-    li::before {
-      content: '''';
-      position: absolute;
-      left: 10px; /* Space from the left */
-      right: 10px; /* Space from the right */
-      bottom: 0; /* Position at the bottom */
-      height: 1px; /* Height of the border */
-      background-color: grey; /* Color of the border */
-  }
+    li.with-bar {
+        border-left: 2px solid #ccc; /* Adjust color and thickness */
+        padding-left: 10px; /* Space between bar and text */
+    }
 }

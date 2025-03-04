@@ -74,131 +74,122 @@
                             </form>
                         </li>
                     </ul>
-                    <div id="settings-modal" class="modal fade" tabindex="-1" aria-labelledby="settings-modal-label" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-scrollable">
-                            <div class="modal-content">
-                                <div class="modal-area w-100">
-                                    <div class="modal-header">
-                                        <div class="text-center w-100"><h4 class="modal-title" id="settings-modal-label">Settings</h4></div>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </li>
+            </ul>
+            <div id="settings-modal" class="modal fade" tabindex="-1" aria-labelledby="settings-modal-label" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-area w-100">
+                            <div class="modal-header">
+                                <div class="text-center w-100"><h4 class="modal-title" id="settings-modal-label">Settings</h4></div>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body pt-0">
+                                <div class="row">
+                                    <div class="col-md-2 p-0">
+                                        <div class="menu-bar">
+                                            <ul class="nav flex-column">
+                                                <li class="nav-item" onclick="loadContent('profile-settings', this)">
+                                                    <a class="nav-link" href="#">Profile Settings</a>
+                                                </li>
+                                                <li class="nav-item" onclick="loadContent('theme', this)">
+                                                    <a class="nav-link" href="#">Theme</a>
+                                                </li>
+                                                <li class="nav-item" onclick="loadContent('login-history', this)">
+                                                    <a class="nav-link" href="#">Login History</a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
-                                    <div class="modal-body pt-0">
-                                        <div class="row">
-                                            <div class="col-md-2 p-0">
-                                                <div class="menu-bar">
-                                                    <ul class="nav flex-column">
-                                                        <li class="nav-item" onclick="loadContent('profile-settings', this)">
-                                                            <a class="nav-link" href="#">Profile Settings</a>
-                                                        </li>
-                                                        <li class="nav-item" onclick="loadContent('theme', this)">
-                                                            <a class="nav-link" href="#">Theme</a>
-                                                        </li>
-                                                        <li class="nav-item" onclick="loadContent('login-history', this)">
-                                                            <a class="nav-link" href="#">Login History</a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-10" id="settings-dialog">
-                                                <div id="settings-content" class="mt-4">
-                                                    <div id="profile-settings" style="display: none;">
-                                                        <div class="profile-container">
-                                                            <h4 class="text-center mb-4 form-heading app-color">Update Profile</h4>
-                                                            <!-- Modified form with POST method and hidden field -->
-                                                            <form id="profileUpdateForm" th:action="@{/updateProfile}" method="post" th:object="${user}" enctype="multipart/form-data">
-                                                                <input type="hidden" name="_method" value="patch" />
-                                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                    <div class="col-md-10" id="settings-dialog">
+                                        <div id="settings-content" class="mt-4">
+                                            <div id="profile-settings" style="display: none;">
+                                                <div class="profile-container">
+                                                    <h4 class="text-center mb-4 form-heading app-color">Update Profile</h4>
+                                                    <!-- Modified form with POST method and hidden field -->
+                                                    <form id="profileUpdateForm" th:action="@{/updateProfile}" method="post" th:object="${user}" enctype="multipart/form-data">
+                                                        <input type="hidden" name="_method" value="patch" />
+                                                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
-                                                                <div class="d-flex gap-5">
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <input type="text" id="username" th:field="*{username}" placeholder="Username" class="form-control" required />
-                                                                        </div>
-
-                                                                        <!-- Checkbox for updating password -->
-                                                                        <div class="form-group">
-                                                                            <input type="checkbox" id="updatePasswordCheckbox" onchange="togglePasswordFields()"> Update Password
-                                                                        </div>
-
-                                                                        <div class="form-group">
-                                                                            <input type="password" id="password" th:field="*{password}" placeholder="Password" class="form-control" disabled />
-                                                                        </div>
-                                                                        <div class="form-group">
-                                                                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-control" disabled />
-                                                                        </div>
-
-                                                                        <!-- Checkbox for updating email -->
-                                                                        <div class="form-group">
-                                                                            <input type="checkbox" id="updateEmailCheckbox" onchange="toggleEmailField()"> Update Email
-                                                                        </div>
-
-                                                                        <div class="input-group">
-                                                                            <input type="text" id="email" th:field="*{email}" placeholder="Email" class="form-control" aria-label="email" aria-describedby="basic-addon2" disabled />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="col-md-6">
-                                                                        <div class="form-group">
-                                                                            <div class="justify-content-center d-flex mb-2">
-                                                                                <label for="profilePictureFile">Profile Picture</label>
-                                                                            </div>
-                                                                            <div id="imagePreviewProfile" style="margin-bottom: 10px; display: none;" class="justify-content-center d-flex mb-3">
-                                                                                <img id="previewImageProfile" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 135px; height: 135px; object-fit: cover;" />
-                                                                            </div>
-                                                                            <input type="file" id="pictureFileProfile" name="profilePicture" accept="image/*" class="form-control" onchange="previewSettingsProfileImage(event)" />
-                                                                        </div>
-                                                                    </div>
+                                                        <div class="d-flex gap-5">
+                                                            <div class="col-md-6">
+                                                                <div class="form-group">
+                                                                    <input type="text" id="username" th:field="*{username}" placeholder="Username" class="form-control" required />
                                                                 </div>
 
-                                                                <div class="d-flex justify-content-center mt-5 mb-5">
-                                                                    <button type="submit" class="btn btn-primary btn-block w-25" id="submitButton">Update</button>
+                                                                <!-- Checkbox for updating password -->
+                                                                <div class="form-group">
+                                                                    <input type="checkbox" id="updatePasswordCheckbox" onchange="togglePasswordFields()"> Update Password
                                                                 </div>
-                                                            </form>
-                                                            <div class="mb-2">
-                                                                <form action="#" th:action="@{/api/status}" method="post" id="statusForm">
-                                                                    <input type="text" name="customStatus" id="customStatus" class="form-control mb-2" placeholder="Enter custom status" style="display:none;" />
-                                                                    <div class="status-section gap-1 d-flex">
-                                                                        <select id="statusSelect" name="statusSelect" class="form-control" required>
-                                                                            <option value="">Select Status</option>
-                                                                            <option value="Available">Available</option>
-                                                                            <option value="Busy">Busy</option>
-                                                                            <option value="Away">Away</option>
-                                                                            <option value="Custom">Custom</option>
-                                                                        </select>
-                                                                        <button type="submit" class="btn btn-primary" id="setStatus">Set Status</button>
+
+                                                                <div class="form-group">
+                                                                    <input type="password" id="password" th:field="*{password}" placeholder="Password" class="form-control" disabled />
+                                                                </div>
+                                                                <div class="form-group">
+                                                                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-control" disabled />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-md-6">
+                                                                <div class="form-group">
+                                                                    <div class="justify-content-center d-flex mb-2">
+                                                                        <label for="profilePictureFile">Profile Picture</label>
                                                                     </div>
-                                                                </form>
+                                                                    <div id="imagePreviewProfile" style="margin-bottom: 10px; display: none;" class="justify-content-center d-flex mb-3">
+                                                                        <img id="previewImageProfile" src="/images/profile-image.png" alt="Image Preview" class="img-fluid" style="width: 135px; height: 135px; object-fit: cover;" />
+                                                                    </div>
+                                                                    <input type="file" id="pictureFileProfile" name="profilePicture" accept="image/*" class="form-control" onchange="previewSettingsProfileImage(event)" />
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
 
-                                                    <div id="theme-settings" style="display: none;">
-                                                        <h4 class="text-center mb-4 form-heading app-color">Theme Settings</h4>
-                                                        <div class="row justify-content-center" id="theme-selection">
-                                                            <!-- Theme boxes will be dynamically added here -->
+                                                        <div class="d-flex justify-content-center mt-5 mb-5">
+                                                            <button type="submit" class="btn btn-primary btn-block w-25" id="submitButton">Update</button>
                                                         </div>
-                                                        <!-- Add your theme settings content here -->
-                                                    </div>
-
-                                                    <div id="login-history-settings" style="display: none;"> <!-- Initially hidden -->
-                                                        <h4 class="text-center mb-4 form-heading app-color">Login History</h4>
-
-                                                        <table class="table">
-                                                            <thead>
-                                                            <tr>
-                                                                <th>Date & Time</th>
-                                                                <th>Type</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                            <tr th:each="history : ${loginHistory}">
-                                                                <td th:text="${history.createdAt}"></td>
-                                                                <td th:text="${history.type}"></td>
-                                                            </tr>
-                                                            </tbody>
-                                                        </table>
+                                                    </form>
+                                                    <div class="mb-2">
+                                                        <form action="#" th:action="@{/api/status}" method="post" id="statusForm">
+                                                            <input type="text" name="customStatus" id="customStatus" class="form-control mb-2" placeholder="Enter custom status" style="display:none;" />
+                                                            <div class="status-section gap-1 d-flex">
+                                                                <select id="statusSelect" name="statusSelect" class="form-control" required>
+                                                                    <option value="">Select Status</option>
+                                                                    <option value="Available">Available</option>
+                                                                    <option value="Busy">Busy</option>
+                                                                    <option value="Away">Away</option>
+                                                                    <option value="Custom">Custom</option>
+                                                                </select>
+                                                                <button type="submit" class="btn btn-primary" id="setStatus">Set Status</button>
+                                                            </div>
+                                                        </form>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            <div id="theme-settings" style="display: none;">
+                                                <h4 class="text-center mb-4 form-heading app-color">Theme Settings</h4>
+                                                <div class="row justify-content-center" id="theme-selection">
+                                                    <!-- Theme boxes will be dynamically added here -->
+                                                </div>
+                                                <!-- Add your theme settings content here -->
+                                            </div>
+
+                                            <div id="login-history-settings" style="display: none;"> <!-- Initially hidden -->
+                                                <h4 class="text-center mb-4 form-heading app-color">Login History</h4>
+
+                                                <table class="table">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Date & Time</th>
+                                                        <th>Type</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <tr th:each="history : ${loginHistory}">
+                                                        <td th:text="${history.createdAt}"></td>
+                                                        <td th:text="${history.type}"></td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>
@@ -206,8 +197,8 @@
                             </div>
                         </div>
                     </div>
-                </li>
-            </ul>
+                </div>
+            </div>
         </div>
     </div>
 </nav>
