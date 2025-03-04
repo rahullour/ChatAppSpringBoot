@@ -1128,3 +1128,7 @@ trix-editor .attachment{
         padding-left: 10px; /* Space between bar and text */
     }
 }
+.dropdown-item:active {
+     color: #000000 !important;
+     background-color: unset !important;
+}

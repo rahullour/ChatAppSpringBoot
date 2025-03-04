@@ -123,11 +123,18 @@
                                                                 </div>
 
                                                                 <div class="form-group">
-                                                                    <input type="password" id="password" th:field="*{password}" placeholder="Password" class="form-control" disabled />
+                                                                    <input type="password" id="password" th:field="*{password}" placeholder="Password" class="form-control" required />
+                                                                    <small id="passwordError" class="text-danger" style="display: none;">Password must be 6-100 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.</small>
                                                                 </div>
                                                                 <div class="form-group">
-                                                                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-control" disabled />
+                                                                    <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-control" required />
+                                                                    <small id="passwordError2" class="text-danger" style="display: none;">Password length must be between 6 and 100 characters</small>
+                                                                    <small id="confirmPasswordError" class="text-danger" style="display: none;">Passwords do not match</small>
                                                                 </div>
+
+                                                                <input type="hidden" id="email"  th:name="email" th:value="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
+                                                                 (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
+                                                                 #authentication.principal.email}" />
                                                             </div>
 
                                                             <div class="col-md-6">
@@ -144,7 +151,7 @@
                                                         </div>
 
                                                         <div class="d-flex justify-content-center mt-5 mb-5">
-                                                            <button type="submit" class="btn btn-primary btn-block w-25" id="submitButton">Update</button>
+                                                            <button type="submit" class="btn btn-primary btn-block w-25 profileUpdateBtn" id="submitButton">Update</button>
                                                         </div>
                                                     </form>
                                                     <div class="mb-2">

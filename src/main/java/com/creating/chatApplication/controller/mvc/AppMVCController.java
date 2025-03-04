@@ -211,28 +211,12 @@ public class AppMVCController {
                     errors.add(bindingResult.getFieldError("password").getDefaultMessage());
                 }
             }
-
-            // Only validate email errors if email is being updated
-            if (user.getEmail() != null && !user.getEmail().equals(current_user.getEmail())) {
-                if (bindingResult.hasFieldErrors("email")) {
-                    errors.add(bindingResult.getFieldError("email").getDefaultMessage());
-                }
-            }
         }
 
         // Validate password match only if password is being updated
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             if (confirmPassword == null || !user.getPassword().equals(confirmPassword)) {
                 errors.add("Passwords do not match");
-            }
-        }
-
-
-        // Only validate email if it's being updated
-        if (user.getEmail() != null && !user.getEmail().equals(current_user.getEmail())) {
-            User existingUser = userService.getUserByEmail(user.getEmail());
-            if (existingUser != null && existingUser.getId() != current_user.getId()) {
-                errors.add("Email already exists!");
             }
         }
 
@@ -243,7 +227,7 @@ public class AppMVCController {
             }
             model.addAttribute("notifications", notificationManager.getNotifications());
             notificationManager.clearNotifications();
-            return "redirect:/loginPage";  // Change this to your actual profile page path
+            return "redirect:/";  // Change this to your actual profile page path
         }
 
         // Update username
@@ -275,20 +259,6 @@ public class AppMVCController {
                 notificationManager.sendFlashNotification("Password updated successfully. Please login with your new password.",
                         "alert-success", "medium-noty");
             }
-        }
-
-        // Handle email update
-        if (user.getEmail() != null && !user.getEmail().equals(current_user.getEmail())) {
-            current_user.setEnabled(false);
-            current_user.setEmail(user.getEmail());
-            needsRelogin = true;
-
-            String token = tokenGenerationService.generateVerificationToken(current_user);
-            String verificationLink = "http://localhost:8080/verifyEmail?user_id=" + current_user.getId() + "&token=" + token;
-            emailService.sendVerificationEmail(current_user.getEmail(), verificationLink);
-
-            notificationManager.sendFlashNotification("Verification email sent to your new email address. Please verify within 5 minutes.",
-                    "alert-success", "medium-noty");
         }
 
         userService.saveUser(current_user);

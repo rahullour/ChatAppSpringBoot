@@ -419,15 +419,73 @@ function togglePasswordFields() {
     const passwordField = document.getElementById('password');
     const confirmPasswordField = document.getElementById('confirmPassword');
     const updatePasswordCheckbox = document.getElementById('updatePasswordCheckbox');
-
+    const submitButton = document.getElementsByClassName("profileUpdateBtn")[0];
     if (updatePasswordCheckbox.checked) {
         passwordField.disabled = false;
         confirmPasswordField.disabled = false;
+        submitButton.disabled = true;
     } else {
         passwordField.disabled = true;
         confirmPasswordField.disabled = true;
+        submitButton.disabled = false;
     }
 }
+
+// Function to validate password length
+function validatePasswordLength(input, errorElementId) {
+    const value = input.value;
+    const errorElement = document.getElementById(errorElementId);
+    const submitButton = document.getElementsByClassName("profileUpdateBtn")[0];
+
+    if (value.length < 6 || value.length > 100) {
+        errorElement.style.display = "block"; // Show error message
+        submitButton.disabled = true; // Disable submit button
+        return false;
+    } else {
+        errorElement.style.display = "none"; // Hide error message
+        return true;
+    }
+}
+
+// Function to check if passwords match
+function checkPasswordMatch() {
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    const matchErrorElement = document.getElementById("confirmPasswordError");
+    const submitButton = document.getElementsByClassName("profileUpdateBtn")[0];
+
+    if (password !== confirmPassword) {
+        matchErrorElement.style.display = "block"; // Show error message
+        submitButton.disabled = true; // Disable submit button
+        return false;
+    } else {
+        matchErrorElement.style.display = "none"; // Hide error message
+        return true;
+    }
+}
+
+// Function to validate both fields and enable/disable the submit button
+function validateForm() {
+    const isPasswordLengthValid = validatePasswordLength(document.getElementById("password"), "passwordError");
+    const isConfirmPasswordLengthValid = validatePasswordLength(document.getElementById("confirmPassword"), "passwordError2");
+    const isMatchValid = checkPasswordMatch();
+
+    const submitButton = document.getElementsByClassName("profileUpdateBtn")[0];
+    submitButton.disabled = !(isPasswordLengthValid && isConfirmPasswordLengthValid && isMatchValid); // Enable only if all checks pass
+}
+
+// Add event listeners for real-time validation
+document.getElementById("password").addEventListener("input", function () {
+    validateForm();
+});
+
+document.getElementById("confirmPassword").addEventListener("input", function () {
+    validateForm();
+});
+
+// Initially disable the submit button
+document.getElementsByClassName("profileUpdateBtn")[0].disabled = true;
+
 
 // Initially disable password and email fields
 document.addEventListener('DOMContentLoaded', function() {
