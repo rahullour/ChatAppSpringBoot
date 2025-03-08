@@ -10,19 +10,15 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "theme")
 public class Theme {
+    private static final String THEMES_DIRECTORY_PATH = "/images/themes";
+    private static final String COMPRESSED_THEMES_DIRECTORY_PATH = "/images/themes/compressed";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @Column(name = "theme_url", columnDefinition = "LONGTEXT")
-    private String themeUrl;
-
     @Column(name = "theme_name")
     private String themeName;
-
-    @Column(name = "theme_url_compressed", columnDefinition = "LONGTEXT")
-    private String themeUrlCompressed;
-
 
     public Theme() {
     }
@@ -35,24 +31,26 @@ public class Theme {
         this.themeName = themeName;
     }
 
-    public Theme(String themeUrl){
-        this.themeUrl = themeUrl;
+    public String getThemeUrl() {
+        String fileName = this.themeName;
+        return THEMES_DIRECTORY_PATH + '/' + fileName;
     }
 
     public String getThemeUrlCompressed() {
-        return themeUrlCompressed;
-    }
+        String fileName = this.themeName; // Example: "1.png"
+        int lastDotIndex = fileName.lastIndexOf(".");
 
-    public void setThemeUrlCompressed(String themeUrlCompressed) {
-        this.themeUrlCompressed = themeUrlCompressed;
-    }
+        if (lastDotIndex != -1) {
+            // Insert "-c" before the file extension
+            String namePart = fileName.substring(0, lastDotIndex); // "1"
+            String extensionPart = fileName.substring(lastDotIndex); // ".png"
+            fileName = namePart + "-c" + extensionPart; // "1-c.png"
+        } else {
+            // If no extension is found, just append "-c" at the end
+            fileName += "-c";
+        }
 
-    public String getThemeUrl() {
-        return themeUrl;
-    }
-
-    public void setThemeUrl(String themeUrl) {
-        this.themeUrl = themeUrl;
+        return COMPRESSED_THEMES_DIRECTORY_PATH + '/' + fileName;
     }
 
     public int getId() {
@@ -67,7 +65,6 @@ public class Theme {
     public String toString() {
         return "Theme{" +
                 "id=" + id +
-                ", themeUrl='" + themeUrl + '\'' +
                 '}';
     }
 }

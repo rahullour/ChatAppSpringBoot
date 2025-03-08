@@ -180,7 +180,7 @@ public class AppMVCController {
         authorities.add(userAuthority);
         user.setAuthorities(authorities);
         String token = tokenGenerationService.generateVerificationToken(user);
-        String verificationLink = "http://3.85.195.27:8080/verifyEmail?user_id=" + user.getId() +"&token=" + token;
+        String verificationLink = "http://52.90.139.68:8080/verifyEmail?user_id=" + user.getId() +"&token=" + token;
         emailService.sendVerificationEmail(user.getEmail(), verificationLink);
         String notificationMessage = "We have sent an email, please verify your email id, link valid for 5 minutes !";
         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
@@ -291,7 +291,7 @@ public class AppMVCController {
         }
         else {
             String token = tokenGenerationService.generateVerificationToken(user);
-            String verificationLink = "http://3.85.195.27:8080/resetPassword?user_id=" + user.getId() +"&token=" + token;
+            String verificationLink = "http://52.90.139.68:8080/resetPassword?user_id=" + user.getId() +"&token=" + token;
             emailService.sendPasswordResetEmail(user.getEmail(), verificationLink);
             String notificationMessage = "We have sent an email, please verify yourself, link valid for 5 minutes !";
             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
@@ -333,7 +333,7 @@ public class AppMVCController {
 
         if (errors) {
             model.addAttribute("notifications", notificationManager.getNotifications());
-            response.sendRedirect("http://3.85.195.27:8080/resetPassword?user_id=" + user_id + "&token=" + token);
+            response.sendRedirect("http://52.90.139.68:8080/resetPassword?user_id=" + user_id + "&token=" + token);
             return null;
         }
 

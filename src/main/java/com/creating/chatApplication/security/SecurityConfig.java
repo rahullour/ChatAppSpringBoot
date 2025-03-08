@@ -85,8 +85,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/loginPage", "/signup-form", "/signup", "/verifyEmail", "/verifyInviteUser",
                                 "/verifyResetEmail", "/resetPassword", "/passwordResetFormSubmit",
-                                "/static/**", "/css/**", "/js/**", "/images/**",
-                                "/oauth2/**", "/login/oauth2/**" // OAuth2-related endpoints
+                                "/api/themes", "/themes", "/oauth2/**", "/login/oauth2/**"
+                        ).permitAll()
+
+                        // 🔹 Allow static resources
+                        .requestMatchers(
+                                "/static/**", "/css/**", "/js/**", "/images/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

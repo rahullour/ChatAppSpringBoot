@@ -19,8 +19,8 @@ import java.util.Optional;
 @Service
 public class ThemeServiceImpl implements ThemeService {
 
-    private static final String THEMES_DIRECTORY_PATH = "src/main/resources/static/themes";
-    private static final String COMPRESSED_THEMES_DIRECTORY_PATH = "src/main/resources/static/themes/compressed";
+    private static final String THEMES_DIRECTORY_PATH = "src/main/resources/static/images/themes";
+    private static final String COMPRESSED_THEMES_DIRECTORY_PATH = "src/main/resources/static/images/themes/compressed";
 
     @Autowired
     private ThemeRepository themeRepository;
@@ -39,9 +39,7 @@ public class ThemeServiceImpl implements ThemeService {
         for (ThemeData theme : defaultThemes) {
             // If not present, save it
             Theme newTheme = new Theme();
-            newTheme.setThemeUrl(theme.getBase64Image());
             newTheme.setThemeName(theme.getFileName());
-            newTheme.setThemeUrlCompressed(theme.getCompressedUrl());
             themeRepository.save(newTheme);
         }
     }
@@ -63,9 +61,7 @@ public class ThemeServiceImpl implements ThemeService {
                 int i = 0;
                 for (File imageFile : imageFiles) {
                     if (themeRepository.findByThemeName(imageFile.getName()).isEmpty()) {
-                        String base64Image = convertImageToBase64(imageFile.getAbsolutePath());
-                        String compressedBase64Image = convertImageToBase64(compressedImageFiles[i++].getAbsolutePath());
-                        defaultThemes.add(new ThemeData(imageFile.getName(), base64Image, base64Image));
+                        defaultThemes.add(new ThemeData(imageFile.getName()));
                     }
                 }
             }

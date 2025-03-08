@@ -11,7 +11,7 @@
 	<groupId>com.creating</groupId>
 	<artifactId>chatApplication</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>chatApplication</name>
+	<name>chatApplication-aws</name>
 	<description>Chap App In Spring Boot</description>
 	<url/>
 	<licenses>

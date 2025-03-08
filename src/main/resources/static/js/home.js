@@ -301,7 +301,6 @@ function displayThemes(themes) {
 
     themes.forEach((theme) => {
         const themeBox = createThemeBox(theme);
-        // Use setTimeout to prevent freezing during rendering
         setTimeout(() => {
             themeSelection.append(themeBox);
         }, 0);
@@ -313,12 +312,11 @@ function createThemeBox(theme) {
     const loadingIndicator = createLoadingIndicator();
 
     themeBox.append(loadingIndicator);
-
     if (theme.compressedUrl) {
         lazyLoadThemeImage(theme.compressedUrl, themeBox, loadingIndicator);
     } else {
         loadingIndicator.text('No image');
-        setTimeout(() => { loadingIndicator.hide(); }, 2000); // Hide after some time
+        setTimeout(() => { loadingIndicator.hide(); }, 2000);
     }
 
     themeBox.on('click', () => selectTheme(theme.id));
@@ -332,7 +330,7 @@ function lazyLoadThemeImage(url, themeBox, loadingIndicator) {
     loadingIndicator.show();
 
     img.onload = () => {
-        themeBox.css('background-image', `url(data:image/png;base64,${url})`);
+        themeBox.css('background-image', `url(${url})`);
         themeBox.css('background-size', 'cover');
         loadingIndicator.hide();
     };
@@ -342,10 +340,7 @@ function lazyLoadThemeImage(url, themeBox, loadingIndicator) {
         setTimeout(() => { loadingIndicator.hide(); }, 2000);
     };
 
-    // Start loading the image
-    setTimeout(() => {
-        img.src = `data:image/png;base64,${url}`;
-    }, 0);
+    img.src = url;
 }
 
 function createLoadingIndicator() {
@@ -358,8 +353,8 @@ function selectTheme(id) {
     $.ajax({
         url: `/api/themeImage?themeId=${id}`,
         method: 'GET',
-        success: function (base64Image) {
-            applyThemeBackground(base64Image);
+        success: function (imageUrl) {
+            applyThemeBackground(imageUrl);
             $.ajax({
                 url: `/api/setTheme?themeId=${id}`,
                 method: 'GET',
@@ -383,20 +378,19 @@ function setCurrentTheme() {
     return $.ajax({
         url: '/api/currentTheme',
         method: 'GET',
-        success: function (base64Image) {
-            applyThemeBackground(base64Image);
+        success: function (imageUrl) {
+            applyThemeBackground(imageUrl);
             state.currentThemeLoaded = true;
             eventDispatcher.dispatch('currentThemeLoaded');
         },
         error: function () {
-            console.error('Error fetching current theme');
-            showErrorMessage('Using default.');
+            showErrorMessage('Error fetching current theme');
         },
     });
 }
 
-function applyThemeBackground(base64Image) {
-    $('#messages').css('background-image', `url(data:image/png;base64,${base64Image})`);
+function applyThemeBackground(imageUrl) {
+    $('#messages').css('background-image', `url(${imageUrl})`);
 }
 
 function showLoadingIndicator() {
