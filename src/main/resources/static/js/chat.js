@@ -2119,7 +2119,7 @@ async function sendMessage(roomId) {
                     if (replyMessageWrapper) {
                             // Extract only the `.attachments-container`, spans
 //                            const attachmentsContainer = replyMessageWrapper.querySelector(".attachments-container");
-                            const textContent = replyMessageWrapper.querySelector("span");
+                            const textContent = replyMessageWrapper.querySelector('span:not(.message-reply-reference > span)');
 
                             const replyIndicator = document.createElement("div");
                             replyIndicator.classList.add("reply-indicator");
