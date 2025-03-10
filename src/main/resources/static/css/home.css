@@ -1141,3 +1141,6 @@ trix-editor .attachment{
      color: #000000 !important;
      background-color: unset !important;
 }
+.dropdown-toggle{
+    color: black !important;
+}
