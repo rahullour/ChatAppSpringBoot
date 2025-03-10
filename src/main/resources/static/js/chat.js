@@ -1330,14 +1330,6 @@ async function handleNewMessages(snapshot, roomId) {
             }
 
             const newSnapshot = await getDocs(messagesQuery);
-//
-//            const debugSnapshot = await getDocs(
-//              query(collection(db, "Messages"), orderBy("timestamp", "asc"))
-//            );
-//
-//            debugSnapshot.docs.forEach(doc => {
-//              console.log(doc.id, doc.data().timestamp.toDate().toISOString());
-//            });
 
             // **1. Extract Message IDs for the new messages**
             const newMessageIds = newSnapshot.docs
@@ -1389,7 +1381,8 @@ async function handleNewMessages(snapshot, roomId) {
                             }
                         }
 
-
+                        // update message content -
+                        textSpan.innerHTML = data.text;
                         // Update attachments
                         // Remove existing attachments container if it exists
                         const existingAttachmentsContainer = messageContent.querySelector('.attachments-container');
