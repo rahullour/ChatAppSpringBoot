@@ -6,17 +6,26 @@ body{
     font-family: 'Quicksand', sans-serif !important;
 }
 
+#navbar{
+    background-color: #effbff !important;
+}
+.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+    color: black !important;
+    font-weight: 600;
+    border-bottom: 3px solid #04ff00;
+}
+.nav-link{
+    border-top-radius: none;
+    color: grey !important;
+}
 .navbar-header{
     border-bottom: 1px solid #c2c2c2;
-    .nav-links{
-        border-top-radius: none;
-
-    }
     .navbar-collapse{
         ul{
             gap: 1vw;
         }
         .nav-logo{
+            color: black !important;
             display: flex;
             gap: 5px;
             div{
@@ -26,7 +35,7 @@ body{
     }
 }
 .sidebar{
-   background-color: #f8f9fa;
+   background-color: #f1f1f1;;
    border-right: 1px solid #dee2e6;
    padding-right: 0px !important;
 }
@@ -264,7 +273,7 @@ trix-editor:focus {
 
 .send-btn-box {
     position: absolute !important;
-    left: 0rem;
+    right: 0rem;
     bottom: 0.5rem;
     z-index: 20;
 }

@@ -25,7 +25,7 @@
     <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
 <div id="toast-container" class="toast-container"></div> <!-- New toast container -->
-<nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary">
+<nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary" id="navbar">
     <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
