@@ -68,7 +68,7 @@ body{
 .chat-screen{
     #one-to-one, #group-chats ul{
         list-style-type: none;
-        background: #cbfff1;
+        background: #f0f0f0;
         li{
             padding: 10px;
         }
@@ -404,7 +404,7 @@ trix-editor .attachment{
 }
 
 #inviteForm .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #92fff4;
+    background-color: #f0f0f0;
 }
 
 .date-header {
@@ -476,7 +476,7 @@ trix-editor .attachment{
     }
     .nav-item.selected {
         border-left: 4px solid #000000;
-        background-color: #2076a9;
+        background-color: #7acdff;
         a{
             color: white;
         }
@@ -650,7 +650,7 @@ trix-editor .attachment{
     margin-bottom: 5px;
 }
 .chat-active-li, .invite-item:hover{
-   background: aquamarine;
+   background: #cbfff1;
 }
 .message-image{
     width: 100px;
@@ -1137,10 +1137,24 @@ trix-editor .attachment{
         padding-left: 10px; /* Space between bar and text */
     }
 }
+.dropdown-menu .dropdown-item:hover {
+    background-color: #f0f0f0;
+    color: #000000;
+    border-radius: 6px;
+    transition: 0.1s ease;
+}
+
+.dropdown-menu .dropdown-item:hover img {
+    transform: scale(1.02);
+    transition: 0.2s ease;
+}
 .dropdown-item:active {
      color: #000000 !important;
      background-color: unset !important;
 }
 .dropdown-toggle{
+    color: black !important;
+}
+.settings-menu-btn{
     color: black !important;
 }

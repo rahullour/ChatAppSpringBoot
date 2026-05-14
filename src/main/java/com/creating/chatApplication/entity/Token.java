@@ -26,9 +26,22 @@ public class Token {
     @Column(name = "expire_at")
     private LocalDateTime expire_at;
 
+    @Column(name = "room_id")
+    private String roomId;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    // Default constructor
+    public Token() {}
+
+    public Token(LocalDateTime expireAt, String roomId, String token, String type) {
+        this.expire_at = expireAt;
+        this.roomId = roomId;
+        this.token = token;
+        this.type = type;
+    }
 
     public User getUser() {
         return user;
@@ -36,17 +49,6 @@ public class Token {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    // Default constructor
-    public Token() {}
-
-
-    // Constructor with fields
-    public Token(String type, String token, LocalDateTime expire_at) {
-        this.type = type;
-        this.token = token;
-        this.expire_at = expire_at;
     }
 
     public int getId() {

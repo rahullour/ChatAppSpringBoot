@@ -23,7 +23,7 @@ public class FirebaseConfig {
     private ResourceLoader resourceLoader;
 
     public Resource getResourceFromPath() throws IOException {
-        return resourceLoader.getResource("classpath:wechat-ec503-4b309cc2015a.json");
+        return resourceLoader.getResource("classpath:wechat-ec503-firebase-adminsdk-fbsvc-02a7509602.json");
     }
 
     @Bean

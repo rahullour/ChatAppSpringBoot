@@ -20,13 +20,28 @@ public class InviteServiceImpl implements InviteService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private TokenService tokenService;
+    @Autowired
+    private InviteGroupServiceImpl inviteGroupServiceImpl;
+
+
     @Override
-    public Invite createInvite(String senderEmail, String recipientEmail, int type, InviteGroup inviteGroup, String roomId) {
+        public Invite createInvite(String senderEmail, String recipientEmail, int type, InviteGroup inviteGroup, String roomId) {
         Invite invite = new Invite();
         invite.setSenderEmail(senderEmail);
         invite.setRecipientEmail(recipientEmail);
         invite.setType(type);
         invite.setRoomId(roomId);
+//         clear previous invites
+        List<Integer> not_accepted_ids = this.getAllInvitesRoomIdNotAccepted(roomId);
+        for(Integer x: not_accepted_ids){
+            if(type == 1){
+                inviteGroupServiceImpl.rejectInviteGroup(x);
+            }
+            this.rejectInvite(x);
+            tokenService.deleteBySenderEmailAndRoomId(senderEmail, roomId);
+        }
         return inviteRepository.save(invite);
     }
 
@@ -51,8 +66,13 @@ public class InviteServiceImpl implements InviteService {
     }
 
     @Override
-    public List<Invite> getInvitesBySenderOrRecieverEmailAccepted(String email, int type) {
-        return inviteRepository.findBySenderOrRecieverEmailAndTypeAccepted(email, type);
+    public List<Invite> getInvitesBySenderOrReceiverEmailAccepted(String email, int type) {
+        return inviteRepository.findBySenderOrReceiverEmailAndTypeAccepted(email, type);
+    }
+
+    @Override
+    public List<Integer> getAllInvitesRoomIdNotAccepted(String roomId) {
+        return inviteRepository.findByRoomIdNotAccepted(roomId);
     }
 
     @Override

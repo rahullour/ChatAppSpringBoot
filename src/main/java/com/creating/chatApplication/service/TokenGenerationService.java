@@ -27,10 +27,10 @@ public class TokenGenerationService {
         return token;
     }
 
-    public String generateToken(User user, String type) {
+    public String generateToken(User user, String type, String roomId) {
         String token = UUID.randomUUID().toString(); // Generate a unique token
         // Save the token in the database associated with the user
-        tokenService.createToken(type, token, LocalDateTime.now().plusMinutes(5), user);
+        tokenService.createToken(type, token, LocalDateTime.now().plusMinutes(5), user, roomId);
         return token;
     }
 }

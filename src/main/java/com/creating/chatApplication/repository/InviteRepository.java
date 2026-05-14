@@ -32,6 +32,9 @@ public interface InviteRepository extends JpaRepository<Invite, Integer> {
                                           @Param("type") int type);
 
     @Query("SELECT i FROM Invite i WHERE i.senderEmail = :email OR i.recipientEmail = :email AND i.type = :type AND i.accepted = true")
-    List<Invite> findBySenderOrRecieverEmailAndTypeAccepted(@Param("email") String senderEmail,
+    List<Invite> findBySenderOrReceiverEmailAndTypeAccepted(@Param("email") String email,
                                                   @Param("type") int type);
+
+    @Query("SELECT i.id FROM Invite i WHERE i.roomId = :roomId AND i.accepted = false")
+    List<Integer> findByRoomIdNotAccepted(@Param("roomId") String roomId);
 }

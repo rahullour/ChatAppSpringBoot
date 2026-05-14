@@ -1610,6 +1610,8 @@ function renderAttachments(attachments, messageContent) {
 
     // Store all images from all message contents globally
     attachments.forEach(attachment => {
+        console.log(attachment);
+        console.log(attachment.fileType);
         if (attachment.fileType.startsWith('image/')) {
             const imgWrapper = document.createElement('div');
             imgWrapper.classList.add('image-wrapper');

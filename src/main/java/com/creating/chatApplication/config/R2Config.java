@@ -25,14 +25,21 @@ public class R2Config {
 
     @Bean
     public AmazonS3 r2Client() {
+
+        BasicAWSCredentials credentials =
+                new BasicAWSCredentials(accessKey, secretKey);
+
         return AmazonS3ClientBuilder.standard()
                 .withEndpointConfiguration(
-                        new AwsClientBuilder.EndpointConfiguration(endpoint, "auto")
-                )
-                .withCredentials(
-                        new AWSStaticCredentialsProvider(
-                                new BasicAWSCredentials(accessKey, secretKey)
+                        new AwsClientBuilder.EndpointConfiguration(
+                                endpoint,
+                                "auto"
                         )
+                )
+                .withPathStyleAccessEnabled(true)
+                .disableChunkedEncoding()
+                .withCredentials(
+                        new AWSStaticCredentialsProvider(credentials)
                 )
                 .build();
     }

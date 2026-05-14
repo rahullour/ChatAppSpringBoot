@@ -13,10 +13,10 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    public void sendInviteEmail(String to, String senderUsername, String chatLink, Boolean type) {
+    public void sendInviteEmail(String to, String senderUsername, String senderEmail, String chatLink, Boolean type) {
         String subject = "WeChat Invitation";
         String convType = type == true ? "group" : "";
-        String body = buildInviteEmailBody(senderUsername, chatLink, convType);
+        String body = buildInviteEmailBody(senderUsername, senderEmail, chatLink, convType);
 
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -32,7 +32,7 @@ public class EmailService {
         }
     }
 
-    private String buildInviteEmailBody(String senderUsername, String chatLink, String convType) {
+    private String buildInviteEmailBody(String senderUsername, String senderEmail, String chatLink, String convType) {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
@@ -65,7 +65,7 @@ public class EmailService {
                 "        .button {\n" +
                 "            display: inline-block;\n" +
                 "            background-color: #ff881d;\n" +
-                "            color: white;\n" +
+                "            color: white !important;\n" +
                 "            padding: 12px 24px;\n" +
                 "            text-decoration: none;\n" +
                 "            border-radius: 5px;\n" +
@@ -84,11 +84,9 @@ public class EmailService {
                 "    <div class=\"container\">\n" +
                 "        <h1>You're Invited to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
-                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>. We're excited to have you !</p>\n" +
-                "        <p>To join the conversation, simply click the button below:</p>\n" +
+                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>, "+ "email: " + senderEmail + ". We're excited to have you !</p>\n" +
+                "        <p>Do invite " + senderEmail + " after login if this mail came before your account verification !</p>\n" +
                 "        <a href=\"" + chatLink + "\" class=\"button\">Join the Chat</a>\n" +
-                "        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>\n" +
-                "        <p>" + chatLink + "</p>\n" +
                 "        <p>We look forward to seeing you in the chat!</p>\n" +
                 "        <p>Best regards,<br>WeChat Team</p>\n" +
                 "        <div class=\"footer\">\n" +
@@ -165,7 +163,7 @@ public class EmailService {
                 "        .button {\n" +
                 "            display: inline-block;\n" +
                 "            background-color: #ff881d;\n" +
-                "            color: white;\n" +
+                "            color: white !important;\n" +
                 "            padding: 12px 24px;\n" +
                 "            text-decoration: none;\n" +
                 "            border-radius: 5px;\n" +
@@ -182,12 +180,10 @@ public class EmailService {
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class=\"container\">\n" +
-                "        <h1>Welcome to WeChat!</h1>\n" +
+                "        <h1>Welcome to WeChat !</h1>\n" +
                 "        <p>Hello,</p>\n" +
                 "        <p>We have received a password request for you account, please click the button below to reset your account password:</p>\n" +
                 "        <a href=\"" + verificationLink + "\" class=\"button\">Reset Password</a>\n" +
-                "        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>\n" +
-                "        <p>" + verificationLink + "</p>\n" +
                 "        <p>Please ignore this email if not requested by you.</p>\n" +
                 "        <p>If you have any questions or need further assistance, please don't hesitate to contact us at wechatcorporations@gmail.com.</p>\n" +
                 "        <p>Best regards,<br>WeChat Team</p>\n" +
@@ -226,7 +222,7 @@ public class EmailService {
                 "        .button {\n" +
                 "            display: inline-block;\n" +
                 "            background-color: #ff881d;\n" +
-                "            color: white;\n" +
+                "            color: white !important;\n" +
                 "            padding: 12px 24px;\n" +
                 "            text-decoration: none;\n" +
                 "            border-radius: 5px;\n" +
@@ -243,12 +239,10 @@ public class EmailService {
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class=\"container\">\n" +
-                "        <h1>Welcome to WeChat!</h1>\n" +
+                "        <h1>Welcome to WeChat !</h1>\n" +
                 "        <p>Hello,</p>\n" +
                 "        <p>Thank you for signing up for WeChat. To complete your registration, please click the button below to verify your email address:</p>\n" +
                 "        <a href=\"" + verificationLink + "\" class=\"button\">Verify Email</a>\n" +
-                "        <p>If the button doesn't work, you can copy and paste this link into your browser:</p>\n" +
-                "        <p>" + verificationLink + "</p>\n" +
                 "        <p>Once your email is verified, you'll be able to start chatting with your friends and family on WeChat.</p>\n" +
                 "        <p>If you have any questions or need further assistance, please don't hesitate to contact us at wechatcorporations@gmail.com.</p>\n" +
                 "        <p>Best regards,<br>WeChat Team</p>\n" +

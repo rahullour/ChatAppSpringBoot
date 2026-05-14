@@ -180,7 +180,7 @@ public class AppMVCController {
         authorities.add(userAuthority);
         user.setAuthorities(authorities);
         String token = tokenGenerationService.generateVerificationToken(user);
-        String verificationLink = "http://52.90.139.68:8080/verifyEmail?user_id=" + user.getId() +"&token=" + token;
+        String verificationLink = "http://localhost:8080/verifyEmail?user_id=" + user.getId() +"&token=" + token;
         emailService.sendVerificationEmail(user.getEmail(), verificationLink);
         String notificationMessage = "We have sent an email, please verify your email id, link valid for 5 minutes !";
         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
@@ -291,7 +291,7 @@ public class AppMVCController {
         }
         else {
             String token = tokenGenerationService.generateVerificationToken(user);
-            String verificationLink = "http://52.90.139.68:8080/resetPassword?user_id=" + user.getId() +"&token=" + token;
+            String verificationLink = "http://localhost:8080/resetPassword?user_id=" + user.getId() +"&token=" + token;
             emailService.sendPasswordResetEmail(user.getEmail(), verificationLink);
             String notificationMessage = "We have sent an email, please verify yourself, link valid for 5 minutes !";
             notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
@@ -303,11 +303,11 @@ public class AppMVCController {
     public String resetPassword(@RequestParam int user_id, @RequestParam String token, RedirectAttributes redirectAttributes, Model model) {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
         if (user == null) {
-            notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired !", "alert-danger", "short-noty");
             return "redirect:/loginPage";
         }
         else if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
-            notificationManager.sendFlashNotification("Verification token has expired, please re-create reset password request !", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired, please re-create reset password request !", "alert-danger", "short-noty");
             return "redirect:/loginPage";
         }
 
@@ -333,19 +333,19 @@ public class AppMVCController {
 
         if (errors) {
             model.addAttribute("notifications", notificationManager.getNotifications());
-            response.sendRedirect("http://52.90.139.68:8080/resetPassword?user_id=" + user_id + "&token=" + token);
+            response.sendRedirect("http://localhost:8080/resetPassword?user_id=" + user_id + "&token=" + token);
             return null;
         }
 
         User sent_user = userService.findByVerificationTokenAndUserId(user_id, token);
         if (sent_user == null) {
-            notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired !", "alert-danger", "short-noty");
             model.addAttribute("notifications", notificationManager.getNotifications());
             notificationManager.clearNotifications();
             return "redirect:/loginPage";
         }
         else if (sent_user.getTokenExpiration().isBefore(LocalDateTime.now())) {
-            notificationManager.sendFlashNotification("Verification token has expired, please re-create reset password request !", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired, please re-create reset password request !", "alert-danger", "short-noty");
             model.addAttribute("notifications", notificationManager.getNotifications());
             notificationManager.clearNotifications();
             return "redirect:/loginPage";
@@ -363,12 +363,12 @@ public class AppMVCController {
     public String verifyEmail(@RequestParam int user_id, @RequestParam String token) {
         User user = userService.findByVerificationTokenAndUserId(user_id, token);
         if (user == null) {
-            notificationManager.sendFlashNotification("Invalid verification token/user_id !", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired !", "alert-danger", "short-noty");
             return "redirect:/loginPage";
         }
 
         if (user.getTokenExpiration().isBefore(LocalDateTime.now())) {
-            notificationManager.sendFlashNotification("Verification token has expired, please re-signup !", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired, please re-signup !", "alert-danger", "short-noty");
             userService.DeleteUserById(user_id);
             return "signup-form";
         }
@@ -384,10 +384,10 @@ public class AppMVCController {
         Token stored_token = tokenService.findByUserTokenAndType(sender_id, token, "invite");
 
         if (stored_token == null) {
-            notificationManager.sendFlashNotification("Invalid verification token/user_id.", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired !", "alert-danger", "short-noty");
         }
         else if (stored_token.getExpire_at().isBefore(LocalDateTime.now())) {
-            notificationManager.sendFlashNotification("Verification token has expired.", "alert-danger", "short-noty");
+            notificationManager.sendFlashNotification("Your link has expired !", "alert-danger", "short-noty");
         }
         else{
             User user = userService.getUserById(user_id);

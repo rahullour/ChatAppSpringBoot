@@ -4,6 +4,7 @@ import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.UserGroup;
 import com.creating.chatApplication.repository.InviteGroupRepository;
+import com.creating.chatApplication.repository.UserGroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,10 @@ import java.util.List;
 public class InviteGroupServiceImpl implements InviteGroupService{
     @Autowired
     private InviteGroupRepository inviteGroupRepository;
+    @Autowired
+    private UserGroupServiceImpl userGroupServiceImpl;
+    @Autowired
+    private UserGroupRepository userGroupRepository;
 
     @Override
     public InviteGroup saveInviteGroup(InviteGroup inviteGroup) {
@@ -33,9 +38,13 @@ public class InviteGroupServiceImpl implements InviteGroupService{
     public void rejectInviteGroup(int inviteId) {
         InviteGroup inviteGroup = inviteGroupRepository.findByInviteId(inviteId);
         if (inviteGroup != null) {
+            UserGroup userGroup = inviteGroup.getUserGroup();
             inviteGroup.setUserGroup(null);
             inviteGroupRepository.save(inviteGroup);
             inviteGroupRepository.delete(inviteGroup);
+            if (userGroup != null) {
+                userGroupRepository.delete(userGroup);
+            }
         }
     }
 }
