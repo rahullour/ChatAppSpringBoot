@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 public class User {
 
     @Id
@@ -38,7 +38,7 @@ public class User {
     @Column(name = "fcm_token")
     private String fcmToken;
 
-    @Column(name = "profile_picture_url", columnDefinition = "LONGTEXT")
+    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
     private String profilePictureUrl;
 
     @Column(name = "verification_token", nullable = false)

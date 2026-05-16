@@ -22,7 +22,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         try (var connection = dataSource.getConnection();
-             var preparedStatement = connection.prepareStatement("SELECT id, username, email, password, enabled FROM user WHERE username = ? OR email = ?")) {
+             var preparedStatement = connection.prepareStatement("SELECT id, username, email, password, enabled FROM users WHERE username = ? OR email = ?")) {
             preparedStatement.setString(1, usernameOrEmail);
             preparedStatement.setString(2, usernameOrEmail);
             try (var resultSet = preparedStatement.executeQuery()) {

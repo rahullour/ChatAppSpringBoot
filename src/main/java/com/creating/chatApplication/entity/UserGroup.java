@@ -16,7 +16,7 @@ public class UserGroup {
     @Column(name = "room_id")
     private String roomId;
 
-    @Column(name = "profile_picture_url", columnDefinition = "LONGTEXT")
+    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
     private String profilePictureUrl;
 
     public UserGroup() {}
