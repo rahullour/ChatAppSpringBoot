@@ -182,7 +182,7 @@ public class AppMVCController {
         String token = tokenGenerationService.generateVerificationToken(user);
 
         String verificationLink = String.format(
-                "http://localhost:8080/verifyEmail?user_id=%d&token=%s",
+                "https://chatappspringboot.onrender.com/verifyEmail?user_id=%d&token=%s",
                 user.getId(),
                 token
         );

@@ -112,7 +112,7 @@ public class InviteController {
                             if (user == null) {
                                 String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                                 notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                                String link = "http://localhost:8080/signup-form";
+                                String link = "https://chatappspringboot.onrender.com/signup-form";
                                 emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
                                 continue;
                             }
@@ -134,7 +134,7 @@ public class InviteController {
                             String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
 
-                            String link = "http://localhost:8080/signup-form";
+                            String link = "https://chatappspringboot.onrender.com/signup-form";
                             emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
                             continue;
                         }
@@ -168,7 +168,7 @@ public class InviteController {
                         }
                         String token = tokenGenerationService.generateToken(userService.getUserByEmail(senderEmail), "invite", tokenRoomId);
                         String verificationLink = String.format(
-                                "http://localhost:8080/verifyInviteUser?token=%s&type=%d&sender_id=%d&user_id=%d&groupName=%s",
+                                "https://chatappspringboot.onrender.com/verifyInviteUser?token=%s&type=%d&sender_id=%d&user_id=%d&groupName=%s",
                                 token,
                                 type ? 1 : 0,
                                 userService.getUserByEmail(senderEmail).getId(),

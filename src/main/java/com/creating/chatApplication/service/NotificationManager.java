@@ -48,7 +48,7 @@ public class NotificationManager {
         if (currentUser != null) {
             String senderUsername = currentUser.getUsername();
             String chatLink = String.format(
-                    "http://localhost:8080"
+                    "http:localhost:8080"
             );
             String emailContent = getEmailTemplate(senderUsername, chatLink);
 
