@@ -33,7 +33,7 @@ build/
 .vscode/
 
 # Ignore application.properties
-/src/main/resources/application.properties
+/src/main/resources/application-dev.properties
 
 # Ignore Firebase admin SDK JSON file
 #rahullour01@gmail.com file
