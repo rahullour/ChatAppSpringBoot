@@ -7,8 +7,6 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import com.creating.chatApplication.entity.FlashNotification;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -26,8 +24,7 @@ public class NotificationManager {
     private UserService userService; // Remove static modifier
 
     @Autowired
-    private JavaMailSender mailSender; // Inject JavaMailSender
-
+    private GmailEmailServiceImpl emailService;
     private List<FlashNotification> notifications = new ArrayList<>();
 
     public void sendFlashNotification(String message, String type, String duration_type) {
@@ -50,17 +47,13 @@ public class NotificationManager {
         User currentUser = userService.getCurrentUser();
         if (currentUser != null) {
             String senderUsername = currentUser.getUsername();
-            String chatLink = "localhost:8080"; // Replace with actual chat link
+            String chatLink = String.format(
+                    "http://localhost:8080"
+            );
             String emailContent = getEmailTemplate(senderUsername, chatLink);
 
             // Create and send the email
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(recipientEmail);
-            message.setSubject("You have a new chat invitation!");
-            message.setText(emailContent);
-            message.setFrom("your-email@example.com"); // Replace with your email
-
-            mailSender.send(message); // Use JavaMailSender to send the email
+            emailService.sendEmail(recipientEmail, "You have a new chat invitation!", emailContent);
             System.out.println("Invitation email sent successfully!");
 
         } else {

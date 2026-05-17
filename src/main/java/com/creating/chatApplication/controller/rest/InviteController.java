@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.MailSendException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,7 +29,7 @@ public class InviteController {
     private NotificationManager notificationManager;
 
     @Autowired
-    private EmailService emailService;
+    private GmailEmailServiceImpl emailService;
 
     @Autowired
     private UserService userService;
@@ -113,7 +112,8 @@ public class InviteController {
                             if (user == null) {
                                 String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                                 notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, "https://chatappspringboot.onrender.com/signup-form", type);
+                                String link = "http://localhost:8080/signup-form";
+                                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
                                 continue;
                             }
                         }
@@ -133,7 +133,9 @@ public class InviteController {
                         if (user == null) {
                             String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, "https://chatappspringboot.onrender.com/signup-form", type);
+
+                            String link = "http://localhost:8080/signup-form";
+                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
                             continue;
                         }
                         if (type) {
@@ -165,7 +167,14 @@ public class InviteController {
 
                         }
                         String token = tokenGenerationService.generateToken(userService.getUserByEmail(senderEmail), "invite", tokenRoomId);
-                        String verificationLink = "https://chatappspringboot.onrender.com/verifyInviteUser?token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&user_id=" + user.getId() + "&groupName=" + groupName;
+                        String verificationLink = String.format(
+                                "http://localhost:8080/verifyInviteUser?token=%s&type=%d&sender_id=%d&user_id=%d&groupName=%s",
+                                token,
+                                type ? 1 : 0,
+                                userService.getUserByEmail(senderEmail).getId(),
+                                user.getId(),
+                                groupName
+                        );
                         String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification by joinee via their email !";
                         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
                         emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, verificationLink, type);
@@ -175,7 +184,7 @@ public class InviteController {
                         notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
                     }
 
-                } catch (MailSendException e) {
+                } catch (Exception e) {
                     String notificationMessage = "Failed to send invite to " + emailAddress + ": " + e.getMessage();
                     notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
                 }
