@@ -5,6 +5,9 @@ import com.creating.chatApplication.entity.ThemeData;
 import com.creating.chatApplication.entity.User;
 import com.creating.chatApplication.repository.ThemeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -18,8 +21,6 @@ import java.util.Optional;
 
 @Service
 public class ThemeServiceImpl implements ThemeService {
-
-    private static final String THEMES_DIRECTORY_PATH = "src/main/resources/static/images/themes";
 
     @Autowired
     private ThemeRepository themeRepository;
@@ -36,7 +37,6 @@ public class ThemeServiceImpl implements ThemeService {
         List<ThemeData> defaultThemes = loadDefaultThemes();
 
         for (ThemeData theme : defaultThemes) {
-            // If not present, save it
             Theme newTheme = new Theme();
             newTheme.setThemeName(theme.getFileName());
             themeRepository.save(newTheme);
@@ -46,24 +46,29 @@ public class ThemeServiceImpl implements ThemeService {
     @Override
     public List<ThemeData> loadDefaultThemes() {
         List<ThemeData> defaultThemes = new ArrayList<>();
-        File ThemesDirectory = new File(THEMES_DIRECTORY_PATH);
 
-        if (ThemesDirectory.exists() && ThemesDirectory.isDirectory()) {
-            File[] imageFiles = ThemesDirectory.listFiles((dir, name) -> {
-                File file = new File(dir, name);
-                return file.isFile(); // Only include files, exclude directories
-            });
+        // Use Spring's Resource pattern resolver to find files inside the JAR
+        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
-            if (imageFiles != null) {
-                int i = 0;
-                for (File imageFile : imageFiles) {
-                    if (themeRepository.findByThemeName(imageFile.getName()).isEmpty()) {
-                        defaultThemes.add(new ThemeData(imageFile.getName()));
+        try {
+            // "classpath*:" scans inside the packed jar resources matching the wildcard pattern
+            Resource[] resources = resolver.getResources("classpath*:static/images/themes/*");
+
+            if (resources != null && resources.length > 0) {
+                for (Resource resource : resources) {
+                    String filename = resource.getFilename();
+                    // Double-check we have a valid filename and it isn't already saved
+                    if (filename != null && !filename.isEmpty()) {
+                        if (themeRepository.findByThemeName(filename).isEmpty()) {
+                            defaultThemes.add(new ThemeData(filename));
+                        }
                     }
                 }
+            } else {
+                System.out.println("Themes directory is empty or could not be resolved on the classpath.");
             }
-        } else {
-            System.out.println("Themes directory does not exist or is not a directory.");
+        } catch (IOException e) {
+            System.err.println("Failed to read theme files from classpath: " + e.getMessage());
         }
 
         return defaultThemes;

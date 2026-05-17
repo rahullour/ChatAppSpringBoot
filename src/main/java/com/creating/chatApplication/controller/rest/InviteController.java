@@ -113,7 +113,7 @@ public class InviteController {
                             if (user == null) {
                                 String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                                 notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, "http://localhost:8080/signup-form", type);
+                                emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, "https://chatappspringboot.onrender.com/signup-form", type);
                                 continue;
                             }
                         }
@@ -133,7 +133,7 @@ public class InviteController {
                         if (user == null) {
                             String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
                             notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
-                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, "http://localhost:8080/signup-form", type);
+                            emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, "https://chatappspringboot.onrender.com/signup-form", type);
                             continue;
                         }
                         if (type) {
@@ -165,7 +165,7 @@ public class InviteController {
 
                         }
                         String token = tokenGenerationService.generateToken(userService.getUserByEmail(senderEmail), "invite", tokenRoomId);
-                        String verificationLink = "http://localhost:8080/verifyInviteUser?token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&user_id=" + user.getId() + "&groupName=" + groupName;
+                        String verificationLink = "https://chatappspringboot.onrender.com/verifyInviteUser?token=" + token + "&type=" + (type ? 1 : 0) + "&sender_id=" + userService.getUserByEmail(senderEmail).getId() + "&user_id=" + user.getId() + "&groupName=" + groupName;
                         String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification by joinee via their email !";
                         notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
                         emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, verificationLink, type);
