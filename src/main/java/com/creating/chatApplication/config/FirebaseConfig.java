@@ -6,6 +6,7 @@ import com.google.cloud.firestore.FirestoreOptions;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
@@ -22,8 +23,11 @@ public class FirebaseConfig {
     @Autowired
     private ResourceLoader resourceLoader;
 
+    @Value("${firebase.config.path}")
+    private String firebaseConfigPath;
+
     public Resource getResourceFromPath() throws IOException {
-        return resourceLoader.getResource("classpath:wechat-ec503-firebase-adminsdk-fbsvc-02a7509602.json");
+        return resourceLoader.getResource(firebaseConfigPath);
     }
 
     @Bean
