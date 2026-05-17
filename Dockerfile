@@ -7,4 +7,4 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jdk-alpine
 COPY --from=build /target/*.jar app.jar
 # CRITICAL: Limit memory to fit in Render's Free Tier (512MB)
-ENTRYPOINT ["java","-Xmx384m","-Xms256m","-jar","/app.jar"]
+ENTRYPOINT ["java","-Xmx350m","-Xms128m","-XX:+UseSerialGC","-jar","/app.jar"]
