@@ -18,7 +18,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.*;
 
 @Service
-public class GmailEmailServiceImpl {
+public class GmailEmailServiceImpl implements gmailEmailService{
 
     private final ResourceLoader resourceLoader;
 
@@ -74,7 +74,7 @@ public class GmailEmailServiceImpl {
         }
     }
 
-    private String buildInviteEmailBody(String senderUsername, String senderEmail, String chatLink, String convType) {
+    public String buildInviteEmailBody(String senderUsername, String senderEmail, String chatLink, String convType) {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
@@ -139,7 +139,7 @@ public class GmailEmailServiceImpl {
                 "</html>";
     }
 
-    private String buildVerificationEmailBody(String verificationLink) {
+    public String buildVerificationEmailBody(String verificationLink) {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
@@ -198,7 +198,7 @@ public class GmailEmailServiceImpl {
                 "</html>";
     }
 
-    private String buildPasswordResetEmailBody(String verificationLink) {
+    public String buildPasswordResetEmailBody(String verificationLink) {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
