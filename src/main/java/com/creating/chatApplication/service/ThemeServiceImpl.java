@@ -20,7 +20,6 @@ import java.util.Optional;
 public class ThemeServiceImpl implements ThemeService {
 
     private static final String THEMES_DIRECTORY_PATH = "src/main/resources/static/images/themes";
-    private static final String COMPRESSED_THEMES_DIRECTORY_PATH = "src/main/resources/static/images/themes/compressed";
 
     @Autowired
     private ThemeRepository themeRepository;
@@ -47,15 +46,13 @@ public class ThemeServiceImpl implements ThemeService {
     @Override
     public List<ThemeData> loadDefaultThemes() {
         List<ThemeData> defaultThemes = new ArrayList<>();
-        File themesDirectory = new File(THEMES_DIRECTORY_PATH);
-        File compressedThemesDirectory = new File(COMPRESSED_THEMES_DIRECTORY_PATH);
+        File ThemesDirectory = new File(THEMES_DIRECTORY_PATH);
 
-        if (themesDirectory.exists() && themesDirectory.isDirectory() && compressedThemesDirectory.exists() && compressedThemesDirectory.isDirectory()) {
-            File[] imageFiles = themesDirectory.listFiles((dir, name) -> {
+        if (ThemesDirectory.exists() && ThemesDirectory.isDirectory()) {
+            File[] imageFiles = ThemesDirectory.listFiles((dir, name) -> {
                 File file = new File(dir, name);
                 return file.isFile(); // Only include files, exclude directories
             });
-            File[] compressedImageFiles = compressedThemesDirectory.listFiles((dir, name) -> true);
 
             if (imageFiles != null) {
                 int i = 0;

@@ -37,7 +37,7 @@ public class ThemeController {
         List<ThemeData> themeDataList = new ArrayList<>();
 
         for (Theme theme : themes) {
-            ThemeData themeData = new ThemeData(theme.getId(), theme.getThemeUrlCompressed());
+            ThemeData themeData = new ThemeData(theme.getId(), theme.getThemeUrl());
             themeDataList.add(themeData);
         }
 

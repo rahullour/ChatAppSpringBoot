@@ -439,7 +439,28 @@ window.deleteMessage = async function (messageId) {
     }
 };
 
+async function deleteDocumentsWithWhere() {
+    // 1. Create your query using 'where'
+    const q = query(
+        collection(db, "Attachments"),
+        where("senderId", "not-in", [1, 2])
+    );
 
+    // 2. Fetch the documents matching the query
+    const querySnapshot = await getDocs(q);
+
+    // 3. Initialize a write batch
+    const batch = writeBatch(db);
+
+    querySnapshot.forEach((doc) => {
+        // Add each document's deletion reference to the batch
+        batch.delete(doc.ref);
+    });
+
+    // 4. Commit the batch to execute the deletions
+    await batch.commit();
+    console.log("Documents successfully deleted!");
+}
 
 
 function connectWebSocket() {
@@ -661,6 +682,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
         console.log('Error fetching invites:', error);
     }
+    // deleteDocumentsWithWhere();
 });
 
 

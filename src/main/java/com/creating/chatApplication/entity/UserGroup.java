@@ -16,7 +16,7 @@ public class UserGroup {
     @Column(name = "room_id")
     private String roomId;
 
-    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
+    @Column(name = "profile_picture_url", length = 100000000) // Explicitly large length
     private String profilePictureUrl;
 
     public UserGroup() {}

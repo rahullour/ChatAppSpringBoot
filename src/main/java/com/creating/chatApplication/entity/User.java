@@ -38,7 +38,7 @@ public class User {
     @Column(name = "fcm_token")
     private String fcmToken;
 
-    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
+    @Column(name = "profile_picture_url", length = 100000000) // Explicitly large length
     private String profilePictureUrl;
 
     @Column(name = "verification_token", nullable = false)

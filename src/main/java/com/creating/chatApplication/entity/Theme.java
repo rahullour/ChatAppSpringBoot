@@ -11,7 +11,6 @@ import java.time.LocalDateTime;
 @Table(name = "theme")
 public class Theme {
     private static final String THEMES_DIRECTORY_PATH = "/images/themes";
-    private static final String COMPRESSED_THEMES_DIRECTORY_PATH = "/images/themes/compressed";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,23 +33,6 @@ public class Theme {
     public String getThemeUrl() {
         String fileName = this.themeName;
         return THEMES_DIRECTORY_PATH + '/' + fileName;
-    }
-
-    public String getThemeUrlCompressed() {
-        String fileName = this.themeName; // Example: "1.png"
-        int lastDotIndex = fileName.lastIndexOf(".");
-
-        if (lastDotIndex != -1) {
-            // Insert "-c" before the file extension
-            String namePart = fileName.substring(0, lastDotIndex); // "1"
-            String extensionPart = fileName.substring(lastDotIndex); // ".png"
-            fileName = namePart + "-c" + extensionPart; // "1-c.png"
-        } else {
-            // If no extension is found, just append "-c" at the end
-            fileName += "-c";
-        }
-
-        return COMPRESSED_THEMES_DIRECTORY_PATH + '/' + fileName;
     }
 
     public int getId() {
