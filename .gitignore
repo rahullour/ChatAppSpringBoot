@@ -33,10 +33,9 @@ build/
 .vscode/
 
 # Ignore application.properties
-/src/main/resources/application-dev.properties
-
+**/src/main/resources/application-dev.properties
 # Ignore Firebase admin SDK JSON file
 #rahullour01@gmail.com file
-/src/main/resources/wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json
+**/src/main/resources/wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json
 #rahulbidawas@gmail.com account file
-/src/main/resources/wechat-ec503-firebase-adminsdk-fbsvc-02a7509602.json
+**/src/main/resources/wechat-ec503-firebase-adminsdk-fbsvc-02a7509602.json
