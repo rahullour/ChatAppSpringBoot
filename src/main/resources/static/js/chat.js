@@ -181,75 +181,69 @@ window.editMessage = async function (messageId) {
 
     // Prevent multiple edits at once
     const existingPreview = document.querySelector(".message-edit-preview");
-    if (existingPreview) {
-        existingPreview.remove();
-    }
+    if (existingPreview) existingPreview.remove();
 
     // Extract sender name from metadata
     const senderIdMatch = messageWrapper.querySelector(".message-metadata")?.innerText.match(/senderId:\s*(\d+)/);
     if (!senderIdMatch) return;
     const senderId = senderIdMatch[1];
 
+    const timestamp = messageWrapper.querySelector(".message-date")?.textContent || "Unknown Time";
+
+    // Extract message text (including rich text formatting)
+    const textSpan = messageContent.querySelector('span:not(.message-reply-reference > span)');
+    const messageHtml = textSpan.cloneNode(true);
+
+    // Clean up indicators
+    let editedIndicator = messageHtml.querySelector(".edited-indicator");
+    if (editedIndicator) editedIndicator.remove();
+
+    // Extract attachments and remove the image hover text
+    const attachmentsContainer = messageContent.querySelector(".attachments-container");
+    let attachmentsHtml = "";
+    if (attachmentsContainer) {
+        const clonedAttachments = attachmentsContainer.cloneNode(true);
+        clonedAttachments.querySelectorAll(".image-wrapper .image-hover-text").forEach(el => el.remove());
+        attachmentsHtml = clonedAttachments.outerHTML;
+    }
+
+    // LOAD CONTENT INTO TRIX INSTANTLY FOR MAX RESPONSIVENESS
+    const fullContent = messageHtml.innerHTML + attachmentsHtml;
+    trixEditor.editor.loadHTML(fullContent);
+    currentEditingMessageId = messageId;
+
+    // RENDER PREVIEW BOX IMMEDIATELY WITH A LOADING PLACEHOLDER
+    const editPreview = document.createElement("div");
+    editPreview.className = "message-edit-preview active";
+    editPreview.innerHTML = `
+        <div class="edit-container">
+            <div class="edit-header">
+                <span class="edit-icon">✏️ Editing Message</span>
+                <button class="close-edit" onclick="closeEdit()">✕</button>
+            </div>
+            <div class="edit-meta">
+                <strong id="edit-preview-username">Loading...</strong> • <span>${timestamp}</span>
+            </div>
+            <div class="edit-preview-content">${messageHtml.innerHTML}</div>
+        </div>
+    `;
+
+    editorWrapper.insertBefore(editPreview, editorWrapper.firstChild);
+    editorWrapper.classList.add("edit-active");
+    trixEditor.focus();
+
+    // FETCH USERNAME IN THE BACKGROUND WITHOUT BLOCKING THE UI
     try {
         const response = await fetch(`/api/users/getUsername?id=${Number(senderId)}`);
         if (!response.ok) throw new Error("Failed to fetch username");
         const senderName = await response.text();
 
-        const timestamp = messageWrapper.querySelector(".message-date")?.textContent || "Unknown Time"; // Extract timestamp
-
-        // Extract message text (including rich text formatting)
-        const textSpan = messageContent.querySelector('span:not(.message-reply-reference > span)');
-        const messageHtml = textSpan.cloneNode(true);
-        // Extract attachments and remove the image hover text
-        const attachmentsContainer = messageContent.querySelector(".attachments-container");
-        let attachmentsHtml = "";
-        if (attachmentsContainer) {
-            // Remove image hover text before adding to the Trix editor
-            const imageWrappers = attachmentsContainer.querySelectorAll(".image-wrapper");
-            imageWrappers.forEach(wrapper => {
-                const hoverText = wrapper.querySelector(".image-hover-text");
-                if (hoverText) {
-                    hoverText.remove(); // Remove the "Preview Image" text
-                }
-            });
-            attachmentsHtml = attachmentsContainer.outerHTML;
-        }
-
-        // Load message content (with attachments) into the Trix editor
-        let editedIndicator = messageHtml.querySelector(".edited-indicator");
-        if (editedIndicator) {
-            editedIndicator.remove();
-        }
-        const fullContent = messageHtml.innerHTML + attachmentsHtml;
-        trixEditor.editor.loadHTML(fullContent);
-
-        // Create Edit Preview (Styled Similar to Reply)
-        const editPreview = document.createElement("div");
-        editPreview.className = "message-edit-preview active";
-        editPreview.innerHTML = `
-            <div class="edit-container">
-                <div class="edit-header">
-                    <span class="edit-icon">✏️ Editing Message</span>
-                    <button class="close-edit" onclick="closeEdit()">✖</button>
-                </div>
-                <div class="edit-meta">
-                    <strong>${senderName}</strong> • <span>${timestamp}</span>
-                </div>
-                <div class="edit-preview-content">${messageHtml.innerHTML}</div>
-            </div>
-        `;
-
-        // Insert preview before editor
-        editorWrapper.insertBefore(editPreview, editorWrapper.firstChild);
-        editorWrapper.classList.add("edit-active");
-
-        // Store editing message ID
-        currentEditingMessageId = messageId;
-
-        // Focus the editor
-        trixEditor.focus();
+        const usernameEl = document.getElementById("edit-preview-username");
+        if (usernameEl) usernameEl.textContent = senderName;
     } catch (error) {
         console.error("Error fetching username:", error);
+        const usernameEl = document.getElementById("edit-preview-username");
+        if (usernameEl) usernameEl.textContent = "User";
     }
 };
 
@@ -262,42 +256,28 @@ window.saveEditedMessage = async function () {
     const trixEditor = document.querySelector("trix-editor");
     const messageContent = messageWrapper.querySelector(".message-content");
 
-     // Get the formatted message content
+    // Get the formatted message content
     const messageContentInput = document.getElementById("message-content");
     let newMessageHtml = messageContentInput.value;
+
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = newMessageHtml;
 
-    // Remove all <figure> elements
-    const figureElements = tempDiv.querySelectorAll('figure');
-    figureElements.forEach(figure => {
-        figure.remove();
+    // Clean DOM markup structural trees
+    tempDiv.querySelectorAll('figure').forEach(fig => fig.remove());
+    tempDiv.querySelectorAll('div').forEach(div => {
+        if (div.innerHTML.trim() === '') div.remove();
     });
 
-    // Remove empty div elements
-    const divElements = tempDiv.querySelectorAll('div');
-    divElements.forEach(div => {
-        if (div.innerHTML.trim() === '') {
-            div.remove();
-        }
-    });
-
-    // Get the modified HTML without <figure> elements
     newMessageHtml = tempDiv.innerHTML;
-    let textContent = messageContent.querySelector('span:not(.message-reply-reference > span)');
-    // convert to html
-    const tempDiv2 = document.createElement('div');
-    tempDiv2.innerHTML = newMessageHtml;
-    textContent.innerHTML = tempDiv2.innerHTML;
 
     const attachments = trixEditor.editor.getDocument().getAttachments();
     const fileAttachments = attachments.filter(attachment => attachment.file);
-    if (newMessageHtml === "" && attachments.length == 0) {
+
+    if (newMessageHtml.trim() === "" && attachments.length === 0) {
         alert("Message cannot be empty!");
         return;
     }
-
-    closeEdit();
 
     if (fileAttachments.length > 5) {
         showAttachmentLimitNotification();
@@ -305,100 +285,108 @@ window.saveEditedMessage = async function () {
     }
 
     try {
+        // Fetch current user verification status
         const senderId = await fetch(`/api/users/currentUser/getId`)
-            .then(response => response.json())
-            .catch(error => {
-                console.error('Error fetching current user', error);
+            .then(res => res.json())
+            .catch(err => {
+                console.error('Error fetching current user', err);
                 return -1;
             });
         if (senderId === -1) return;
 
+        // Initialize Batch Operations
         const batch = writeBatch(db);
         const messageRef = doc(db, "Messages", currentEditingMessageId);
         batch.update(messageRef, { text: newMessageHtml, edited: 1, editRenderedOn: [] });
 
-        // Fetch existing attachments from Firebase
+        // Fetch existing attachments from Firebase to check for deletions
         const existingAttachmentsSnapshot = await getDocs(
             query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
         );
         const existingAttachments = existingAttachmentsSnapshot.docs.map(doc => ({
-            docId: doc.id, // Store Firestore document ID separately
+            docId: doc.id,
             ...doc.data()
         }));
-        // Extract preview URLs from attachments
+
         const previewUrls = new Set(
             attachments.map(att => att.getAttributes().url ? att.getAttributes().url.trim().toLowerCase() : "")
         );
 
-        const deletedAttachments = previewUrls.size == 0 ? existingAttachments : existingAttachments.filter(att => previewUrls.size > 0 && !previewUrls.has(att.downloadUrl.trim().toLowerCase()));
-        // Ensure deletedAttachments has the correct IDs
-        console.log("Deleted Attachments:", deletedAttachments);
+        const deletedAttachments = previewUrls.size === 0
+            ? existingAttachments
+            : existingAttachments.filter(att => !previewUrls.has(att.downloadUrl.trim().toLowerCase()));
 
+        // Process File Deletions
         await Promise.all(deletedAttachments.map(async (attachment) => {
-            batch.delete(doc(db, "Attachments", attachment.docId)); // Use Firestore doc ID
+            batch.delete(doc(db, "Attachments", attachment.docId));
             await fetch(`/api/files/delete?fileName=${encodeURIComponent(attachment.fileName)}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
             });
         }));
 
-        // Upload new attachments
+        // Upload New File Attachments
         if (fileAttachments.length > 0) {
             await Promise.all(
                 fileAttachments.map(async (attachment) => {
                     const file = attachment.file;
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', file);
+                    const formData = new FormData();
+                    formData.append('file', file);
 
-                        const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
-                        if (!response.ok) throw new Error(`Upload failed! Status: ${response.status}`);
-                        const downloadUrl = await response.text();
+                    const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
+                    if (!response.ok) throw new Error(`Upload failed!`);
+                    const downloadUrl = await response.text();
 
-                        const attachmentData = {
-                            messageId: currentEditingMessageId,
-                            senderId: senderId,
-                            fileName: file.name,
-                            fileSize: file.size,
-                            fileType: file.type,
-                            downloadUrl: downloadUrl,
-                            timestamp: new Date()
-                        };
-                        batch.set(doc(collection(db, "Attachments")), attachmentData);
-                    } catch (error) {
-                        console.error("Error uploading to backend:", error);
-                    }
+                    const attachmentRef = doc(collection(db, "Attachments"));
+                    batch.set(attachmentRef, {
+                        messageId: currentEditingMessageId,
+                        senderId: senderId,
+                        fileName: file.name,
+                        fileSize: file.size,
+                        fileType: file.type,
+                        downloadUrl: downloadUrl,
+                        timestamp: new Date()
+                    });
                 })
             );
         }
 
+        // COMMIT THE TRANSACTION FIRST BEFORE CLEARING SCREEN STATE
         await batch.commit();
 
-        // Refetch updated attachments before rendering
+        // Safe DOM Fallback update
+        let textContent = messageContent.querySelector('span:not(.message-reply-reference > span)');
+        if (textContent) textContent.innerHTML = newMessageHtml;
+
+        // Sync local view mutations cleanly
         const updatedAttachmentsSnapshot = await getDocs(
             query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
         );
         const updatedAttachments = updatedAttachmentsSnapshot.docs.map(doc => doc.data());
         renderAttachments(updatedAttachments, messageContent);
-        hideLoadingChatNotification();
-        console.log("✅ Message updated successfully");
+
+        // SUCCESSFUL RESOLUTION CLOSURE
+        closeEdit();
+        console.log("✏️ Message updated successfully");
         currentEditingMessageId = null;
+
     } catch (error) {
         console.error("❌ Error updating message:", error);
+        alert("Failed to save changes. Please try again.");
+    } finally {
+        hideLoadingChatNotification();
     }
 };
 
-// Close edit preview
 window.closeEdit = function () {
     const editPreview = document.querySelector(".message-edit-preview");
     const editorWrapper = document.querySelector(".editor-wrapper");
 
-    if (editPreview) {
-        editPreview.remove();
-        editorWrapper.classList.remove("edit-active");
-        const trixEditor = document.querySelector("trix-editor");
-        trixEditor.editor.loadHTML("");
-    }
+    if (editPreview) editPreview.remove();
+    if (editorWrapper) editorWrapper.classList.remove("edit-active");
+
+    const trixEditor = document.querySelector("trix-editor");
+    if (trixEditor) trixEditor.editor.loadHTML("");
 };
 
 window.deleteMessage = async function (messageId) {
