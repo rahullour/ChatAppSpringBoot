@@ -478,10 +478,14 @@ function subscribeToNotifications() {
     const roomId = localStorage.getItem("roomId");
     console.log('Subscribing to room:', roomId);
     if (roomId) {
-        stompClient.subscribe('/topic/notifications/' + roomId, function (notification) {
+        const topicPath = '/topic/notifications/' + roomId;
+
+        // Pass the topicPath as the custom ID in the headers object (the 2nd argument)
+        stompClient.subscribe(topicPath, function (notification) {
             console.log('Received notification:', notification);
-            handleNotification(notification.body); // Handle the incoming notification
-        });
+            handleNotification(notification.body);
+        }, { id: topicPath }); // <--- THIS IS THE FIX
+
     } else {
         console.warn('No roomId found in localStorage');
     }
@@ -1315,7 +1319,6 @@ async function handleNewMessages(snapshot, roomId) {
                 } catch (error) {
                     console.error("Error fetching room:", error);
                 }
-                markMessagesAsRead(localStorage.getItem("roomId"));
                 resolve();
                 sessionStorage.setItem("newChat", "false");
             }, 300);
@@ -1773,104 +1776,198 @@ async function fetchCurrentUserRooms() {
   return currentUserRooms;
 }
 
+function playNotificationSound() {
+    try {
+        const audio = new Audio('/sounds/new-message.mp3');
 
-let currentMessagesSubscription = null;
+        // No explicit lower volume caps set here.
+        // It respects whatever master volume level the user's device is outputting.
+        audio.play();
+    } catch (error) {
+        console.warn("Failed to play notification sound:", error);
+    }
+}
+
+// A global Set to track room IDs that already have an active Firestore listener
+const activeNotificationListeners = new Set();
+// Global cache mapping: roomId -> "Other User's Name"
+const oneToOneRoomNamesCache = new Map();
+
+async function initializeBackgroundNotificationListeners() {
+    const currentUserRooms = await fetchCurrentUserRooms();
+    const currentUserId = await fetchCurrentUserId();
+
+    // 1. Pre-fetch and cache names for all 1-to-1 rooms first
+    for (const rId of currentUserRooms) {
+        if (activeNotificationListeners.has(rId)) continue;
+
+        const roomRef = doc(db, "Rooms", rId);
+        const roomDoc = await getDoc(roomRef);
+
+        if (roomDoc.exists()) {
+            const roomData = roomDoc.data();
+
+            // If name is blank or missing, it's a 1-to-1 room
+            if (!roomData.name || roomData.name.trim() === "") {
+                const userIds = roomData.userIds || [];
+
+                // Eliminate the current logged-in user to find the recipient's ID
+                const otherUserId = userIds.find(id => String(id) !== String(currentUserId));
+
+                if (otherUserId) {
+                    try {
+                        // Fetch the actual name from your database/API once
+                        const response = await fetch(`/api/users/getUsername?id=${Number(otherUserId)}`);
+                        if (!response.ok) throw new Error("Failed to fetch username");
+                        const otherUserName = await response.text();
+                        oneToOneRoomNamesCache.set(rId, otherUserName);
+                    } catch (err) {
+                        console.error(`Failed to fetch user name for ID ${otherUserId}:`, err);
+                        oneToOneRoomNamesCache.set(rId, "Someone"); // Fallback text
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Setup listeners as usual
+    currentUserRooms.forEach((rId) => {
+        if (activeNotificationListeners.has(rId)) return;
+        activeNotificationListeners.add(rId);
+
+        const messagesQueryForNewMessages = query(
+            collection(db, "Messages"),
+            where("roomId", "==", rId),
+            orderBy("timestamp", "asc")
+        );
+
+        // Persistent background snapshot listener
+        onSnapshot(messagesQueryForNewMessages, async (snapshot) => {
+            const roomRef = doc(db, "Rooms", rId);
+            try {
+                const roomDoc = await getDoc(roomRef);
+                if (!roomDoc.exists()) return;
+
+                const roomData = roomDoc.data();
+                let notificationText = "";
+
+                // Determine Notification String Structure
+                if (roomData.name && roomData.name.trim() !== "") {
+                    // Group Chat Rule
+                    notificationText = `New messages in ${roomData.name}`;
+                } else {
+                    // 1-to-1 Chat Rule: Instantly grab the name out of memory cache
+                    const senderName = oneToOneRoomNamesCache.get(rId) || "Someone";
+                    notificationText = `New messages from ${senderName}`;
+                }
+
+                let lastReadMessageId = roomData.lastReadMessageId || {};
+                const currentUserLastReadMessageId = lastReadMessageId[currentUserId];
+
+                const latestMessage = snapshot.docs[snapshot.docs.length - 1];
+                let latestMessageId = latestMessage ? latestMessage.id : null;
+
+                if (latestMessageId != null && currentUserLastReadMessageId !== latestMessageId) {
+                    const latestMessageData = latestMessage.data();
+                    const readyByUsers = latestMessageData.readyByUsers || [];
+
+                    if (!readyByUsers.includes(currentUserId)) {
+                        if (localStorage.getItem("roomId") !== rId) {
+                            showNotificationToast(notificationText);
+                            playNotificationSound();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking new messages:", error);
+            }
+        });
+    });
+}
+
+let globalActiveChatListener = null;
+let globalMutationObserver = null;
+
 async function openChat(roomId) {
+    // 1. Manage WebSocket Swap (Top of function)
+    if (stompClient && stompClient.connected) {
+        const oldRoomId = localStorage.getItem("roomId");
+        if (oldRoomId) {
+            stompClient.unsubscribe('/topic/notifications/' + oldRoomId);
+        }
+    }
+
+    // 2. Clear ONLY the main active chat view listener
+    if (globalActiveChatListener) {
+        globalActiveChatListener();
+        globalActiveChatListener = null;
+    }
+    if (globalMutationObserver) {
+        globalMutationObserver.disconnect();
+    }
+
+    // 3. Set up new room state
     console.log(`Opening chat for room ID: ${roomId}`);
     sessionStorage.setItem("newChat", "true");
-     // Set up Firestore listener for real-time updates after processing invites
     localStorage.setItem("roomId", roomId);
-    const messagesQuery = query(
-        collection(db, "Messages"),
-        where("roomId", "==", localStorage.getItem("roomId")),
-        orderBy("timestamp", "asc")
-    );
 
-    const currentUserRooms = await fetchCurrentUserRooms();
-    // Loop through each room to check for new messages
-    currentUserRooms.forEach(async (roomId) => {
-      const messagesQueryForNewMessages = query(
+    if (stompClient && stompClient.connected) {
+        subscribeToNotifications();
+    }
+
+    // 4. Setup DOM Scroll Observer
+    const messagesContainer = document.getElementById("messages");
+    globalMutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE &&
+                    node.tagName === 'DIV' && currentEditingMessageId == null && currentDeletingMessageId == null) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                currentDeletingMessageId = null;
+            });
+        });
+    });
+    globalMutationObserver.observe(messagesContainer, { childList: true, subtree: true });
+
+    // 5. Define a tracking flag for the initial data payload
+    let isInitialLoad = true;
+
+    // 6. Active Chat Screen Firestore Listener
+    const messagesQuery = query(
         collection(db, "Messages"),
         where("roomId", "==", roomId),
         orderBy("timestamp", "asc")
-      );
+    );
 
-     onSnapshot(messagesQueryForNewMessages, async (snapshot) => {
-       const roomRef = doc(db, "Rooms", roomId);
-       try {
-         const roomDoc = await getDoc(roomRef);
-         if (!roomDoc.exists()) return;
-
-         const roomData = roomDoc.data();
-         let lastReadMessageId = roomData.lastReadMessageId || {};
-         const currentUserId = await fetchCurrentUserId();
-         const currentUserLastReadMessageId = lastReadMessageId[currentUserId];
-
-         // Get the latest message in the snapshot
-         const latestMessage = snapshot.docs[snapshot.docs.length - 1];
-         let latestMessageId = null;
-         if(latestMessage != undefined){
-           latestMessageId = latestMessage.id;
-         }
-
-         // Check if the current user has read the latest message
-         if (latestMessageId != null && currentUserLastReadMessageId !== latestMessageId) {
-           // Get the readyByUsers data from the latest message
-           const latestMessageData = latestMessage.data();
-           const readyByUsers = latestMessageData.readyByUsers || [];
-
-           // Check if the current user is in the readyByUsers list
-           if (!readyByUsers.includes(currentUserId)) {
-             // Check if the chat is open for a different room
-             if (localStorage.getItem("roomId") !== roomId) {
-               console.log("Chat is open for a different room, setting new message count");
-               showNotificationToast('New messages in ' + roomId);
-             }
-           }
-         }
-       } catch (error) {
-         console.error("Error checking new messages:", error);
-       }
-     });
-    });
-
-    const messagesContainer = document.getElementById("messages");
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            // Check if the added node is an element and has class 'message-wrapper'
-            if (node.nodeType === Node.ELEMENT_NODE &&
-                node.tagName === 'DIV' && currentEditingMessageId == null && currentDeletingMessageId == null) {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-              currentDeletingMessageId = null;
-          });
-      });
-    });
-    observer.observe(messagesContainer, { childList: true, subtree: true }); // Watch for added children
-    onSnapshot(messagesQuery, async (snapshot) => {
+    globalActiveChatListener = onSnapshot(messagesQuery, async (snapshot) => {
         try {
+            // Step A: Always await the message populating/rendering logic first
             await handleNewMessages(snapshot, roomId);
-            markMessagesAsRead(localStorage.getItem("roomId"));
+
+            // Step B: Check if this is the absolute first time the room is loading data
+            if (isInitialLoad) {
+                console.log(`Initial message render complete for room ${roomId}. Marking as read once.`);
+
+                await markMessagesAsRead(roomId); // Await it here to guarantee sequential execution
+                isInitialLoad = false;            // Flip the flag so this block NEVER runs again
+            }
+        } catch (error) {
+            console.error("Error processing messages snapshot:", error);
         } finally {
-            // **Display read receipts from Rooms table**
-            hideLoadingChatNotification(); // Hide loading notification after completion (success or failure)
+            hideLoadingChatNotification();
         }
     });
 
-
+    // 7. Independent synchronous UI updates can stay here
     displayReadByUsersFromRooms(roomId);
+    notificationCount = 0;
 
-    if (stompClient && stompClient.connected) {
-        console.log('Resubscribing to new room');
-        stompClient.unsubscribe('/topic/notifications/' + localStorage.getItem("roomId"));
-        subscribeToNotifications();
-    } else {
-        console.warn('STOMP client not connected');
-    }
-    notificationCount = 0; // Reset notification count when opening a new chat
+
+    // 8. If a user is added to a new room during their session,
+    // this keeps our background listeners up to date without duplicating existing ones.
+    initializeBackgroundNotificationListeners();
 }
-
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 // import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
@@ -2285,25 +2382,23 @@ async function markMessagesAsRead(roomId) {
     showLoadingChatNotification("Updating");
     const currentUserId = await fetchCurrentUserId();
     if (!currentUserId || currentUserId === -1) return;
-
     const messagesContainer = document.getElementById("messages");
+
     if (!messagesContainer) return;
 
-    const lastMessageElement = messagesContainer.querySelector(".message-wrapper:last-of-type");
+    const lastMessageElement = messagesContainer.querySelector(".message-wrapper:not(:has(~ .message-wrapper))");
     if (!lastMessageElement) return;
 
     const messageId = lastMessageElement.dataset.messageId;
     if (!messageId) return;
 
     const roomRef = doc(db, "Rooms", roomId);
-    try {
 
+    try {
         const roomDoc = await getDoc(roomRef);
         if (!roomDoc.exists()) return;
-
         const roomData = roomDoc.data();
         let lastReadMessageId = roomData.lastReadMessageId || {};
-
         if (lastReadMessageId[currentUserId] !== messageId) {
             lastReadMessageId[currentUserId] = messageId;
             await updateDoc(roomRef, { lastReadMessageId });

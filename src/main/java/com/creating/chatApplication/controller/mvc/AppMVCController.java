@@ -297,7 +297,7 @@ public class AppMVCController {
         else {
             String token = tokenGenerationService.generateVerificationToken(user);
             String verificationLink = String.format(
-                    "http:localhost:8080/resetPassword?user_id=%d&token=%s",
+                    "https://chatappspringboot.onrender.com/resetPassword?user_id=%d&token=%s",
                     user.getId(),
                     token
             );
@@ -342,7 +342,7 @@ public class AppMVCController {
 
         if (errors) {
             model.addAttribute("notifications", notificationManager.getNotifications());
-            response.sendRedirect("http:localhost:8080/resetPassword?user_id=" + user_id + "&token=" + token);
+            response.sendRedirect("https://chatappspringboot.onrender.com/resetPassword?user_id=" + user_id + "&token=" + token);
             return null;
         }
 
@@ -500,7 +500,7 @@ public class AppMVCController {
                     // Create new group room
                     Map<String, Object> roomData = new HashMap<>();
                     roomData.put("userIds", Arrays.asList(senderId, recipient_id)); // Store user IDs
-                    roomData.put("name", "Group Chat"); // Set a default name
+                    roomData.put("name", groupName);
                     roomRef.set(roomData);
                     System.out.println("Group room created.");
                 } else {
