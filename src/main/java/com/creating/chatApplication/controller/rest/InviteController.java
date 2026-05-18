@@ -14,12 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -58,19 +55,46 @@ public class InviteController {
     }
 
     @PostMapping("/invites")
-    public ResponseEntity<Void> sendInvite(@RequestParam String senderEmail, @RequestParam String emails, @RequestParam(required = false) boolean type, @RequestParam(required = false) String groupName, @RequestParam(required = false) MultipartFile profilePicture) {
+    public ResponseEntity<Map<String, String>> sendInvite(@RequestParam String senderEmail, @RequestParam String emails, @RequestParam(required = false) boolean type, @RequestParam(required = false) String groupName, @RequestParam(required = false) MultipartFile profilePicture) {
         ObjectMapper objectMapper = new ObjectMapper();
-        List<String> receiverEmails = null;
         UserGroup newUserGroup = null;
+        Map<String, String> responseData = new HashMap<>();
         try {
-            receiverEmails = objectMapper.readValue(emails, new TypeReference<List<String>>() {});
+            List<String> receiverEmails = new ArrayList<>();
+
+            // FIX: Avoid Jackson ObjectMapper completely for plain string parsing
+            if (emails != null && !emails.trim().isEmpty()) {
+                try {
+                    // Split the string by commas and clean up any accidental spaces
+                    String[] emailArray = emails.split(",");
+                    for (String email : emailArray) {
+                        if (!email.trim().isEmpty()) {
+                            receiverEmails.add(email.trim());
+                        }
+                    }
+                } catch (Exception e) {
+                    String notificationMessage = e.getMessage();
+//                    notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
+                    responseData.put("message", notificationMessage);
+                    responseData.put("type", "danger");
+                    responseData.put("durationType", "medium-noty");
+                    return ResponseEntity.badRequest().body(responseData); // Return a clean error response
+                }
+            } else {
+//                notificationManager.sendFlashNotification("Email list cannot be empty", "danger", "medium-noty");
+                responseData.put("message", "Email list cannot be empty");
+                responseData.put("type", "danger");
+                responseData.put("durationType", "medium-noty");
+                return ResponseEntity.badRequest().body(responseData);
+            }
             for(String email: receiverEmails) {
                 if(senderEmail.equals(email)){
                     String notificationMessage = "You cannot invite yourself !";
-                    notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "short-noty");
-                    return ResponseEntity.status(HttpStatus.FOUND)
-                            .header("Location", "/")
-                            .build();
+//                    notificationManager.sendFlashNotification(notificationMessage, "danger", "short-noty");
+                    responseData.put("message", notificationMessage);
+                    responseData.put("type", "danger");
+                    responseData.put("durationType", "short-noty");
+                    return ResponseEntity.badRequest().body(responseData);
                 }
             }
             if(type){
@@ -87,10 +111,11 @@ public class InviteController {
                     }
                 }
                 if(groupNames.contains(groupName)){
-                    notificationManager.sendFlashNotification(groupName + " group already exists, please delete chat and retry!", "alert-error", "short-noty");
-                    return ResponseEntity.status(HttpStatus.FOUND)
-                            .header("Location", "/")
-                            .build();
+//                    notificationManager.sendFlashNotification(groupName + " group already exists, please delete chat and retry!", "error", "short-noty");
+                    responseData.put("message", groupName + " group already exists, please delete chat and retry!");
+                    responseData.put("type", "error");
+                    responseData.put("durationType", "short-noty");
+                    return ResponseEntity.badRequest().body(responseData);
                 }
                 newUserGroup = new UserGroup();
                 newUserGroup.setName(groupName); // Set the name of the new UserGroup
@@ -111,16 +136,17 @@ public class InviteController {
                             User user = userService.getUserByEmail(emailAddress);
                             if (user == null) {
                                 String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
-                                notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+//                                notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
+                                responseData.put("message", notificationMessage);
+                                responseData.put("type", "danger");
+                                responseData.put("durationType", "medium-noty");
+
                                 String link = "https://chatappspringboot.onrender.com/signup-form";
                                 emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
                                 continue;
                             }
                         }
-                        return ResponseEntity.status(HttpStatus.FOUND)
-                                .header("Location", "/")
-                                .build();
-
+                        return ResponseEntity.badRequest().body(responseData);
                     }
                 }
                 newUserGroup.setRoomId(groupNameFormed);
@@ -132,11 +158,14 @@ public class InviteController {
                         String tokenRoomId = "";
                         if (user == null) {
                             String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
-                            notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+//                            notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
+                            responseData.put("message", notificationMessage);
+                            responseData.put("type", "danger");
+                            responseData.put("durationType", "medium-noty");
 
                             String link = "https://chatappspringboot.onrender.com/signup-form";
                             emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
-                            continue;
+                            return ResponseEntity.badRequest().body(responseData);
                         }
                         if (type) {
                             // Create the invite
@@ -155,10 +184,11 @@ public class InviteController {
                         } else {
                             List<Invite> connections = inviteService.getInvites(senderEmail, emailAddress,  0);
                             if (!connections.isEmpty() && connections.getLast().isAccepted()) {
-                                notificationManager.sendFlashNotification(emailAddress + " is connected already, please delete chat and retry!", "alert-error", "short-noty");
-                                return ResponseEntity.status(HttpStatus.FOUND)
-                                        .header("Location", "/")
-                                        .build();
+//                                notificationManager.sendFlashNotification(emailAddress + " is connected already, please delete chat and retry!", "error", "short-noty");
+                                responseData.put("message", emailAddress + " is connected already, please delete chat and retry!");
+                                responseData.put("type", "error");
+                                responseData.put("durationType", "short-noty");
+                                return ResponseEntity.badRequest().body(responseData);
                             } else {
                                 String inviteRoomId = "single_" + String.valueOf(userService.getUserByEmail(senderEmail).getId()) + "_" + String.valueOf(user.getId());
                                 inviteService.createInvite(senderEmail, emailAddress, 0, null, inviteRoomId);
@@ -176,28 +206,42 @@ public class InviteController {
                                 groupName
                         );
                         String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification by joinee via their email !";
-                        notificationManager.sendFlashNotification(notificationMessage, "alert-success", "medium-noty");
+//                        notificationManager.sendFlashNotification(notificationMessage, "success", "medium-noty");
+                        responseData.put("message", notificationMessage);
+                        responseData.put("type", "success");
+                        responseData.put("durationType", "medium-noty");
+
                         emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, verificationLink, type);
                     }
                     else{
                         String notificationMessage = "Invalid email id: " + emailAddress;
-                        notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+//                        notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
+                        responseData.put("message", notificationMessage);
+                        responseData.put("type", "danger");
+                        responseData.put("durationType", "medium-noty");
+                        return ResponseEntity.badRequest().body(responseData);
                     }
 
                 } catch (Exception e) {
                     String notificationMessage = "Failed to send invite to " + emailAddress + ": " + e.getMessage();
-                    notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+//                    notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
+                    responseData.put("message", notificationMessage);
+                    responseData.put("type", "danger");
+                    responseData.put("durationType", "medium-noty");
+                    return ResponseEntity.badRequest().body(responseData);
                 }
             }
         } catch (Exception e) {
             String notificationMessage = e.getMessage();
-            notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "medium-noty");
+//            notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
+            responseData.put("message", notificationMessage);
+            responseData.put("type", "danger");
+            responseData.put("durationType", "medium-noty");
+            return ResponseEntity.badRequest().body(responseData);
         }
+//        notificationManager.clearNotifications();
+        return ResponseEntity.ok(responseData);
 
-
-        return ResponseEntity.status(HttpStatus.FOUND)
-                .header("Location", "/")
-                .build();
     }
     @GetMapping("/invites/single")
     public List<Invite> getSingleInvites(){

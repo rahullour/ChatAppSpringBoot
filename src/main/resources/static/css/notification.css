@@ -1,14 +1,35 @@
 .notification {
     position: fixed !important;
-    right: 0;
-    left: 0;
-    margin: 0 auto;
+    /* FIX: Align to top center using transform instead of margin auto */
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: fit-content;
     max-width: 80vw;
     z-index: 9999;
     opacity: 1;
-    transition: opacity 0.5s ease-in-out;
+    font-weight: 600;
+    transition: opacity 0.5s ease-in-out, top 0.2s ease-out; /* Smooth transition when shifting up */
     display: flex;
     justify-content: center;
+    color: white !important;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.notification.success {
+    background-color: #24da72;
+}
+.notification.danger {
+    background-color: #fb1a1a;
+}
+.notification.error {
+    background-color: #da245e;
+}
+
+.notification.hide {
+    opacity: 0;
 }
 
 .notification.hide {

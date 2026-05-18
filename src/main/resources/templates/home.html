@@ -22,7 +22,7 @@
 
 <body>
 <div id="notification-container">
-    <div th:each="notification : ${notifications}" th:class="${'alert alert-success notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
+    <div th:each="notification : ${notifications}" th:class="${'notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
 <div id="toast-container" class="toast-container"></div> <!-- New toast container -->
 <nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary" id="navbar">
@@ -219,7 +219,7 @@
                             <div class="w-100"><h4  class="modal-title" id="inviteModalLabel">Invite Users</h4></div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form action="#" th:action="@{/api/invites}" method="post" id="inviteForm" enctype="multipart/form-data">
+                        <form th:action="@{/api/invites}" method="post" id="inviteForm" enctype="multipart/form-data">
                             <div class="modal-body">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
@@ -257,8 +257,8 @@
                                 <input type="hidden" name="emails" id="emailList" /> <!-- Hidden input to hold the processed email addresses -->
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                <button type="submit" class="btn btn-primary">Send Invite</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="sendInviteAjax()">Send Invite</button>
                             </div>
                         </form>
                     </div>

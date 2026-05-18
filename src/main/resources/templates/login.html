@@ -18,8 +18,8 @@
 
 <body>
 <div id="notification-container">
-    <div class="alert alert-success notification short-noty" role="alert" th:if="${param.logout != null}" th:text="#{logout.message}"></div>
-    <div th:each="notification : ${notifications}" th:class="${'alert notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
+    <div class="success notification short-noty" th:if="${param.logout != null}" th:text="#{logout.message}"></div>
+    <div th:each="notification : ${notifications}" th:class="${'notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
 
 

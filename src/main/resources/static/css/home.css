@@ -15,7 +15,6 @@ body{
     border-bottom: 3px solid #04ff00;
 }
 .nav-link{
-    border-top-radius: none;
     color: grey !important;
 }
 .navbar-header{
@@ -35,7 +34,7 @@ body{
     }
 }
 .sidebar{
-   background-color: #f1f1f1;;
+   background-color: #e6e6e6;;
    border-right: 1px solid #dee2e6;
    padding-right: 0px !important;
 }
@@ -196,10 +195,7 @@ trix-toolbar {
     bottom: 100%;
     left: 0;
     right: 0;
-    background: var(--bs-white);
-    border-radius: var(--bs-border-radius);
     padding: 0.5rem;
-    box-shadow: var(--bs-box-shadow-sm);
     transform: translateY(10px);
     opacity: 0;
     visibility: hidden;
@@ -228,8 +224,6 @@ trix-editor {
     padding: 0.75rem 1rem;
     font-size: 1rem;
     line-height: 1.5;
-    border: var(--bs-border-width) solid var(--bs-border-color);
-    border-radius: var(--bs-border-radius);
     background-color: rgba(240, 240, 240, 1) !important;
 }
 
@@ -262,11 +256,6 @@ trix-editor:focus {
     width: 32px;
     height: 32px;
     padding: 0 0.25rem !important;
-}
-
-.toolbar-toggle-btn.active {
-    background-color: var(--bs-gray-200);
-    border-color: var(--bs-gray-400);
 }
 
 .send-btn-box {
@@ -371,34 +360,12 @@ trix-editor .attachment{
     object-fit: cover; /* Ensures the image covers the container */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
-
-.notification {
-    background-color: #2cd173;
-    color: white;
-    padding: 15px;
-    margin: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    opacity: 1;
-    transition: opacity 0.5s ease; /* Only fade-out transition */
-}
-
-
-.notification.error {
-     background-color: #dc3545;
-}
-
-
-.notification.hide {
-    opacity: 0;
-}
-
 .invite-item{
     border-bottom: 1px solid #ffffff;
 }
 
 #inviteForm .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    background-color: #f0f0f0;
+    background-color: #ffffff;
 }
 
 .date-header {
@@ -592,7 +559,7 @@ trix-editor .attachment{
 }
 
 .loading-chat-notification {
-    background-color: #2cd173;
+    background-color: #24da72;
     color: white;
     padding: 10px;
     margin: 10px;

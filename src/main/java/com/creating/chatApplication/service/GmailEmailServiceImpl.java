@@ -1,75 +1,44 @@
 package com.creating.chatApplication.service;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
-import java.util.Collections;
-import org.springframework.http.*;
-import org.springframework.web.client.RestTemplate;
-
-import java.util.*;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
-public class GmailEmailServiceImpl implements gmailEmailService{
+public class GmailEmailServiceImpl implements gmailEmailService {
 
     private final ResourceLoader resourceLoader;
+    private final JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
-    private String senderEmail;
+    private String fromEmail;
 
-    @Value("${BREVO_API_KEY}")
-    private String apiKey;
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
-
-    public GmailEmailServiceImpl(ResourceLoader resourceLoader) {
+    // Spring Boot automatically injects JavaMailSender using your environment variables
+    public GmailEmailServiceImpl(ResourceLoader resourceLoader, JavaMailSender mailSender) {
         this.resourceLoader = resourceLoader;
+        this.mailSender = mailSender;
     }
 
     public void sendEmail(String to, String subject, String bodyText) {
         try {
-            // Set up secure headers for Brevo API
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("api-key", apiKey);
+            MimeMessage message = mailSender.createMimeMessage();
 
-            // Construct payload matching Brevo JSON schema
-            Map<String, Object> payload = new HashMap<>();
+            // Set multipart to true to support rich HTML email content
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            Map<String, String> sender = new HashMap<>();
-            sender.put("name", "WeChat");
-            sender.put("email", senderEmail);
-            payload.put("sender", sender);
+            helper.setFrom("WeChat <" + fromEmail + ">");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(bodyText, true); // Setting true enables HTML rendering
 
-            Map<String, String> recipient = new HashMap<>();
-            recipient.put("email", to);
-            payload.put("to", Collections.singletonList(recipient));
-
-            payload.put("subject", subject);
-            payload.put("htmlContent", bodyText);
-
-            HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-
-            // POST the data out over open Port 443
-            ResponseEntity<String> response = restTemplate.postForEntity(BREVO_API_URL, request, String.class);
-
-            if (response.getStatusCode() == HttpStatus.CREATED || response.getStatusCode() == HttpStatus.OK) {
-                System.out.println("Email sent successfully via Brevo HTTP API Gateway.");
-            } else {
-                System.err.println("Brevo responded with unexpected status: " + response.getStatusCode());
-            }
+            mailSender.send(message);
+            System.out.println("Email successfully sent via Gmail SMTP to: " + to);
 
         } catch (Exception e) {
-            System.err.println("Failed to dispatch email via Brevo REST API: " + e.getMessage());
+            System.err.println("Failed to send email via Gmail SMTP: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -101,9 +70,6 @@ public class GmailEmailServiceImpl implements gmailEmailService{
                 "            color: #ff881d;\n" +
                 "            margin-top: 0;\n" +
                 "        }\n" +
-                "        .ii a[href] {\n" +
-                "        color: #000000;\n" +
-                "    }\n" +
                 "        .button {\n" +
                 "            display: inline-block;\n" +
                 "            background-color: #ff881d;\n" +
@@ -126,9 +92,9 @@ public class GmailEmailServiceImpl implements gmailEmailService{
                 "    <div class=\"container\">\n" +
                 "        <h1>You're Invited to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
-                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>, "+ "email: " + senderEmail + ". We're excited to have you !</p>\n" +
-                "        <p>Do invite " + senderEmail + " after login if this mail came before your account verification !</p>\n" +
-                "        <a href=\"" + chatLink + "\" data-tracking=\"false\" iterable=\"false\" class=\"button\">Join the Chat</a>" +
+                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>, email: " + senderEmail + ". We're excited to have you!</p>\n" +
+                "        <p>Do invite " + senderEmail + " after login if this mail came before your account verification!</p>\n" +
+                "        <a href=\"" + chatLink + "\" data-tracking=\"false\" iterable=\"false\" class=\"button\">Join the Chat</a>\n" +
                 "        <p>We look forward to seeing you in the chat!</p>\n" +
                 "        <p>Best regards,<br>WeChat Team</p>\n" +
                 "        <div class=\"footer\">\n" +
@@ -186,7 +152,7 @@ public class GmailEmailServiceImpl implements gmailEmailService{
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class=\"container\">\n" +
-                "        <h1>Welcome to WeChat !</h1>\n" +
+                "        <h1>Welcome to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
                 "        <p>Thank you for signing up for WeChat. To complete your registration, please click the button below to verify your email address:</p>\n" +
                 "        <a href=\"" + verificationLink + "\" data-tracking=\"false\" iterable=\"false\" class=\"button\">Verify Email</a>\n" +
@@ -245,9 +211,9 @@ public class GmailEmailServiceImpl implements gmailEmailService{
                 "</head>\n" +
                 "<body>\n" +
                 "    <div class=\"container\">\n" +
-                "        <h1>Welcome to WeChat !</h1>\n" +
+                "        <h1>Welcome to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
-                "        <p>We have received a password request for you account, please click the button below to reset your account password:</p>\n" +
+                "        <p>We have received a password request for your account, please click the button below to reset your account password:</p>\n" +
                 "        <a href=\"" + verificationLink + "\" data-tracking=\"false\" iterable=\"false\" class=\"button\">Reset Password</a>\n" +
                 "        <p>Please ignore this email if not requested by you.</p>\n" +
                 "        <p>If you have any questions or need further assistance, please don't hesitate to contact us at wechatcorporations@gmail.com.</p>\n" +

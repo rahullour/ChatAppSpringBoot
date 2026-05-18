@@ -54,7 +54,7 @@ public class SecurityConfig {
     public AuthenticationFailureHandler customAuthenticationFailureHandler() {
         return (request, response, exception) -> {
             String errorMessage = "Invalid username or password";
-            String notificationType = "alert-danger";
+            String notificationType = "danger";
             String notificationDuration = "short-noty";
             if (exception instanceof BadCredentialsException) {
                 errorMessage = "Invalid username or password";

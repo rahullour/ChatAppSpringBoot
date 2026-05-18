@@ -494,6 +494,9 @@ function showNotificationToast(message, persistent = false) {
     if(persistent == true){
         notification.classList.add("error");
     }
+    else{
+        notification.classList.add("success");
+    }
     notification.innerText = message;
 
     // Append the notification to the toast container
@@ -507,7 +510,7 @@ function showNotificationToast(message, persistent = false) {
             notification.addEventListener('transitionend', () => {
                 toastContainer.removeChild(notification);
             });
-        }, 1000); // Adjust the duration as needed
+        }, 2000); // Adjust the duration as needed
     } else {
         // If persistent, do not auto-hide and allow for manual removal later
         offlineNotification = notification; // Store reference for later use

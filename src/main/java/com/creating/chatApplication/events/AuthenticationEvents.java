@@ -63,7 +63,7 @@ public class AuthenticationEvents {
             createUserIfNotPresent(email);
             logUserActivityByEmail(email, true);
             String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
-            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
+            notificationManager.sendFlashNotification(notificationMessage, "success", "short-noty");
         } else if (authentication instanceof UsernamePasswordAuthenticationToken) {
             UsernamePasswordAuthenticationToken jdbcToken = (UsernamePasswordAuthenticationToken) authentication;
             Object principal = jdbcToken.getPrincipal();
@@ -76,7 +76,7 @@ public class AuthenticationEvents {
                     System.out.println("Email retrieved: " + email);
                     logUserActivityByEmail(email, true);
                     String notificationMessage = "Welcome " + userService.getUserByEmail(email).getUsername();
-                    notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
+                    notificationManager.sendFlashNotification(notificationMessage, "success", "short-noty");
                 } else {
                     System.out.println("Email is null in CustomUserDetails");
                 }
@@ -177,11 +177,11 @@ public class AuthenticationEvents {
             newUser.setEnabled(true);
             User user = userService.saveUser(newUser);
             String notificationMessage = "Account created successfully !";
-            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "short-noty");
+            notificationManager.sendFlashNotification(notificationMessage, "success", "short-noty");
             notificationMessage = "A temporary password has been generated. Please save it locally if you wish to login again normally !";
-            notificationManager.sendFlashNotification(notificationMessage, "alert-danger", "long-noty");
+            notificationManager.sendFlashNotification(notificationMessage, "danger", "long-noty");
             notificationMessage = "Password: "+password;
-            notificationManager.sendFlashNotification(notificationMessage, "alert-success", "long-noty");
+            notificationManager.sendFlashNotification(notificationMessage, "success", "long-noty");
         }
     }
 

@@ -33,15 +33,15 @@ public class StatusController {
         if(Objects.equals(statusSelect, "Custom")){
             boolean error = false;
             if(customStatus.isBlank()){
-                notificationManager.sendFlashNotification("Status cannot blank !", "alert-danger", "short-noty");
+                notificationManager.sendFlashNotification("Status cannot blank !", "danger", "short-noty");
                 error = true;
             }
             if(customStatus.length() < 4){
-                notificationManager.sendFlashNotification("Status must have have 4 or more chars !", "alert-danger", "short-noty");
+                notificationManager.sendFlashNotification("Status must have have 4 or more chars !", "danger", "short-noty");
                 error = true;
             }
             if(customStatus.length() > 60){
-                notificationManager.sendFlashNotification("Status cannot exceed 60 chars !", "alert-danger", "short-noty");
+                notificationManager.sendFlashNotification("Status cannot exceed 60 chars !", "danger", "short-noty");
                 error = true;
             }
             if(error){
@@ -52,7 +52,7 @@ public class StatusController {
             statusSelect = customStatus;
         }
         statusService.setStatus(userService.getCurrentUser().getId(), statusSelect);
-        notificationManager.sendFlashNotification("New status is set.", "alert-success", "short-noty");
+        notificationManager.sendFlashNotification("New status is set.", "success", "short-noty");
         return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", "/")
                 .build();

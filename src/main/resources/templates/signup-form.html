@@ -14,7 +14,7 @@
 </head>
 <body>
 <div id="notification-container">
-    <div th:each="notification : ${notifications}" th:class="${'alert alert-danger notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
+    <div th:each="notification : ${notifications}" th:class="${'notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
 </div>
 
 <div class="container mt-5 signup-container">
