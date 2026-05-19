@@ -21,8 +21,13 @@
 </head>
 
 <body>
-<div id="notification-container">
-    <div th:each="notification : ${notifications}" th:class="${'notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
+<div id="notification-container" class="notifications-style"?>
+    <!-- Dynamic Notifications -->
+    <div th:each="notification : ${notifications}"
+         th:class="${'notification ' + notification.type + ' ' + notification.duration_type}"
+         th:text="${notification.message}"
+         style="display: none;">
+    </div>
 </div>
 <div id="toast-container" class="toast-container"></div> <!-- New toast container -->
 <nav class="navbar navbar-header navbar-expand-lg bg-body-tertiary" id="navbar">

@@ -166,7 +166,7 @@ public class AuthenticationEvents {
         if (existingUser == null) {
             String username = email.split("@")[0];
             String password = generateRandomPassword();
-            String profileImageUrl = convertImageToBase64("src/main/resources/static/images/profile-image.png");
+            String profileImageUrl = convertImageToBase64("/images/profile-image.png");
             User newUser = new User(username, email, new BCryptPasswordEncoder().encode(password), true, "afio123deseud", LocalDateTime.now(), profileImageUrl);
             Authority userAuthority = new Authority("ROLE_USER");
             userAuthority.setUser(newUser);
@@ -176,9 +176,9 @@ public class AuthenticationEvents {
             newUser.setTheme(themeRepository.findById(1).orElse(null));
             newUser.setEnabled(true);
             User user = userService.saveUser(newUser);
-            String notificationMessage = "Account created successfully !";
+            String notificationMessage = "Account created successfully";
             notificationManager.sendFlashNotification(notificationMessage, "success", "short-noty");
-            notificationMessage = "A temporary password has been generated. Please save it locally if you wish to login again normally !";
+            notificationMessage = "A temporary password has been generated, please save it locally if you wish to login again normally";
             notificationManager.sendFlashNotification(notificationMessage, "danger", "long-noty");
             notificationMessage = "Password: "+password;
             notificationManager.sendFlashNotification(notificationMessage, "success", "long-noty");

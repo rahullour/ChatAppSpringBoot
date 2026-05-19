@@ -15,7 +15,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public String handleMaxSizeException(MaxUploadSizeExceededException exc, RedirectAttributes redirectAttributes) {
-        notificationManager.sendFlashNotification("File size exceeds the maximum limit of 2 MB !", "danger", "short-noty");
+        notificationManager.sendFlashNotification("File size exceeds the maximum limit of 2 MB", "danger", "short-noty");
 
         // Get the current URL from the filter
         String currentUrl = RequestUrlFilter.getCurrentUrl();

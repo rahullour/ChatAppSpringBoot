@@ -1,4 +1,3 @@
-// Function to activate and fade out a single notification based on your existing timer logic
 function initializeNotification(notificationElement) {
     // Calculate index based on how many elements are visible
     var index = $('#notification-container .notification:visible').length;
@@ -11,10 +10,9 @@ function initializeNotification(notificationElement) {
     } else if (notificationElement.hasClass('medium-noty')) {
         timer = 4;
     }
-
+    // FIX: Position the element vertically *before* showing it so they don't overlap
+    notificationElement.css({ top: (10 + (index * 65)) + 'px' });
     notificationElement.show();
-
-    // FIX: Add a base offset (20px) so the first notification doesn't touch the absolute top of the screen
 
     var interval = setInterval(function() {
         timer--;
@@ -157,13 +155,13 @@ window.sendInviteAjax = async function (event) {
             }
 
             if (data) {
-                injectDynamicNotification(data.message, data.type, data.durationType, "success");
+                injectDynamicNotification(data.message, data.type, data.durationType);
             }
 
         } else {
             // FAILURE: (e.g. status 400) Keep the modal open, but show the error alert banner
             if (data && data.message) {
-                injectDynamicNotification(data.message, data.type, data.durationType, "danger");
+                injectDynamicNotification(data.message, data.type, data.durationType);
             } else {
                 const errorText = await response.text();
                 alert("Failed to send invites: " + errorText);
@@ -175,12 +173,12 @@ window.sendInviteAjax = async function (event) {
 };
 
 // Dynamic local notification factory
-function injectDynamicNotification(message, typeClass, durationClass, baseAlertStyle) {
+function injectDynamicNotification(message, type, duration) {
     const container = document.getElementById("notification-container");
     if (!container) return;
 
     const newNotification = document.createElement("div");
-    newNotification.className = `alert ${baseAlertStyle} notification ${typeClass} ${durationClass}`;
+    newNotification.className = `${type} notification ${duration}`;
     newNotification.textContent = message;
     newNotification.style.display = "none";
 

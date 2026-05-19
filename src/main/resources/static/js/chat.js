@@ -471,7 +471,7 @@ function subscribeToNotifications() {
         // Pass the topicPath as the custom ID in the headers object (the 2nd argument)
         stompClient.subscribe(topicPath, function (notification) {
             console.log('Received notification:', notification);
-            handleNotification(notification.body);
+            showNotificationToast(notification.body, "success", "short-noty");
         }, { id: topicPath }); // <--- THIS IS THE FIX
 
     } else {
@@ -479,47 +479,13 @@ function subscribeToNotifications() {
     }
 }
 
-function handleNotification(message) {
-    console.log('Handling notification:', message);
-    notificationCount++; // Increment the notification count
-    showNotificationToast(message); // Show the toast notification
-}
-
-function showNotificationToast(message, persistent = false) {
-    const toastContainer = document.getElementById('toast-container');
-
-    // Create a new notification element
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    if(persistent == true){
-        notification.classList.add("error");
-    }
-    else{
-        notification.classList.add("success");
-    }
-    notification.innerText = message;
-
-    // Append the notification to the toast container
-    toastContainer.appendChild(notification);
-
-    if (!persistent) {
-        // Automatically hide the notification after 1 second if not persistent
-        setTimeout(() => {
-            notification.classList.add('hide');
-            // Remove the notification from the DOM after the fade-out transition
-            notification.addEventListener('transitionend', () => {
-                toastContainer.removeChild(notification);
-            });
-        }, 2000); // Adjust the duration as needed
-    } else {
-        // If persistent, do not auto-hide and allow for manual removal later
-        offlineNotification = notification; // Store reference for later use
-    }
+function showNotificationToast(message, type, duration) {
+    injectDynamicNotification(message, type, duration);
 }
 
 // Function to handle offline state
 function handleOffline() {
-    showNotificationToast('You are currently offline. Please check your internet connection.', true);
+    showNotificationToast("You are currently offline. Please check your internet connection", "error", "short-noty");
 }
 
 // Add a variable to track if the chat is loading
@@ -616,7 +582,7 @@ function handleOnline() {
         });
     }
 
-    showNotificationToast('You are back online!'); // Show a brief message about being back online
+    showNotificationToast("You are back online", "success", "short-noty");
     location.reload();
 }
 
@@ -1864,7 +1830,7 @@ async function initializeBackgroundNotificationListeners() {
 
                     if (!readyByUsers.includes(currentUserId)) {
                         if (localStorage.getItem("roomId") !== rId) {
-                            showNotificationToast(notificationText);
+                            showNotificationToast(notificationText,"success", "short-noty");
                             playNotificationSound();
                         }
                     }
@@ -1952,8 +1918,6 @@ async function openChat(roomId) {
 
     // 7. Independent synchronous UI updates can stay here
     displayReadByUsersFromRooms(roomId);
-    notificationCount = 0;
-
 
     // 8. If a user is added to a new room during their session,
     // this keeps our background listeners up to date without duplicating existing ones.

@@ -52,8 +52,7 @@ public class ThemeServiceImpl implements ThemeService {
 
         try {
             // "classpath*:" scans inside the packed jar resources matching the wildcard pattern
-            Resource[] resources = resolver.getResources("classpath*:static/images/themes/*");
-
+            Resource[] resources = resolver.getResources("classpath:/static/images/themes/*");
             if (resources != null && resources.length > 0) {
                 for (Resource resource : resources) {
                     String filename = resource.getFilename();

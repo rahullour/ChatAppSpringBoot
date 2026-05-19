@@ -111,7 +111,7 @@ public class InviteController {
                     }
                 }
                 if(groupNames.contains(groupName)){
-//                    notificationManager.sendFlashNotification(groupName + " group already exists, please delete chat and retry!", "error", "short-noty");
+//                    notificationManager.sendFlashNotification(groupName + " group already exists, please delete chat and retry", "error", "short-noty");
                     responseData.put("message", groupName + " group already exists, please delete chat and retry!");
                     responseData.put("type", "error");
                     responseData.put("durationType", "short-noty");
@@ -135,7 +135,7 @@ public class InviteController {
                         for (String emailAddress : receiverEmails) {
                             User user = userService.getUserByEmail(emailAddress);
                             if (user == null) {
-                                String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
+                                String notificationMessage = "User with email ID: " + emailAddress + " not registered, sending join link, please resend invite later";
 //                                notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
                                 responseData.put("message", notificationMessage);
                                 responseData.put("type", "danger");
@@ -157,7 +157,7 @@ public class InviteController {
                     if(isValidEmail(emailAddress)) {
                         String tokenRoomId = "";
                         if (user == null) {
-                            String notificationMessage = "User with email ID: " + emailAddress + " not registered! Sending join link! Please resend invite later!";
+                            String notificationMessage = "User with email ID: " + emailAddress + " not registered, sending join link!, please resend invite later";
 //                            notificationManager.sendFlashNotification(notificationMessage, "danger", "medium-noty");
                             responseData.put("message", notificationMessage);
                             responseData.put("type", "danger");
@@ -184,8 +184,8 @@ public class InviteController {
                         } else {
                             List<Invite> connections = inviteService.getInvites(senderEmail, emailAddress,  0);
                             if (!connections.isEmpty() && connections.getLast().isAccepted()) {
-//                                notificationManager.sendFlashNotification(emailAddress + " is connected already, please delete chat and retry!", "error", "short-noty");
-                                responseData.put("message", emailAddress + " is connected already, please delete chat and retry!");
+//                                notificationManager.sendFlashNotification(emailAddress + " is connected already, please delete chat and retry", "error", "short-noty");
+                                responseData.put("message", emailAddress + " is connected already, please delete chat and retry");
                                 responseData.put("type", "error");
                                 responseData.put("durationType", "short-noty");
                                 return ResponseEntity.badRequest().body(responseData);
@@ -205,7 +205,7 @@ public class InviteController {
                                 user.getId(),
                                 groupName
                         );
-                        String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification by joinee via their email !";
+                        String notificationMessage = "Chat with " + emailAddress + " will be enabled after verification by joinee via their email";
 //                        notificationManager.sendFlashNotification(notificationMessage, "success", "medium-noty");
                         responseData.put("message", notificationMessage);
                         responseData.put("type", "success");

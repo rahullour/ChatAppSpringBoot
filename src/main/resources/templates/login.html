@@ -17,9 +17,21 @@
 </head>
 
 <body>
-<div id="notification-container">
-    <div class="success notification short-noty" th:if="${param.logout != null}" th:text="#{logout.message}"></div>
-    <div th:each="notification : ${notifications}" th:class="${'notification ' + notification.type + ' ' + notification.duration_type}" th:text="${notification.message}"></div>
+<div id="notification-container" class="notifications-style">
+    <!-- Logout Notification -->
+    <div class="success notification short-noty"
+         th:if="${param.logout != null}"
+         th:text="#{logout.message}"
+         style="display: none;">
+    </div>
+
+    <!-- Dynamic Notifications -->
+    <div th:each="notification : ${notifications}"
+         th:class="${'notification ' + notification.type + ' ' + notification.duration_type}"
+         th:text="${notification.message}"
+         style="display: none;">
+    </div>
+
 </div>
 
 

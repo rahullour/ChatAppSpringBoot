@@ -1,15 +1,10 @@
 .notification {
-    position: fixed !important;
-    /* FIX: Align to top center using transform instead of margin auto */
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: fit-content;
-    max-width: 80vw;
-    z-index: 9999;
+    position: absolute;
+    width: max-content;
+    white-space: nowrap; /* Prevents text wrapping awkwardly */
     opacity: 1;
     font-weight: 600;
-    transition: opacity 0.5s ease-in-out, top 0.2s ease-out; /* Smooth transition when shifting up */
+    transition: opacity 0.5s ease-in-out, top 0.2s ease-out;
     display: flex;
     justify-content: center;
     color: white !important;
@@ -30,13 +25,17 @@
 
 .notification.hide {
     opacity: 0;
-}
-
-.notification.hide {
-    opacity: 0;
     transition: opacity 0.5s ease-in-out;
 }
-
-.notification {
-    margin-top: 10px; /* Space between notifications */
+.notifications-style{
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: fit-content;
+    max-width: 80vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
