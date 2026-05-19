@@ -5,7 +5,6 @@ import com.creating.chatApplication.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +38,10 @@ public class UserServiceImpl implements UserService{
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-
+    @Override
+    public User getUserByEmailAndStatus(String email, boolean status) {
+        return userRepository.findByEmailAndStatus(email,status);
+    }
     @Override
     public User saveUser(User user) {
        return userRepository.save(user);

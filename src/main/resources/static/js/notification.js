@@ -6,7 +6,7 @@ function initializeNotification(notificationElement) {
     if (notificationElement.hasClass('short-noty')) {
         timer = 2;
     } else if (notificationElement.hasClass('long-noty')) {
-        timer = 6;
+        timer = 8;
     } else if (notificationElement.hasClass('medium-noty')) {
         timer = 4;
     }
@@ -142,7 +142,7 @@ window.sendInviteAjax = async function (event) {
     // D. Extract Group Name & Profile Picture (Only appended if it's actually a Group Chat)
     if (isGroupChat) {
         const groupNameInput = document.getElementById("group_name");
-        formData.append("groupName", groupNameInput ? groupNameInput.value : "");
+        formData.append("groupName", groupNameInput ? groupNameInput.value.trim() : "");
 
         const fileInput = document.getElementById("profilePictureFile");
         if (fileInput && fileInput.files.length > 0) {

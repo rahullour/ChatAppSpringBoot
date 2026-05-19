@@ -12,5 +12,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     public User findByEmail(String email);
     public User findByUsernameOrEmail(String username, String email);
     public User findByVerificationToken(String token);
+    @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email_param) AND u.enabled = :status_param")
+    public User findByEmailAndStatus(@Param("email_param") String email, @Param("status_param") boolean status);
     @Query("SELECT u.email FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<String> findEmailsByQuery(@Param("query") String query);}

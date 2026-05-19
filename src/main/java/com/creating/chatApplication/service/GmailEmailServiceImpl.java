@@ -92,7 +92,7 @@ public class GmailEmailServiceImpl implements gmailEmailService {
                 "    <div class=\"container\">\n" +
                 "        <h1>You're Invited to WeChat!</h1>\n" +
                 "        <p>Hello,</p>\n" +
-                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>, email: " + senderEmail + ". We're excited to have you!</p>\n" +
+                "        <p>You've been invited to join a " + convType + " conversation by <strong>" + senderUsername + "</strong>, email: " + senderEmail + ".</p>\n" +
                 "        <p>Do invite " + senderEmail + " after login if this mail came before your account verification!</p>\n" +
                 "        <a href=\"" + chatLink + "\" data-tracking=\"false\" iterable=\"false\" class=\"button\">Join the Chat</a>\n" +
                 "        <p>We look forward to seeing you in the chat!</p>\n" +

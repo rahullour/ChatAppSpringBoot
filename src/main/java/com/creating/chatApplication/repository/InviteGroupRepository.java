@@ -13,4 +13,7 @@ public interface InviteGroupRepository extends JpaRepository<InviteGroup, Intege
     InviteGroup findByInviteId(int igId);
     @Query("SELECT ig FROM InviteGroup ig WHERE ig.invite.id IN :inviteIds")
     List<InviteGroup> findAllByInviteId(@Param("inviteIds") List<Integer> inviteIds);
+
+    @Query("SELECT ig FROM InviteGroup ig WHERE ig.userGroup.id IN :groupId_param")
+    List<InviteGroup> findAllByGroupId(@Param("groupId_param") int groupId);
 }

@@ -2,11 +2,13 @@ package com.creating.chatApplication.service;
 
 import com.creating.chatApplication.entity.UserGroup;
 
+import java.util.List;
+
 public interface UserGroupService {
     UserGroup createUserGroup(String name);
     UserGroup saveUserGroup(UserGroup userGroup);
-    UserGroup findUserGroupByRoomId(String roomId);
-    UserGroup findUserGroupByName(String groupName);
+    List<UserGroup> getAllUserGroupsByName(String groupName);
+        UserGroup findUserGroupByRoomId(String roomId);
     UserGroup findUserGroupById(int groupId);
 }
 

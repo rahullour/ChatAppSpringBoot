@@ -1,7 +1,8 @@
 .notification {
     position: absolute;
     width: max-content;
-    white-space: nowrap; /* Prevents text wrapping awkwardly */
+    max-width: 80vw;
+    white-space: nowrap;
     opacity: 1;
     font-weight: 600;
     transition: opacity 0.5s ease-in-out, top 0.2s ease-out;
@@ -11,6 +12,12 @@
     padding: 15px;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    overflow-wrap: break-word;
+}
+
+/* Automatically wraps when max-width reached */
+.notification {
+    white-space: pre-wrap;
 }
 
 .notification.success {

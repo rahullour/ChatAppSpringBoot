@@ -13,6 +13,8 @@ public interface UserService {
 
     User getCurrentUser();
 
+    User getUserByEmailAndStatus(String email, boolean status);
+
     User saveUser(User user);
 
     String getFCMTokenByEmail(String email);

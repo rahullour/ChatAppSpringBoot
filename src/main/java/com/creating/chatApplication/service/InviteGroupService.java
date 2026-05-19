@@ -8,7 +8,12 @@ import java.util.List;
 
 public interface InviteGroupService {
     InviteGroup saveInviteGroup(InviteGroup inviteGroup);
+
     InviteGroup findInviteGroupByInviteId(int igId);
+
     List<InviteGroup> findInviteGroupsByInviteId(List<Integer> inviteIds);
+
     void rejectInviteGroup(int igId);
+
+    List<InviteGroup> getAllInviteGroupByGroupId(int groupId);
 }
