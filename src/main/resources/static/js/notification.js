@@ -103,26 +103,65 @@ window.sendInviteAjax = async function (event) {
     const inviteForm = document.getElementById("inviteForm");
     if (!inviteForm) return;
 
-    const formData = new FormData(inviteForm);
+    // 1. MANUALLY TRIGGER HTML5 VALIDATION WITHOUT SUBMITTING
+    if (!inviteForm.checkValidity()) {
+        inviteForm.classList.add('was-validated');
+        inviteForm.reportValidity();
+        return; // Stop right here if validation fails!
+    }
 
+    // 2. EXTRACT REQUIRED DATA FROM FORM
+    // Create a fresh FormData object to explicitly control parameter names
+    const formData = new FormData();
+
+    // A. Extract Sender Email
+    const senderEmailInput = inviteForm.querySelector('input[name="senderEmail"]');
+    formData.append("senderEmail", senderEmailInput ? senderEmailInput.value : "");
+
+    // B. Extract Emails
     const emailSelect = document.getElementById("emailInput");
+    let emailString = "";
     if (emailSelect) {
         const selectedValues = Array.from(emailSelect.selectedOptions).map(opt => opt.value);
         if (selectedValues.length > 0) {
-            formData.set("emails", selectedValues.join(","));
+            emailString = selectedValues.join(",");
         } else {
             const hiddenEmailList = document.getElementById("emailList");
             if (hiddenEmailList && hiddenEmailList.value) {
-                formData.set("emails", hiddenEmailList.value);
+                emailString = hiddenEmailList.value;
             }
         }
     }
+    formData.append("emails", emailString);
 
-    if (!formData.get("emails") || formData.get("emails").trim() === "") {
-        alert("Please select or type at least one recipient email address first.");
-        return;
+    // C. Extract Switch Status (Forces true/false mapping for the Spring boolean backend)
+    const groupTypeCheckbox = document.getElementById("group_type");
+    const isGroupChat = groupTypeCheckbox ? groupTypeCheckbox.checked : false;
+    formData.append("type", isGroupChat ? "true" : "false");
+
+    // D. Extract Group Name & Profile Picture (Only appended if it's actually a Group Chat)
+    if (isGroupChat) {
+        const groupNameInput = document.getElementById("group_name");
+        formData.append("groupName", groupNameInput ? groupNameInput.value : "");
+
+        const fileInput = document.getElementById("profilePictureFile");
+        if (fileInput && fileInput.files.length > 0) {
+            formData.append("profilePicture", fileInput.files[0]);
+        }
+    } else {
+        // Explicitly set empty values for direct user invites so the backend handles them cleanly
+        formData.append("groupName", "");
     }
 
+    // 3. CLOSE MODAL IMMEDIATELY
+    // Data is safely stored in the formData object; close the UI now
+    const modalElement = document.getElementById('inviteModal');
+    if (modalElement) {
+        const modalInstance = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+        modalInstance.hide();
+    }
+
+    // 4. ASYNCHRONOUS BACKGROUND TRANSMISSION
     const csrfTokenElement = document.querySelector('input[name="_csrf"]');
     const headers = {};
     if (csrfTokenElement) {
@@ -131,7 +170,6 @@ window.sendInviteAjax = async function (event) {
 
     try {
         const targetUrl = inviteForm.getAttribute("action") || "/api/invites";
-
         const response = await fetch(targetUrl, {
             method: 'POST',
             headers: headers,
@@ -145,26 +183,15 @@ window.sendInviteAjax = async function (event) {
         }
 
         if (response.ok) {
-            // SUCCESS: Trigger modal closure
-            const modalElement = document.getElementById('inviteModal');
-            if (modalElement) {
-                const modalInstance = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
-                modalInstance.hide();
-                // NOTE: The hidden.bs.modal event listener above will now
-                // automatically handle inviteForm.reset(), Select2 flushing, and image hiding!
-            }
-
             if (data) {
                 injectDynamicNotification(data.message, data.type, data.durationType);
             }
-
         } else {
-            // FAILURE: (e.g. status 400) Keep the modal open, but show the error alert banner
             if (data && data.message) {
                 injectDynamicNotification(data.message, data.type, data.durationType);
             } else {
                 const errorText = await response.text();
-                alert("Failed to send invites: " + errorText);
+                console.error("Server error response:", errorText);
             }
         }
     } catch (error) {
