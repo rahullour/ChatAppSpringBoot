@@ -392,7 +392,7 @@ public class AppMVCController {
     }
 
     @GetMapping("/verifyInviteUser")
-    public String verifyChatJoin(@RequestParam String token, @RequestParam int type, @RequestParam int sender_id, @RequestParam int user_id, @RequestParam String groupName) {
+    public String verifyChatJoin(@RequestParam String token, @RequestParam int type, @RequestParam int sender_id, @RequestParam int user_id, @RequestParam String groupName, String roomId) {
         Token stored_token = tokenService.findByUserTokenAndType(sender_id, token, "invite");
 
         if (stored_token == null) {
@@ -463,17 +463,15 @@ public class AppMVCController {
             }
 
             // Proceed to create or check rooms
-            createOrCheckRoom(type, sender_id, user_id, groupName);
+            createOrCheckRoom(type, sender_id, user_id, groupName, roomId);
         }
         return "redirect:/loginPage";
     }
 
-    private void createOrCheckRoom(int type, int senderId, int recipient_id, String groupName) {
+    private void createOrCheckRoom(int type, int senderId, int recipient_id, String groupName, String roomId) {
         Firestore db = this.firestore;
-        String roomId;
 
         if (type == 0) { // Single chat
-            roomId = "single_" + senderId + "_" + recipient_id; // Unique ID for single chat
             DocumentReference roomRef = db.collection("Rooms").document(roomId);
             ApiFuture<DocumentSnapshot> roomDocument = roomRef.get();
 
@@ -493,7 +491,6 @@ public class AppMVCController {
                 e.printStackTrace();
             }
         } else if (type == 1) { // Group chat
-            roomId = "group_" + groupName + "_" + senderId; // Use sender's ID as the room ID
             DocumentReference roomRef = db.collection("Rooms").document(roomId);
             ApiFuture<DocumentSnapshot> roomDocument = roomRef.get();
 

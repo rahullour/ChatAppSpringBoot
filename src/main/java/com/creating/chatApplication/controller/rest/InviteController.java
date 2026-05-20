@@ -297,12 +297,13 @@ public class InviteController {
                     }
                     String token = tokenGenerationService.generateToken(userService.getUserByEmail(senderEmail), "invite", tokenRoomId);
                     String verificationLink = String.format(
-                            "https://chatappspringboot.onrender.com/verifyInviteUser?token=%s&type=%d&sender_id=%d&user_id=%d&groupName=%s",
+                            "https://chatappspringboot.onrender.com/verifyInviteUser?token=%s&type=%d&sender_id=%d&user_id=%d&groupName=%s&roomId=%s",
                             token,
                             type ? 1 : 0,
                             userService.getUserByEmail(senderEmail).getId(),
                             user.getId(),
-                            groupName
+                            groupName,
+                            type ? groupNameFormed : inviteRoomId
                     );
                     invitesSentEmails.add(emailAddress);
                     emailService.sendInviteEmail(emailAddress, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, verificationLink, type);
@@ -332,11 +333,11 @@ public class InviteController {
     }
     @GetMapping("/invites/single")
     public List<Invite> getSingleInvites(){
-        return inviteService.getInvitesAccepted(userService.getCurrentUser().getEmail(), 0);
+        return inviteService.getInvitesBySenderOrReceiverEmailAccepted(userService.getCurrentUser().getEmail(), 0);
     }
     @GetMapping("/invites/group")
     public List<Invite> getGroupInvites(){
-        return inviteService.getInvitesAccepted(userService.getCurrentUser().getEmail(), 1);
+        return inviteService.getInvitesBySenderOrReceiverEmailAccepted(userService.getCurrentUser().getEmail(), 1);
     }
     @GetMapping("/user_groups")
     public UserGroup getUserGroups(@RequestParam int groupId){
