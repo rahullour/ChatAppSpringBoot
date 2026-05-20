@@ -1,47 +1,102 @@
 package com.creating.chatApplication.service;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Service;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.services.gmail.Gmail;
+import com.google.api.services.gmail.model.Message;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.UserCredentials;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Properties;
 
 @Service
 public class GmailEmailServiceImpl implements gmailEmailService {
 
-    private final ResourceLoader resourceLoader;
-    private final JavaMailSender mailSender;
+    @Value("${google.gmail.refresh-token}")
+    private String refreshToken;
 
-    @Value("${spring.mail.username}")
+    @Value("${google.gmail.sender-email}")
     private String fromEmail;
 
-    // Spring Boot automatically injects JavaMailSender using your environment variables
-    public GmailEmailServiceImpl(ResourceLoader resourceLoader, JavaMailSender mailSender) {
-        this.resourceLoader = resourceLoader;
-        this.mailSender = mailSender;
+    @Value("${google.oauth.config.path}")
+    private String googleOAuthConfigPath;
+
+    @Autowired
+    private ResourceLoader resourceLoader;
+
+    private Gmail getGmailService() throws Exception {
+        // 1. Leverages your injected ResourceLoader dynamically using the properties path
+        Resource resource = resourceLoader.getResource(googleOAuthConfigPath);
+
+        // 2. Parse the stream natively via Google's library structure
+        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(
+                GsonFactory.getDefaultInstance(),
+                new InputStreamReader(resource.getInputStream())
+        );
+
+        // 3. Assemble application client identity with the permanent refresh token
+        UserCredentials credentials = UserCredentials.newBuilder()
+                .setClientId(clientSecrets.getDetails().getClientId())
+                .setClientSecret(clientSecrets.getDetails().getClientSecret())
+                .setRefreshToken(refreshToken)
+                .build();
+
+        return new Gmail.Builder(
+                GoogleNetHttpTransport.newTrustedTransport(),
+                GsonFactory.getDefaultInstance(),
+                new HttpCredentialsAdapter(credentials))
+                .setApplicationName("WeChat-App")
+                .build();
     }
 
+    @Override
     public void sendEmail(String to, String subject, String bodyText) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
+            Gmail service = getGmailService();
 
-            // Set multipart to true to support rich HTML email content
+            // 3. Construct a standard Jakarta Mail message (retaining your original helper logic)
+            Properties props = new Properties();
+            Session session = Session.getDefaultInstance(props, null);
+            MimeMessage message = new MimeMessage(session);
+
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
             helper.setFrom("WeChat <" + fromEmail + ">");
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(bodyText, true); // Setting true enables HTML rendering
+            helper.setText(bodyText, true); // Retains HTML rendering support
 
-            mailSender.send(message);
-            System.out.println("Email successfully sent via Gmail SMTP to: " + to);
+            // 4. Encode the mime message to Base64url format for the web API payload
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            message.writeTo(buffer);
+            String encodedEmail = Base64.encodeBase64URLSafeString(buffer.toByteArray());
+
+            Message gmailMessage = new Message().setRaw(encodedEmail);
+
+            // 5. Fire via standard HTTP REST API (Port 443)
+            service.users().messages().send("me", gmailMessage).execute();
+            System.out.println("Email successfully sent via Gmail API to: " + to);
 
         } catch (Exception e) {
-            System.err.println("Failed to send email via Gmail SMTP: " + e.getMessage());
+            System.err.println("Failed to send email via Gmail API: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
 
     public String buildInviteEmailBody(String senderUsername, String senderEmail, String chatLink, String convType) {
         return "<!DOCTYPE html>\n" +

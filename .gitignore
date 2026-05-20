@@ -39,3 +39,6 @@ build/
 **/src/main/resources/wechat-5e447-firebase-adminsdk-dcsei-e95bbc009b.json
 #rahulbidawas@gmail.com account file
 **/src/main/resources/wechat-ec503-firebase-adminsdk-fbsvc-02a7509602.json
+
+#Ignore Google OAuth Secret
+**/src/main/resources/client_secret_416052037332-l2blpcf7qklqmtblgham6o10nu3ell7d.apps.googleusercontent.com.json
