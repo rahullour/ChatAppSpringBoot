@@ -1,0 +1,442 @@
+/* ==========================================================================
+   modern_look.css - Integrated High-Contrast Glass Theme
+   ========================================================================== */
+
+/* 1. Base Dark Wallpaper Background with Gradient Tint Overlay */
+body {
+    background-image: radial-gradient(circle at top right, rgb(26 30 54 / 0%), rgb(9 13 22 / 0%)), url(/images/login-back-2.png) !important;
+    background-attachment: fixed !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    /*color: #ffffff !important; !* Forces crisp white readability base *!*/
+}
+
+/* Base App Colors Guardrail - Absolutely Untouched */
+.app-color {
+    /* Retains your website's native branding colors flawlessly */
+}
+
+
+/* 2. Top Navigation Bar */
+#navbar.navbar {
+    position: relative !important; /* Establishes the boundary for our blur layer */
+    background: transparent !important; /* Pass transparency down to the pseudo-layer */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    .navbar-nav{
+        .invite-btn{
+            button{
+                background: rgb(82 255 0 / 30%) !important;
+                border: none;
+            }
+        }
+    }
+}
+
+#inviteModal {
+    #send-invite-btn{
+        background: rgb(82 255 0 / 30%) !important;
+        border: none;
+    }
+}
+
+/* This hidden layer handles the background tint and blur independently */
+#navbar.navbar::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(5px) !important;
+    -webkit-backdrop-filter: blur(5px) !important;
+    z-index: -1 !important; /* Pushes the blur safely behind links and dropdowns */
+    pointer-events: none !important; /* Ensures clicks pass right through to buttons */
+}
+
+#navbar .nav-link,
+#navbar .user-status {
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+/* 3. Left Sidebar & Navigation Tabs Menu */
+.sidebar {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Modernizing Single/Group Tabs Selection Menu into a Glass Pill Design */
+.sidebar .nav-tabs {
+    border-bottom: none !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    padding: 4px !important;       /* Slightly tighter padding around the track */
+    border-radius: 12px !important;
+    margin: 10px 6px !important;   /* Narrowed side margins to prevent squishing */
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;  /* CRITICAL: Forces elements to stay in one line */
+    gap: 4px !important;
+    width: auto !important;        /* Let container adapt smoothly */
+}
+
+.sidebar .nav-tabs .nav-item {
+    flex: 1 1 0% !important;       /* Forces parent container wrappers to divide width 50/50 evenly */
+    display: flex !important;
+}
+
+.sidebar .nav-tabs .nav-item{
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar .nav-tabs .nav-link {
+    color: rgba(255, 255, 255, 0.6) !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0px !important;
+    padding: 8px 4px !important;   /* Reduced side padding inside text blocks to secure space */
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    text-align: center !important;
+    flex: 1 !important;            /* Fills the 50% tab block fully */
+    white-space: nowrap !important;/* Prevents text strings inside tabs from breaking line */
+}
+
+/* Highlighting the active selection seamlessly */
+.sidebar .nav-tabs .nav-link.active {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar .chat-content .tab-content .tab-pane .invite-item.chat-active-li {
+    background: rgb(255 255 255 / 13%) !important;
+}
+
+.sidebar .chat-content .tab-content .tab-pane .username {
+    display: inline-block;
+    max-width: 200px;           /* Adjust this width to match roughly 20 characters */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;    /* Automatically appends the "..." */
+    vertical-align: middle;     /* Keeps text aligned with surrounding elements */
+}
+
+.sidebar .nav-tabs .nav-link:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #ffffff !important;
+}
+
+/* Fixing Left Sidebar Chat Items Visibility against Dark Backgrounds */
+.sidebar ul li,
+.sidebar .contact-name,
+.sidebar .chat-item-text {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.sidebar ul li:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-radius: 0px !important;
+}
+
+/* ==========================================================================
+   Chat Items List Styles (Single & Group Lists)
+   ========================================================================== */
+
+/* The wrapper container holding your lists */
+/* ==========================================================================
+   Theme Styles for Chat Lists (Single & Group Lists)
+   ========================================================================== */
+.single-list,
+.group-list,
+.sidebar ul {
+    list-style: none !important;
+}
+
+/* Individual list rows matching your dropdown transparency theme */
+/* Add :not(.select2-selection__choice) to each selector chain */
+.single-list li:not(.select2-selection__choice),
+.group-list li:not(.select2-selection__choice),
+.sidebar ul li:not(.select2-selection__choice) {
+    background: rgb(20 25 45 / 0%) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    transition: background 0.2s ease, color 0.2s ease;
+    cursor: pointer;
+}
+
+/* Hover effect using your exact specification */
+.single-list li:hover,
+.group-list li:hover,
+.sidebar ul li:hover {
+    background: rgb(255 255 255 / 13%) !important;
+}
+
+/* Active chat state highlighting */
+.single-list li.active,
+.group-list li.active,
+.sidebar ul li.active {
+    background: rgb(255 255 255 / 20%) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Row elements & Profile icons styling */
+.single-list li img,
+.group-list li img,
+.sidebar ul li img {
+    border-radius: 50% !important;
+    object-fit: cover;
+}
+
+.sidebar .contact-name,
+.single-list li strong,
+.group-list li strong {
+    color: #ffffff !important;
+    font-weight: 500 !important;
+}
+
+.sidebar .chat-item-text,
+.single-list li span,
+.group-list li span {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Hover adjustments specifically for nested texts */
+.single-list li:hover span,
+.group-list li:hover span {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* 4. Chat Content Styling (Main Panel Area Wrapper) */
+.chat-content {
+    background: rgba(255, 255, 255, 0.02) !important;
+    color: #ffffff !important;
+}
+.chat-content h1, .chat-content h2, .chat-content h3,
+.chat-content h4, .chat-content h5, .chat-content h6,
+.chat-content p, .chat-content span {
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); /* Helps texts pop beautifully over backgrounds */
+}
+
+/* 5. Text Input Window Frame */
+#trix-editor-box.input-box {
+    background: rgb(20 25 45 / 0%) !important;
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+trix-editor:empty:not(:focus)::before {
+    color: #ffffff !important;
+}
+trix-editor {
+    color: #ffffff !important;
+    background: transparent !important;
+}
+trix-toolbar {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: #000000 !important;
+}
+
+/* Invert the background-image icons to turn them from black to white */
+trix-toolbar .trix-button--icon::before {
+    filter: invert(1);
+    opacity: 1; /* Makes them crisp against a dark background */
+}
+
+/* Optional: Keep them slightly dimmed when disabled */
+trix-toolbar .trix-button--icon:disabled::before {
+    filter: invert(1);
+    opacity: 0.4;
+}
+
+/* 6. Modals & Settings Dialogs - Glassmorphic Transparent Dark Blue Base */
+/* ==========================================================================
+   Modals & Settings Dialogs - Integrated Glass Theme
+   ========================================================================== */
+.modal {
+    background: rgb(0 0 0 / 10%) !important;
+}
+
+.modal-content {
+    background: rgb(38 54 121 / 0%) !important; /* Your 100% transparent signature space color */
+    backdrop-filter: blur(10px) !important;     /* Heavy frost glass separation behind elements */
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
+}
+
+.modal-header, .modal-footer {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.modal-title {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.modal .btn-close {
+    filter: invert(1) brightness(2);
+}
+
+/* Forcing all inner text, table logs, and headers to turn readable over transparency */
+.modal-content table,
+.modal-content label,
+.modal-content .login-history-item {
+    color: #ffffff !important;
+}
+
+/* Orange Headers get an isolated clean luminous drop-shadow glow for contrast */
+.modal-content h3,
+.modal-content h4,
+.modal-content .modal-header h5 {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
+   Inner left sidebar menu within settings modal context (UPDATED)
+   ========================================================================== */
+.modal-content .menu-bar {
+    background: rgb(20 25 45 / 0%) !important; /* Pure transparent menu container */
+    backdrop-filter: blur(15px) !important;
+    -webkit-backdrop-filter: blur(15px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.modal-content .menu-bar .nav-link {
+    color: #ffffff !important;
+    border: none !important;
+    background: transparent !important;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Hover style inside settings navigation matching your style profile */
+.modal-content .menu-bar .nav-link:hover {
+    background: rgb(255 255 255 / 13%) !important;
+    color: #ffffff !important;
+}
+
+/* Active/Selected link inside the modal menu panel */
+.modal-content .menu-bar .nav-link.active {
+    background: rgb(255 255 255 / 20%) !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+}
+
+/* ==========================================================================
+   Form Controls & Select Inputs Inside Modals
+   ========================================================================== */
+
+
+/* Target disabled inputs and select boxes inside the modal */
+.modal-content .form-control:disabled,
+.modal-content .form-select:disabled {
+    background: #cccccc !important; /* Change this to your preferred disabled color */
+    color: #888888 !important;      /* Optional: dim the text color so it looks disabled */
+    cursor: not-allowed;            /* Optional: shows the 'block' cursor on hover */
+    opacity: 1 !important;          /* Prevents iOS/Safari from overriding your background opacity */
+}
+
+.modal-content .form-control:focus,
+.modal-content .form-select:focus {
+    color: black !important;
+    background: rgb(255 255 255) !important;
+    border-color: #0dcaf0 !important;
+}
+
+/* ==========================================================================
+   Data Table Styling inside Transparent Settings Modal
+   ========================================================================== */
+.modal-content .table {
+    color: #ffffff !important;
+}
+
+.modal-content .table th {
+    color: #fff !important; /* Emphasized header columns */
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal-content .table td {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 12px 8px !important;
+}
+
+/* 7. Settings & Logout Dropdown Menu Style Update */
+.dropdown-menu {
+    background: rgba(20, 25, 45, 0.85) !important; /* Solid tint overlay for high dark readability safety */
+    background: rgb(20 25 45 / 0%) !important;
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dropdown-item {
+    color: #ffffff !important;
+    font-weight: 400;
+    transition: background 0.2s ease, color 0.2s ease;
+    background: transparent !important;
+    border: none !important;
+}
+
+.dropdown-item:hover {
+    background: rgb(255 255 255 / 13%) !important;
+}
+
+.dropdown-divider {
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    opacity: 1;
+}
+
+/* Form submission layouts adjusted seamlessly inside dropdown items */
+.dropdown-menu form {
+    margin: 0;
+    width: 100%;
+}
+
+.dropdown-menu button.dropdown-item {
+    width: 100%;
+    text-align: left;
+}
+
+/* Target the placeholder only when the input is disabled */
+.form-control:disabled::placeholder {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    -webkit-text-fill-color: #ffffff !important; /* Fix for Safari/Chrome */
+}
+
+.form-control input::placeholder{
+    color: black !important;
+}
+
+/* Optional: If Safari is still forcing the input text itself to be gray */
+.form-control:disabled {
+    color: #000000 !important;
+    opacity: 1 !important;
+}
+
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: red !important;
+
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    color: black;
+}
+
+select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #e4e4e4 !important;
+    border: 1px solid #aaa !important;
+}

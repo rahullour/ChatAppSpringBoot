@@ -60,7 +60,7 @@ $(document).ready(function() {
         }
     });
     $('#emailInput').select2({
-        placeholder: "Enter email addresses",
+        placeholder: "Enter email addresses ...",
         tags: true, // Allow users to add new emails
         ajax: {
             url: '/api/users/getUserEmails', // Endpoint to fetch existing emails
@@ -360,7 +360,7 @@ function selectTheme(id) {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 success: function () {
-                    showSuccessMessage('Theme updated successfully!');
+                    // showSuccessMessage('Theme updated successfully!');
                 },
                 error: function () {
                     showErrorMessage('Failed to set theme.');
@@ -488,3 +488,75 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Call the initialize function when the DOM is ready
 $(document).ready(initialize);
+
+// trix toolbar dyamic positioning on message-edit-preview/message-reply-preview open
+window.addEventListener("load", () => {
+
+    function initializeToolbarLogic() {
+        const toggleBtn = document.querySelector(".toolbar-toggle-btn");
+        const editorBox = document.getElementById("trix-editor-box");
+        // If elements aren't present yet, exit cleanly and let the observer try on the next frame
+        if (!toggleBtn || !editorBox) return false;
+
+        // Prevent attaching multiple identical event listeners if initialized multiple times
+        if (toggleBtn.dataset.listenerAttached) return true;
+
+        toggleBtn.addEventListener("click", () => {
+                const toolbar = editorBox.querySelector("trix-toolbar");
+                if (!toolbar) return;
+
+                // Detect which preview has the active state class
+                const replyPreview = editorBox.querySelector(".message-reply-preview.active");
+                const editPreview = editorBox.querySelector(".message-edit-preview.active");
+                const activePreview = replyPreview || editPreview;
+
+                if (activePreview) {
+                    toolbar.style.setProperty("position", "absolute", "important");
+                    toolbar.style.setProperty("left", "0", "important");
+                    toolbar.style.setProperty("width", "100%", "important");
+                    toolbar.style.setProperty("z-index", "101", "important");
+                    toolbar.style.setProperty("height", "45px", "important");
+
+                    // 1. Get viewport positions
+                    const parentTop = editorBox.getBoundingClientRect().top;
+                    const previewTop = activePreview.getBoundingClientRect().top;
+
+                    // 2. This gives us the exact negative offset where the preview's roof starts
+                    const finalYPosition = previewTop - parentTop - 46;
+
+                    // 3. Align the top of the toolbar exactly with the top of the preview box
+                    toolbar.style.setProperty("top", `${finalYPosition}px`, "important");
+                }else {
+                    // Clear all overrides completely if no preview panels are active
+                    toolbar.style.removeProperty("position");
+                    toolbar.style.removeProperty("top");
+                    toolbar.style.removeProperty("left");
+                    toolbar.style.removeProperty("width");
+                    toolbar.style.removeProperty("z-index");
+                    toolbar.style.removeProperty("height");
+                }
+
+        });
+
+        // Flag the button so we don't bind it twice
+        toggleBtn.dataset.listenerAttached = "true";
+        return true;
+    }
+
+    // Run immediately when window finishes loading assets
+    const success = initializeToolbarLogic();
+
+    // If data elements aren't fully baked yet, look out for background modifications
+    if (!success) {
+        const observer = new MutationObserver((mutations, obs) => {
+            if (initializeToolbarLogic()) {
+                obs.disconnect(); // Turn off the background scanner once bound safely
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+});

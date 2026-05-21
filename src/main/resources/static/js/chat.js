@@ -71,6 +71,7 @@ window.downloadFile = async function (messageId) {
 };
 
 window.messageReply = async function(messageId) {
+    closeEdit();
     const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
     if (!messageWrapper) return;
     const messageContent = messageWrapper.querySelector('.message-content');
@@ -166,7 +167,18 @@ window.messageReply = async function(messageId) {
         });
 };
 
+// trix toolbar dyamic positioning on message-edit-preview/message-reply-preview close
+window.resetToolbar = function () {
+    const toggleBtn = document.querySelector(".toolbar-toggle-btn");
+
+    // Check if the button exists and if it contains the 'active' class
+    if (toggleBtn && toggleBtn.classList.contains("active")) {
+        toggleBtn.click();
+    }
+}
+
 window.closeReply = function() {
+    resetToolbar();
     const replyPreview = document.querySelector('.message-reply-preview');
     const editorWrapper = document.querySelector('.editor-wrapper');
 
@@ -178,6 +190,7 @@ window.closeReply = function() {
 };
 
 window.editMessage = async function (messageId) {
+    closeReply();
     const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
     if (!messageWrapper) return;
 
@@ -434,7 +447,7 @@ window.saveEditedMessage = async function () {
         if (newAttachments.length > 0) {
             addMessageAttachmentsToGlobal(currentEditingMessageId, newAttachments);
         }
-        
+
 
         // Safe DOM Fallback view updates
         let textContent = messageContent.querySelector('span:not(.message-reply-reference > span)');
@@ -465,6 +478,7 @@ window.saveEditedMessage = async function () {
 };
 
 window.closeEdit = function () {
+    resetToolbar();
     const editPreview = document.querySelector(".message-edit-preview");
     const editorWrapper = document.querySelector(".editor-wrapper");
 

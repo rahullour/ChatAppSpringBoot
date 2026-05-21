@@ -11,6 +11,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" th:href="@{/css/home.css}" />
     <link rel="stylesheet" th:href="@{/css/notification.css}" />
+    <link rel="stylesheet" th:href="@{/css/modern_look.css}" />
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/trix/1.3.1/trix.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -63,7 +64,7 @@
                         <img id="profilePic" class="profile-pic me-2" src="" alt="No Profile Picture" width="35" height="35" style="border-radius: 50%;">
                         <span th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
                                  (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
-                                 #authentication.principal.email}"></span>
+                                 #authentication.principal.username}"></span>
                     </a>
                     <ul class="dropdown-menu shadow border-0 mt-2 p-2 w-100">
                         <li>
@@ -192,8 +193,8 @@
                                                 <table class="table">
                                                     <thead>
                                                     <tr>
-                                                        <th>Date & Time</th>
                                                         <th>Type</th>
+                                                        <th>Date & Time</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -264,7 +265,7 @@
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-primary" onclick="sendInviteAjax()">Send Invite</button>
+                                <button id="send-invite-btn" type="button" class="btn btn-primary" onclick="sendInviteAjax()">Send Invite</button>
                             </div>
                         </form>
                     </div>
@@ -305,7 +306,7 @@
                         <input id="message-content" type="hidden" name="content">
                         <trix-editor
                                 input="message-content"
-                                placeholder="Enter a message..."
+                                placeholder="Enter a message ..."
                                 class="form-control border-0"
                                 data-direct-upload-url="/rails/active_storage/direct_uploads"
                                 data-blob-url-template="/rails/active_storage/blobs/redirect/:signed_id/:filename">
