@@ -1846,6 +1846,7 @@ function renderAttachments(attachments, messageContent,messageRoomId) {
             hoverText.classList.add('image-hover-text');
             hoverText.textContent = "Preview Image";
 
+            hoverText.onclick = () => openImagePreview(attachment.downloadUrl);
             imgElement.onclick = () => openImagePreview(attachment.downloadUrl);
 
             imgWrapper.appendChild(imgElement);

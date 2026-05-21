@@ -4,7 +4,8 @@ body{
 }
 
 * {
-    font-family: 'Quicksand', sans-serif !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-weight: 500;
 }
 
 .login-card{
