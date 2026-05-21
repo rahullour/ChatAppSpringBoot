@@ -720,13 +720,13 @@ trix-editor .attachment{
 /* Close Button */
 .close-btn {
     position: absolute;
-    top: 20px;
+    top: 0px;
     right: 20px;
     padding: 0px 10px;
-    background-color: rgba(128, 128, 128, 0.9);
+    background-color: rgb(255 255 255 / 90%);
     border-radius: 4px;
     font-size: 24px;
-    color: white;
+    color: red;
     cursor: pointer;
     transition: opacity 0.2s ease-in-out;
 }
@@ -865,8 +865,10 @@ trix-editor .attachment{
     cursor: pointer;
     margin-left: 8px;
     float: right;
+    border-radius: 4px;
     top: -40px;
     position: relative;
+    transition: opacity 0.2s ease-in-out;
     svg{
         top: -2px;
         position: relative;
@@ -874,8 +876,8 @@ trix-editor .attachment{
     }
 
 }
-.close-reply:hover {
-    opacity: 1;
+.close-edit:hover, .close-reply:hover {
+    background: lightgrey;
 }
 
 /* Add border radius to top of editor when reply is active */
@@ -1021,7 +1023,7 @@ trix-editor .attachment{
     cursor: pointer;
     color: #ff4444;
     background: white;
-    border: 1px solid;
+    border: none;
 }
 
 .edit-meta {

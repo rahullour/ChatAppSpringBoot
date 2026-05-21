@@ -252,6 +252,7 @@ window.editMessage = async function (messageId) {
         if (usernameEl) usernameEl.textContent = "User";
     }
 };
+
 window.saveEditedMessage = async function () {
     if (!currentEditingMessageId) return;
 
@@ -420,6 +421,21 @@ window.saveEditedMessage = async function () {
             removeMessageAttachmentsFromGlobal(currentEditingMessageId, urlsToPurge);
         }
 
+        // add newAttachments to Images Preview
+        const newAttachments = updatedAttachments.filter(updatedAtt => {
+            if (!updatedAtt.downloadUrl) return false;
+
+            // Check if this updated attachment does NOT exist anywhere in initialAttachments
+            return !initialAttachments.some(initialAtt =>
+                initialAtt.downloadUrl && initialAtt.downloadUrl.trim().toLowerCase() === updatedAtt.downloadUrl.trim().toLowerCase()
+            );
+        });
+
+        if (newAttachments.length > 0) {
+            addMessageAttachmentsToGlobal(currentEditingMessageId, newAttachments);
+        }
+        
+
         // Safe DOM Fallback view updates
         let textContent = messageContent.querySelector('span:not(.message-reply-reference > span)');
         if (textContent) textContent.innerHTML = newMessageHtml;
@@ -523,6 +539,85 @@ function removeMessageAttachmentsFromGlobal(messageId, specificUrls = null) {
         // Exclude the record only if it satisfies both room conditions and target items
         return !(isTargetRoom && isTargetUrl);
     });
+}
+
+function addMessageAttachmentsToGlobal(messageId, specificAttachments = null) {
+    const currentRoomId = localStorage.getItem('roomId');
+    if (!currentRoomId) return;
+
+    // Standardizer to match strings flawlessly regardless of protocol mismatches
+    const normalizeUrl = (url) => url ? url.trim().replace(/^https?:\/\//i, '').toLowerCase() : '';
+
+    // Create a Set of normalized URLs currently tracked in the global array to prevent duplicates
+    const existingUrlsInRoom = new Set(
+        allImageUrls
+            .filter(item => item.roomId === currentRoomId)
+            .map(item => normalizeUrl(item.url))
+    );
+
+    // This will temporarily house new, unique items to be pushed globally
+    const itemsToAdd = [];
+
+    if (specificAttachments && Array.isArray(specificAttachments)) {
+        // Mode A: Invoked by Save/Edit/Receive flow (Takes explicit arrays of attachment objects)
+        // Expected format: [{ downloadUrl: '...' }, { downloadUrl: '...' }]
+        specificAttachments.forEach(att => {
+            if (!att || !att.downloadUrl) return;
+
+            const normalized = normalizeUrl(att.downloadUrl);
+            if (!existingUrlsInRoom.has(normalized)) {
+                itemsToAdd.push({
+                    roomId: currentRoomId,
+                    messageId: messageId,
+                    url: att.downloadUrl // Store the pristine original URL
+                });
+                // Add it to our local tracking Set so we don't accidentally add the same item twice within this loop execution
+                existingUrlsInRoom.add(normalized);
+            }
+        });
+    } else {
+        // Mode B: Invoked by Fallback/Render Flow (Scrapes entire DOM elements container)
+        const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageWrapper) return;
+
+        const attachmentsContainer = messageWrapper.querySelector(".attachments-container");
+        if (!attachmentsContainer) return;
+
+        // Process images
+        attachmentsContainer.querySelectorAll("img.message-image").forEach(img => {
+            if (!img.src) return;
+
+            const normalized = normalizeUrl(img.src);
+            if (!existingUrlsInRoom.has(normalized)) {
+                itemsToAdd.push({
+                    roomId: currentRoomId,
+                    messageId: messageId,
+                    url: img.src
+                });
+                existingUrlsInRoom.add(normalized);
+            }
+        });
+
+        // Process files/documents
+        attachmentsContainer.querySelectorAll("a.message-file-link").forEach(a => {
+            if (!a.href) return;
+
+            const normalized = normalizeUrl(a.href);
+            if (!existingUrlsInRoom.has(normalized)) {
+                itemsToAdd.push({
+                    roomId: currentRoomId,
+                    messageId: messageId,
+                    url: a.href
+                });
+                existingUrlsInRoom.add(normalized);
+            }
+        });
+    }
+
+    // Append the new unique assets to your global tracker state
+    if (itemsToAdd.length > 0) {
+        allImageUrls = [...allImageUrls, ...itemsToAdd];
+    }
 }
 
 window.deleteMessage = async function (messageId) {
