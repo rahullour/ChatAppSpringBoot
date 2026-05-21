@@ -121,25 +121,31 @@ window.messageReply = async function(messageId) {
                 replyPreview.className = 'message-reply-preview active';
                 replyPreview.innerHTML = `
                     <div class="reply-container">
-                        <span class="reply-icon">
-                            <span class="reply-indicator">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="reply">
-                                   <linearGradient id="a" x1="169.657" x2="406.21" y1="131.461" y2="368.014" gradientTransform="matrix(1 0 0 -1 0 514)" gradientUnits="userSpaceOnUse">
-                                     <stop offset="0" stop-color="#332c81"></stop>
-                                     <stop offset="1" stop-color="#e21d73"></stop>
-                                   </linearGradient>
-                                   <path fill="url(#a)" d="M14.1 191.4 186 43c15-13 38.8-2.4 38.8 17.7v78.2C381.6 140.7 506 172.1 506 320.8c0 60-38.7 119.4-81.4 150.5-13.3 9.7-32.3-2.5-27.4-18.2 44.3-141.6-21-179.2-172.5-181.4v85.9c0 20.2-23.7 30.7-38.8 17.7L14.1 226.9c-10.8-9.4-10.8-26.2 0-35.5z"></path>
-                                 </svg> Replying Message
-                            </span>
-                        </span>
-                        <div class="close-reply" onclick="closeReply()">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20   " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
+                        <!-- Top Bar: Houses the left indicator and the right close icon -->
+                        <div class="reply-header">
+                            <div class="reply-indicator">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="reply-svg-icon" id="reply">
+                                    <linearGradient id="a" x1="169.657" x2="406.21" y1="131.461" y2="368.014" gradientTransform="matrix(1 0 0 -1 0 514)" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0" stop-color="#332c81"></stop>
+                                        <stop offset="1" stop-color="#e21d73"></stop>
+                                    </linearGradient>
+                                    <path fill="url(#a)" d="M14.1 191.4 186 43c15-13 38.8-2.4 38.8 17.7v78.2C381.6 140.7 506 172.1 506 320.8c0 60-38.7 119.4-81.4 150.5-13.3 9.7-32.3-2.5-27.4-18.2 44.3-141.6-21-179.2-172.5-181.4v85.9c0 20.2-23.7 30.7-38.8 17.7L14.1 226.9c-10.8-9.4-10.8-26.2 0-35.5z"></path>
+                                </svg> 
+                                <span>Replying Message</span>
+                            </div>
+                            
+                            <div class="close-reply" onclick="closeReply()">
+                                <!-- Fixed typo: height="20 " had extra spaces -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </div>
                         </div>
+                        
+                        <!-- Bottom Content: Message text body and metadata info stack -->
                         <div class="reply-content">
-                            ${messageText.innerHTML}
+                            <div class="reply-text-body">${messageText.innerHTML}</div>
                             <div class="reply-meta">${senderName}, ${timestamp}</div>
                         </div>
                     </div>
@@ -246,7 +252,6 @@ window.editMessage = async function (messageId) {
         if (usernameEl) usernameEl.textContent = "User";
     }
 };
-
 window.saveEditedMessage = async function () {
     if (!currentEditingMessageId) return;
 
@@ -254,16 +259,16 @@ window.saveEditedMessage = async function () {
     if (!messageWrapper) return;
 
     const trixEditor = document.querySelector("trix-editor");
-    const messageContent = messageWrapper.querySelector(".message-content");
+    var messageContent = messageWrapper.querySelector(".message-content");
 
-    // Get the formatted message content
+    // Get the formatted message content HTML string
     const messageContentInput = document.getElementById("message-content");
     let newMessageHtml = messageContentInput.value;
 
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = newMessageHtml;
 
-    // Clean DOM markup structural trees
+    // Clean DOM markup structural trees for storage saving
     tempDiv.querySelectorAll('figure').forEach(fig => fig.remove());
     tempDiv.querySelectorAll('div').forEach(div => {
         if (div.innerHTML.trim() === '') div.remove();
@@ -271,15 +276,17 @@ window.saveEditedMessage = async function () {
 
     newMessageHtml = tempDiv.innerHTML;
 
+    // USE TRIX DATA HERE: Get currently staged file attachments for uploading
     const attachments = trixEditor.editor.getDocument().getAttachments();
-    const fileAttachments = attachments.filter(attachment => attachment.file);
 
+    // Filter to capture ONLY new attachments that need to be uploaded (have a file object OR a blob URL)
+    const newFileAttachments = attachments.filter(attachment => attachment.file !== null);
     if (newMessageHtml.trim() === "" && attachments.length === 0) {
         alert("Message cannot be empty!");
         return;
     }
 
-    if (fileAttachments.length > 5) {
+    if (attachments.length > 5) {
         showAttachmentLimitNotification();
         return;
     }
@@ -296,54 +303,79 @@ window.saveEditedMessage = async function () {
 
         // Initialize Batch Operations
         const batch = writeBatch(db);
+
+        // 1. CLEAR EXSTING DATABASE RECORDS: Find and queue deletions for old attachment docs
+        const existingSnapshot = await getDocs(
+            query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
+        );
+        // 1. Initialize an array to hold your parsed attachments
+        const initialAttachments = [];
+
+        existingSnapshot.docs.forEach(docSnap => {
+            // 2. Safely extract the clean JavaScript object from the Firestore snapshot
+            const data = docSnap.data();
+
+            // 3. Push the fields you need into your array
+            if (data) {
+                initialAttachments.push({
+                    id: docSnap.id, // Good practice to keep the Firestore document ID
+                    downloadUrl: data.downloadUrl,
+                    fileName: data.fileName,
+                    fileSize: data.fileSize ? Number(data.fileSize) : 0, // Ensures it's a JS number, not a string
+                    fileType: data.fileType,
+                    messageId: data.messageId,
+                    senderId: data.senderId,
+                    timestamp: data.timestamp // This will be a Firestore Timestamp object
+                });
+            }
+
+            // 4. Proceed with your batch deletion
+            batch.delete(docSnap.ref);
+        });
+
+        // Update the main message text
         const messageRef = doc(db, "Messages", currentEditingMessageId);
         batch.update(messageRef, { text: newMessageHtml, edited: 1, editRenderedOn: [] });
 
-        // Fetch existing attachments from Firebase to check for deletions
-        const existingAttachmentsSnapshot = await getDocs(
-            query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
-        );
-        const existingAttachments = existingAttachmentsSnapshot.docs.map(doc => ({
-            docId: doc.id,
-            ...doc.data()
-        }));
-
-        const previewUrls = new Set(
-            attachments.map(att => att.getAttributes().url ? att.getAttributes().url.trim().toLowerCase() : "")
-        );
-
-        const deletedAttachments = previewUrls.size === 0
-            ? existingAttachments
-            : existingAttachments.filter(att => !previewUrls.has(att.downloadUrl.trim().toLowerCase()));
-
-        // Process File Deletions
-        await Promise.all(deletedAttachments.map(async (attachment) => {
-            batch.delete(doc(db, "Attachments", attachment.docId));
-            await fetch(`/api/files/delete?fileName=${encodeURIComponent(attachment.fileName)}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }));
-
-        // Upload New File Attachments
-        if (fileAttachments.length > 0) {
+        // 2. PROCESS CURRENT TRIX ATTACHMENTS
+        if (attachments.length > 0) {
             await Promise.all(
-                fileAttachments.map(async (attachment) => {
-                    const file = attachment.file;
-                    const formData = new FormData();
-                    formData.append('file', file);
+                attachments.map(async (attachment) => {
+                    let downloadUrl = "";
+                    let fileName = "";
+                    let fileSize = 0;
+                    let fileType = "";
 
-                    const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
-                    if (!response.ok) throw new Error(`Upload failed!`);
-                    const downloadUrl = await response.text();
+                    if (attachment.file) {
+                        // This is a BRAND NEW file (needs uploading)
+                        const file = attachment.file;
+                        const formData = new FormData();
+                        formData.append('file', file);
 
+                        const response = await fetch('/api/files/upload', { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error(`Upload failed!`);
+                        downloadUrl = await response.text();
+
+                        fileName = file.name;
+                        fileSize = file.size;
+                        fileType = file.type;
+                    } else {
+                        // This is an ALREADY UPLOADED file (keep its remote metadata)
+                        downloadUrl = attachment.previewURL || attachment.attributes?.values?.url || "";
+                        // Fallback text parsing for names from R2/S3 paths if properties are nested
+                        fileName = attachment.attributes?.values?.filename || "Attached Image";
+                        fileSize = attachment.attributes?.values?.filesize || 0;
+                        fileType = "image/png"; // Default fallback
+                    }
+
+                    // 3. RE-ADD EVERYTHING FRESH: Create a new doc for every current attachment
                     const attachmentRef = doc(collection(db, "Attachments"));
                     batch.set(attachmentRef, {
                         messageId: currentEditingMessageId,
                         senderId: senderId,
-                        fileName: file.name,
-                        fileSize: file.size,
-                        fileType: file.type,
+                        fileName: fileName,
+                        fileSize: fileSize,
+                        fileType: fileType,
                         downloadUrl: downloadUrl,
                         timestamp: new Date()
                     });
@@ -351,27 +383,65 @@ window.saveEditedMessage = async function () {
             );
         }
 
-        // COMMIT THE TRANSACTION FIRST BEFORE CLEARING SCREEN STATE
+        // 4. COMMIT EVERYTHING AT ONCE (Deletions, Updates, and fresh Inserts)
         await batch.commit();
 
-        // Safe DOM Fallback update
+        // 2. FIREBASE SNAPSHOT: Fetch fresh state after uploads/modifications finish
+        const updatedSnapshot = await getDocs(
+            query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
+        );
+
+
+        // Map the updated snapshot documents using the standard .data() method
+        const updatedAttachments = updatedSnapshot.docs.map(doc => doc.data());
+
+        // Isolate missing items using direct URL references
+        // Using optional chaining (?.) and a fallback string protects against missing or null downloadUrls
+        const updatedUrls = new Set(
+            updatedAttachments.map(att => (att?.downloadUrl || '').trim().toLowerCase())
+        );
+
+
+        // Filter your initialAttachments to find exactly what was removed
+        const deletedAttachments = initialAttachments.filter(att => {
+            if (!att.downloadUrl) return false;
+
+            const initialUrl = att.downloadUrl.trim().toLowerCase();
+
+            // If an initial item isn't in the updated DB list, it was removed from the message
+            return !updatedUrls.has(initialUrl);
+        });
+        
+        // 4. CLEANUP: Clear global tracking state and purge local file servers
+        if (deletedAttachments.length > 0) {
+            const urlsToPurge = deletedAttachments.map(att => att.downloadUrl).filter(Boolean);
+
+            // Clean global tracking array safely using the verified list of deleted URLs
+            removeMessageAttachmentsFromGlobal(currentEditingMessageId, urlsToPurge);
+        }
+
+        // Safe DOM Fallback view updates
         let textContent = messageContent.querySelector('span:not(.message-reply-reference > span)');
         if (textContent) textContent.innerHTML = newMessageHtml;
 
-        // Sync local view mutations cleanly
-        const updatedAttachmentsSnapshot = await getDocs(
-            query(collection(db, "Attachments"), where("messageId", "==", currentEditingMessageId))
-        );
-        const updatedAttachments = updatedAttachmentsSnapshot.docs.map(doc => doc.data());
-        renderAttachments(updatedAttachments, messageContent);
+        // Sync local interface mutations using the verified database data
+        if (messageContent) {
+            const messagesContainer = messageContent.closest("#messages");
+            if (messagesContainer) {
+                const currentRoomId = messagesContainer.dataset.roomId;
+                renderAttachments(updatedAttachments, messageContent, currentRoomId);
+            } else {
+                console.warn("Could not find the parent messages container in the DOM hierarchy.");
+            }
+        }
 
         // SUCCESSFUL RESOLUTION CLOSURE
         closeEdit();
-        console.log("✏️ Message updated successfully");
+        console.log("Message updated successfully");
         currentEditingMessageId = null;
 
     } catch (error) {
-        console.error("❌ Error updating message:", error);
+        console.error("Error updating message:", error);
         alert("Failed to save changes. Please try again.");
     } finally {
         hideLoadingChatNotification();
@@ -389,22 +459,62 @@ window.closeEdit = function () {
     if (trixEditor) trixEditor.editor.loadHTML("");
 };
 
+function removeMessageAttachmentsFromGlobal(messageId, specificUrls = null) {
+    const currentRoomId = localStorage.getItem('roomId');
+    const urlsToRemove = new Set();
+
+    // Standardizer to match strings flawlessly regardless of protocol mismatches
+    const normalizeUrl = (url) => url ? url.trim().replace(/^https?:\/\//i, '').toLowerCase() : '';
+
+    if (specificUrls && Array.isArray(specificUrls)) {
+        // Mode A: Invoked by Save Edit flow (Deletes explicit array matches only)
+        specificUrls.forEach(url => {
+            if (url) urlsToRemove.add(normalizeUrl(url));
+        });
+    } else {
+        // Mode B: Invoked by Full Delete Flow (Scrapes entire DOM elements container)
+        const messageWrapper = document.querySelector(`[data-message-id="${messageId}"]`);
+        if (!messageWrapper) return;
+
+        const attachmentsContainer = messageWrapper.querySelector(".attachments-container");
+        if (!attachmentsContainer) return;
+
+        attachmentsContainer.querySelectorAll("img.message-image").forEach(img => {
+            if (img.src) urlsToRemove.add(normalizeUrl(img.src));
+        });
+
+        attachmentsContainer.querySelectorAll("a.message-file-link").forEach(a => {
+            if (a.href) urlsToRemove.add(normalizeUrl(a.href));
+        });
+    }
+
+    if (urlsToRemove.size === 0) return;
+
+    // Filter global records without side effects
+    allImageUrls = allImageUrls.filter(item => {
+        const isTargetRoom = item.roomId === currentRoomId;
+        const isTargetUrl = urlsToRemove.has(normalizeUrl(item.url));
+
+        // Exclude the record only if it satisfies both room conditions and target items
+        return !(isTargetRoom && isTargetUrl);
+    });
+}
+
 window.deleteMessage = async function (messageId) {
     if (!messageId) return;
     currentDeletingMessageId = messageId
     try {
+        var messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
         const batch = writeBatch(db);
 
         // Delete message from Firebase
         const messageRef = doc(db, "Messages", messageId);
         batch.delete(messageRef);
-
         // Fetch and delete attachments
         const attachmentsSnapshot = await getDocs(
             query(collection(db, "Attachments"), where("messageId", "==", messageId))
         );
         const attachments = attachmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
         await Promise.all(attachments.map(async (attachment) => {
             batch.delete(doc(db, "Attachments", attachment.id));
             await fetch(`/api/files/delete?fileName=${encodeURIComponent(attachment.fileName)}`, {
@@ -412,12 +522,10 @@ window.deleteMessage = async function (messageId) {
               headers: { 'Content-Type': 'application/json' }
             });
         }));
-
         await batch.commit();
-
         // Remove message from DOM
-        const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
         if (messageElement) {
+            removeMessageAttachmentsFromGlobal(messageId);
             messageElement.remove();
         }
 
@@ -429,10 +537,16 @@ window.deleteMessage = async function (messageId) {
 
 async function deleteDocumentsWithWhere() {
     // 1. Create your query using 'where'
+    // const q = query(
+    //     collection(db, "Attachments"),
+    //     where("senderId", "not-in", [1, 2])
+    // );
+
     const q = query(
-        collection(db, "Attachments"),
-        where("senderId", "not-in", [1, 2])
+        collection(db, "Messages"),
+        where("messageId", "not-in", ["0PUm8uJiwKYtW5qoVFth"])
     );
+
 
     // 2. Fetch the documents matching the query
     const querySnapshot = await getDocs(q);
@@ -1025,6 +1139,11 @@ async function handleNewMessages(snapshot, roomId) {
         const messagesContainer = document.getElementById("messages");
         if (!messagesContainer) return;
 
+        if (messagesContainer.getAttribute("data-room-id") !== roomId) {
+            messagesContainer.setAttribute("data-room-id", roomId);
+            console.log(`Room ID attribute updated to: ${roomId}`);
+        }
+
         const currentUserId = await fetchCurrentUserId();
 
         // Fetch the latest read receipts from the Rooms table
@@ -1074,7 +1193,7 @@ async function handleNewMessages(snapshot, roomId) {
                     // Fetch and add attachments if they exist
                     const attachments = await fetchAttachmentsForMessages([messageData.replyTo.messageId]);
                     if (attachments[messageData.replyTo.messageId]) {
-                        renderAttachments(attachments[messageData.replyTo.messageId], replyPreview);
+                        renderAttachments(attachments[messageData.replyTo.messageId], replyPreview, roomId);
                     }
                 }
                 // Insert reply preview at the beginning of message content
@@ -1255,7 +1374,7 @@ async function handleNewMessages(snapshot, roomId) {
                         messageContent.appendChild(actionsMenu);
                         messageWrapper.appendChild(messageContent);
                         // 3. Render Attachments for this Message
-                        renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent);
+                        renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent, roomId);
                         messagesContainer.appendChild(messageWrapper);
                         createReactionFeature(messageWrapper, data);
                     }
@@ -1372,7 +1491,7 @@ async function handleNewMessages(snapshot, roomId) {
                             existingAttachmentsContainer.remove();
                         }
                         // Re-render the attachments
-                        renderAttachments(editedAttachmentsByMessageId[messageId] || [], messageContent);
+                        renderAttachments(editedAttachmentsByMessageId[messageId] || [], messageContent, localStorage.getItem("roomId"));
 
                         // Reset the edited flag in Firestore
                         const messageRef = doc(db, "Messages", messageId);
@@ -1531,7 +1650,7 @@ async function handleNewMessages(snapshot, roomId) {
                       messageContent.appendChild(actionsMenu);
                       messageWrapper.appendChild(messageContent);
                       // 3. Render Attachments for this Message
-                      renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent); // Pass the attachments for this message
+                      renderAttachments(attachmentsByMessageId[data.messageId] || [], messageContent, roomId); // Pass the attachments for this message
                       messagesContainer.appendChild(messageWrapper);
                       createReactionFeature(messageWrapper, data);
                   }
@@ -1575,7 +1694,7 @@ async function fetchAttachmentsForMessages(messageIds) {
     return attachmentsByMessageId;
 }
 
-function renderAttachments(attachments, messageContent) {
+function renderAttachments(attachments, messageContent,messageRoomId) {
     // Remove existing attachments container if it exists
     const existingAttachments = messageContent.querySelector(".attachments-container");
     if (existingAttachments) {
@@ -1612,8 +1731,15 @@ function renderAttachments(attachments, messageContent) {
             imgWrapper.appendChild(imgElement);
             imgWrapper.appendChild(hoverText);
             AttachmentsBox.appendChild(imgWrapper);
+            // Check if this specific URL is already tracked inside the current room context
+            const isDuplicate = allImageUrls.some(item => item.roomId === messageRoomId && item.url === attachment.downloadUrl);
 
-            allImageUrls.push(attachment.downloadUrl); // Add image to global list
+            if (!isDuplicate) {
+                allImageUrls.push({
+                    roomId: messageRoomId,
+                    url: attachment.downloadUrl
+                });
+            }
         } else {
             const fileLink = document.createElement('a');
             fileLink.href = attachment.downloadUrl;
@@ -1658,12 +1784,28 @@ function renderAttachments(attachments, messageContent) {
 }
 
 
-// Global list to store all images from all messages
+// Global list to store all images from all messages along with their room context
+// Structure: [{ roomId: "room_123", url: "https://..." }, ...]
 let allImageUrls = [];
 
 // Open Image Preview Modal
 function openImagePreview(currentImageUrl) {
-    let currentIndex = allImageUrls.indexOf(currentImageUrl);
+    // 1. Get the current active room ID
+    const currentRoomId = localStorage.getItem('roomId');
+
+    // 2. Filter the global array to get ONLY the images belonging to this room
+    const currentRoomImages = allImageUrls
+        .filter(item => item.roomId === currentRoomId)
+        .map(item => item.url);
+
+    // 3. Find the index within this filtered room-specific array
+    let currentIndex = currentRoomImages.indexOf(currentImageUrl);
+
+    // Fallback safeguard: If for some reason the image isn't tracked yet, show it standalone
+    if (currentIndex === -1 && currentImageUrl) {
+        currentRoomImages.push(currentImageUrl);
+        currentIndex = currentRoomImages.length - 1;
+    }
 
     const modal = document.createElement('div');
     modal.classList.add('image-preview-modal');
@@ -1672,7 +1814,7 @@ function openImagePreview(currentImageUrl) {
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <button class="prev-btn">&langle;</button>
-            <img src="${allImageUrls[currentIndex]}" class="modal-image">
+            <img src="${currentRoomImages[currentIndex] || ''}" class="modal-image">
             <button class="next-btn">&rangle;</button>
         </div>
     `;
@@ -1683,19 +1825,19 @@ function openImagePreview(currentImageUrl) {
     const prevBtn = modal.querySelector('.prev-btn');
     const nextBtn = modal.querySelector('.next-btn');
 
-    // Function to show image by index
+    // Function to show image by index from the room-specific list
     function showImage(index) {
-        if (index >= 0 && index < allImageUrls.length) {
+        if (index >= 0 && index < currentRoomImages.length) {
             currentIndex = index;
-            modalImage.src = allImageUrls[currentIndex];
+            modalImage.src = currentRoomImages[currentIndex];
             updateButtons();
         }
     }
 
-    // Update button visibility
+    // Update button visibility based on the current room's image count
     function updateButtons() {
         prevBtn.style.display = currentIndex === 0 ? 'none' : 'block';
-        nextBtn.style.display = currentIndex === allImageUrls.length - 1 ? 'none' : 'block';
+        nextBtn.style.display = currentIndex === currentRoomImages.length - 1 ? 'none' : 'block';
     }
 
     prevBtn.onclick = () => showImage(currentIndex - 1);
@@ -2236,7 +2378,7 @@ async function sendMessage(roomId) {
                         downloadUrl: URL.createObjectURL(attachment.file),
                         fileName: attachment.file.name
                     }));
-                    renderAttachments(attachmentsData, messageContent);
+                    renderAttachments(attachmentsData, messageContent, roomId);
                 }
 
                 messagesContainer.appendChild(messageWrapper);

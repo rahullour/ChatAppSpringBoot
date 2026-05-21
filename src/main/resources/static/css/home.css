@@ -201,7 +201,7 @@ trix-toolbar {
     visibility: hidden;
     transition: all 0.3s ease;
     z-index: 1000;
-    border: 3px solid #000000;
+    border: 1px solid #ffffff;
     .trix-button-row{
         overflow-x: unset !important;
     }
@@ -211,6 +211,7 @@ trix-toolbar.show {
     transform: translateY(0);
     opacity: 1;
     visibility: visible;
+    background: #00ffa5c2;
 }
 
 .editor-wrapper {
@@ -743,7 +744,7 @@ trix-editor .attachment{
     color: white;
     border: none;
     padding: 10px 15px;
-    font-size: 20px;
+    font-size: 35px;
     cursor: pointer;
     border-radius: 4px;
     transition: background 0.2s ease-in-out;
@@ -826,10 +827,8 @@ trix-editor .attachment{
 .reply-indicator {
     svg{
         width: 20px;
-        margin-right: 8px;
-        width: 20px;
-        margin-top: 0px;
     }
+    margin-bottom: 15px;
 }
 
 .form-control:focus{
@@ -866,16 +865,15 @@ trix-editor .attachment{
     cursor: pointer;
     margin-left: 8px;
     float: right;
-}
-
-.close-reply svg {
-    cursor: pointer;
-    margin-left: 8px;
-    float: right;
-    top: -30px;
+    top: -40px;
     position: relative;
-}
+    svg{
+        top: -2px;
+        position: relative;
+        padding: 0px 2px;
+    }
 
+}
 .close-reply:hover {
     opacity: 1;
 }
@@ -1019,11 +1017,11 @@ trix-editor .attachment{
 }
 
 .close-edit, .close-reply {
-    background: none;
-    border: none;
     font-size: 16px;
     cursor: pointer;
     color: #ff4444;
+    background: white;
+    border: 1px solid;
 }
 
 .edit-meta {
