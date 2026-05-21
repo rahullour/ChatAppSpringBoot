@@ -13,7 +13,7 @@ public interface InviteGroupService {
 
     List<InviteGroup> findInviteGroupsByInviteId(List<Integer> inviteIds);
 
-    void rejectInviteGroup(int igId);
+    void rejectInviteGroupByInviteId(int igId);
 
     List<InviteGroup> getAllInviteGroupByGroupId(int groupId);
 }

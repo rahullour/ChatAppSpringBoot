@@ -23,4 +23,8 @@ public interface TokenRepository extends JpaRepository<Token, Integer> {
     @Query("DELETE FROM Token t WHERE t.user.email = :sender_email AND t.roomId = :room_id")
     void deleteBySenderEmailAndRoomId(@Param("sender_email") String senderEmail,
                                       @Param("room_id") String roomId);
+
+    @Modifying
+    @Query("DELETE FROM Token t WHERE t.roomId = :room_id")
+    void deleteByRoomId(@Param("room_id") String roomId);
 }

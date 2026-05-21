@@ -10,4 +10,5 @@ public interface TokenService {
     Token findByUserTokenAndType(int user_id, String token, String type);
     void delete(int token_id);
     void deleteBySenderEmailAndRoomId(String senderEmail, String roomId);
+    void deleteByRoomId(String roomId);
 }

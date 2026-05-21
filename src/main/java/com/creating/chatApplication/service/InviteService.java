@@ -12,7 +12,7 @@ public interface InviteService {
     List<Invite> getInvitesBySenderReceiverAndRoom(String s_email, String r_email, int type, String room_id);
     List<Invite> getInvitesBySenderEmail(String s_email, int type);
     List<Invite> getInvitesBySenderOrReceiverEmailAccepted(String email, int type);
-    List<Integer> getAllInvitesRoomIdNotAccepted(String roomId);
+    List<Integer> getAllInviteIdsByRoomIdAndNotAccepted(String roomId);
     void rejectInvite(int inviteId);
     Invite saveInvite(Invite invite);
 }

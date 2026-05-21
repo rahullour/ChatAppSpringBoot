@@ -36,6 +36,12 @@ public class TokenServiceImpl implements TokenService{
         tokenRepository.deleteBySenderEmailAndRoomId(senderEmail, roomId);
     }
 
+    @Transactional
+    @Override
+    public void deleteByRoomId(String roomId) {
+        tokenRepository.deleteByRoomId(roomId);
+    }
+
     @Override
     public void delete(int token_id) {
         tokenRepository.deleteById(token_id);

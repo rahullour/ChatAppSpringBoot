@@ -41,7 +41,7 @@ public class InviteGroupServiceImpl implements InviteGroupService{
 
 
     @Override
-    public void rejectInviteGroup(int inviteId) {
+    public void rejectInviteGroupByInviteId(int inviteId) {
         InviteGroup inviteGroup = inviteGroupRepository.findByInviteId(inviteId);
         if (inviteGroup != null) {
             UserGroup userGroup = inviteGroup.getUserGroup();

@@ -40,15 +40,7 @@ public class InviteServiceImpl implements InviteService {
         invite.setRecipientEmail(recipientEmail);
         invite.setType(type);
         invite.setRoomId(roomId);
-//         clear previous invites
-//        List<Integer> not_accepted_ids = this.getAllInvitesRoomIdNotAccepted(roomId);
-//        for(Integer x: not_accepted_ids){
-//            if(type == 1){
-//                inviteGroupServiceImpl.rejectInviteGroup(x);
-//            }
-//            this.rejectInvite(x);
-//            tokenService.deleteBySenderEmailAndRoomId(senderEmail, roomId);
-//        }
+
         return inviteRepository.save(invite);
     }
 
@@ -78,7 +70,7 @@ public class InviteServiceImpl implements InviteService {
     }
 
     @Override
-    public List<Integer> getAllInvitesRoomIdNotAccepted(String roomId) {
+    public List<Integer> getAllInviteIdsByRoomIdAndNotAccepted(String roomId) {
         return inviteRepository.findByRoomIdNotAccepted(roomId);
     }
 

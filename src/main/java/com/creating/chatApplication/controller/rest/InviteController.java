@@ -38,6 +38,9 @@ public class InviteController {
     private InviteService inviteService;
 
     @Autowired
+    private TokenServiceImpl tokenServiceImpl;
+
+    @Autowired
     private InviteServiceImpl inviteServiceImpl;
 
     @Autowired
@@ -131,6 +134,7 @@ public class InviteController {
                     emailService.sendInviteEmail(email, userService.getUserByEmail(senderEmail).getUsername(), senderEmail, link, type);
                 }
             }
+
             // response for foundSelfInvite And unregisteredUserInvite
             ArrayList<String> selfAndUnregisteredInviteResponse = new ArrayList<>();
             if(foundSelfInvite){
@@ -145,8 +149,13 @@ public class InviteController {
                 responseData.put("durationType", "medium-noty");
                 return ResponseEntity.badRequest().body(responseData);
             }
-            Collections.sort(groupNameSuffix);
             // group names creation
+
+            // add sender id to groupNameSuffix at end
+            groupNameSuffix.add(userService.getUserByEmail(senderEmail).getId());
+            // sort the groupNameSuffix
+            Collections.sort(groupNameSuffix);
+            // group name structure - "groupType" + "_" + "groupName" + "_" + "groupNameSuffix i.e Sorted Receivers' Ids"
             String groupNameFormed =
                     "group_" +
                             groupName +
@@ -155,6 +164,7 @@ public class InviteController {
                                     .map(String::valueOf)
                                     .collect(Collectors.joining(""));
 
+            // group name structure - "groupType" + "_" + "groupNameSuffix i.e Receiver Id"
             String inviteRoomId = "single_" + groupNameSuffix.stream()
                     .map(String::valueOf)
                     .collect(Collectors.joining(""));
@@ -166,7 +176,6 @@ public class InviteController {
             HashSet<String> invitesUniqueRoomsNamesWithAcceptedStatus = new HashSet<>();
             ArrayList<Invite> allInvites = new ArrayList<>();
             ArrayList<Invite> invitesWithCommonGroupNameAccepted = new ArrayList<>();
-            ArrayList<Invite> invitesWithCommonGroupNameNotAccepted = new ArrayList<>();
 
             if(type){
                 List<UserGroup> userGroups = userGroupServiceImpl.getAllUserGroupsByName(groupName);
@@ -186,9 +195,6 @@ public class InviteController {
                         invitesWithCommonGroupNameAccepted.add(i);
                         acceptedUniqueEmails.add(i.getSenderEmail());
                         acceptedUniqueEmails.add(i.getRecipientEmail());
-                    }
-                    else{
-                        invitesWithCommonGroupNameNotAccepted.add(i);
                     }
                 }
                 alreadyConnectedUsers.addAll(acceptedUniqueEmails);
@@ -261,17 +267,19 @@ public class InviteController {
                 }
                 newUserGroup.setRoomId(groupNameFormed);
             }
+
             // clear prev invites data
-            List<Integer> not_accepted_ids = new ArrayList<>();
-            for(Invite i: invitesWithCommonGroupNameNotAccepted){
-                not_accepted_ids.add(i.getId());
-            }
+
+            List<Integer> not_accepted_ids = inviteServiceImpl.getAllInviteIdsByRoomIdAndNotAccepted(type ? groupNameFormed : inviteRoomId);
             for(Integer x: not_accepted_ids) {
-                inviteGroupServiceImpl.rejectInviteGroup(x);
+                inviteGroupServiceImpl.rejectInviteGroupByInviteId(x);
                 inviteServiceImpl.rejectInvite(x);
-                tokenService.deleteBySenderEmailAndRoomId(senderEmail, "");
+                // expire old invites for the group before sending new invites for the group
+                tokenServiceImpl.deleteByRoomId(type ? groupNameFormed : inviteRoomId);
             }
+
             // send invites
+
             ArrayList<String> invitesSentEmails = new ArrayList<>();
             for (String emailAddress : receiverEmails) {
                 User user = userService.getUserByEmail(emailAddress);
