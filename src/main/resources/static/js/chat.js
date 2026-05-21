@@ -411,7 +411,7 @@ window.saveEditedMessage = async function () {
             // If an initial item isn't in the updated DB list, it was removed from the message
             return !updatedUrls.has(initialUrl);
         });
-        
+
         // 4. CLEANUP: Clear global tracking state and purge local file servers
         if (deletedAttachments.length > 0) {
             const urlsToPurge = deletedAttachments.map(att => att.downloadUrl).filter(Boolean);
@@ -458,6 +458,31 @@ window.closeEdit = function () {
     const trixEditor = document.querySelector("trix-editor");
     if (trixEditor) trixEditor.editor.loadHTML("");
 };
+
+// Listen for Trix attachment removal -  to clean left over blank lines after edit message
+document.addEventListener("trix-attachment-remove", function(event) {
+    const trixEditor = event.target.editor;
+    if (!trixEditor) return;
+
+    const doc = trixEditor.getDocument();
+    const docString = doc.toString();
+    const [position] = trixEditor.getSelectedRange();
+
+    // 1. Look for a double newline artifact anywhere near the deletion cursor
+    // This happens specifically when an attachment block is removed
+    if (docString.includes("\n\n")) {
+        // Find where the double newline is sitting in the document string
+        const doubleNewlineIndex = docString.indexOf("\n\n");
+
+        // 2. Target just one of those phantom newlines and delete it surgically
+        trixEditor.setSelectedRange([doubleNewlineIndex, doubleNewlineIndex + 1]);
+        trixEditor.deleteInDirection("backward");
+
+        // 3. Reset the user's cursor back to where it belongs minus the collapsed space
+        const newPosition = Math.max(0, position - 1);
+        trixEditor.setSelectedRange(newPosition);
+    }
+});
 
 function removeMessageAttachmentsFromGlobal(messageId, specificUrls = null) {
     const currentRoomId = localStorage.getItem('roomId');
