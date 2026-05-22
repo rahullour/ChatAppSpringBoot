@@ -15,7 +15,12 @@
 	<description>Chap App In Spring Boot</description>
 	<url/>
 	<licenses>
-		<license/>
+		<license>
+			<name>UNLICENSED</name>
+			<url>about:blank</url>
+			<distribution>repo</distribution>
+			<comments>Copyright (C) 2026 Rahul Lour. All Rights Reserved. Private and Proprietary.</comments>
+		</license>
 	</licenses>
 	<developers>
 		<developer/>
@@ -177,5 +182,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>
