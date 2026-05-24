@@ -11,4 +11,6 @@ import java.util.List;
 public interface StatusRepository extends JpaRepository<Status, Integer> {
     Status findByUserId(int userId);
     Status getStatusByUserId(@Param("userId") int userId);
+    @Query("SELECT s.statusMessage FROM Status s WHERE s.user.id = :id_param")
+    String getStatusMessageByUserId(@Param("id_param") int userId);
 }

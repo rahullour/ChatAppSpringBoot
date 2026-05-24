@@ -1,11 +1,12 @@
 package com.creating.chatApplication.service;
 
+import com.creating.chatApplication.dto.InviteResponseDTO;
 import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.User;
-import com.creating.chatApplication.entity.UserGroup;
 import com.creating.chatApplication.repository.InviteGroupRepository;
 import com.creating.chatApplication.repository.InviteRepository;
+import com.creating.chatApplication.repository.StatusRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,8 @@ public class InviteServiceImpl implements InviteService {
     private UserGroupServiceImpl userGroupServiceImpl;
     @Autowired
     private InviteGroupRepository inviteGroupRepository;
+    @Autowired
+    private StatusRepository statusRepository;
 
 
     @Override
@@ -67,6 +70,27 @@ public class InviteServiceImpl implements InviteService {
     @Override
     public List<Invite> getInvitesBySenderOrReceiverEmailAccepted(String email, int type) {
         return inviteRepository.findBySenderOrReceiverEmailAndGroupTypeAndAccepted(email, type);
+    }
+
+    @Override
+    public List<InviteResponseDTO> getSingleInvitesWithStatus(String currentUserEmail) {
+        // 1. Fetch the single invites (type = 0)
+        List<Invite> invites = inviteRepository.findBySenderOrReceiverEmailAndGroupTypeAndAccepted(currentUserEmail, 0);
+        List<InviteResponseDTO> responseList = new ArrayList<>();
+
+        for (Invite invite : invites) {
+            // 2. Identify the other user's email to fetch their status
+            String otherUserEmail = invite.getSenderEmail().equals(currentUserEmail)
+                    ? invite.getRecipientEmail()
+                    : invite.getSenderEmail();
+
+            User invite_user = userService.getUserByEmail(otherUserEmail);
+            String status = statusRepository.getStatusMessageByUserId(invite_user.getId());
+
+            responseList.add(new InviteResponseDTO(invite, status, invite_user.getUsername(), invite_user.getId()));
+        }
+
+        return responseList;
     }
 
     @Override

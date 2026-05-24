@@ -1,5 +1,6 @@
 package com.creating.chatApplication.controller.rest;
 
+import com.creating.chatApplication.dto.InviteResponseDTO;
 import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.InviteGroup;
 import com.creating.chatApplication.entity.User;
@@ -340,8 +341,8 @@ public class InviteController {
 
     }
     @GetMapping("/invites/single")
-    public List<Invite> getSingleInvites(){
-        return inviteService.getInvitesBySenderOrReceiverEmailAccepted(userService.getCurrentUser().getEmail(), 0);
+    public List<InviteResponseDTO> getSingleInvites() {
+        return inviteService.getSingleInvitesWithStatus(userService.getCurrentUser().getEmail());
     }
     @GetMapping("/invites/group")
     public List<Invite> getGroupInvites(){

@@ -16,3 +16,5 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     public User findByEmailAndStatus(@Param("email_param") String email, @Param("status_param") boolean status);
     @Query("SELECT u.email FROM User u WHERE LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<String> findEmailsByQuery(@Param("query") String query);}
+
+

@@ -1,6 +1,7 @@
 package com.creating.chatApplication.service;
 
 import com.creating.chatApplication.entity.User;
+import com.creating.chatApplication.repository.StatusRepository;
 import com.creating.chatApplication.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -15,6 +16,8 @@ public class UserServiceImpl implements UserService{
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private StatusRepository statusRepository;
 
     @Override
     public User getUserById(int id) {
@@ -27,7 +30,6 @@ public class UserServiceImpl implements UserService{
                 .map(User::getUsername)
                 .orElse(null);
     }
-
 
     @Override
     public User getUserByUsername(String username) {
@@ -105,4 +107,5 @@ public class UserServiceImpl implements UserService{
     public List<String> findEmailsByQuery(String query) {
         return userRepository.findEmailsByQuery(query);
     }
+
 }

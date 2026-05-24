@@ -30,4 +30,5 @@ public interface UserService {
     List<String> findEmailsByQuery(String query);
 
     String getUserNameById(int id);
+
 }

@@ -1,5 +1,6 @@
 package com.creating.chatApplication.service;
 
+import com.creating.chatApplication.dto.InviteResponseDTO;
 import com.creating.chatApplication.entity.Invite;
 import com.creating.chatApplication.entity.InviteGroup;
 
@@ -12,6 +13,9 @@ public interface InviteService {
     List<Invite> getInvitesBySenderReceiverAndRoom(String s_email, String r_email, int type, String room_id);
     List<Invite> getInvitesBySenderEmail(String s_email, int type);
     List<Invite> getInvitesBySenderOrReceiverEmailAccepted(String email, int type);
+
+    List<InviteResponseDTO> getSingleInvitesWithStatus(String currentUserEmail);
+
     List<Integer> getAllInviteIdsByRoomIdAndNotAccepted(String roomId);
     void rejectInvite(int inviteId);
     Invite saveInvite(Invite invite);
