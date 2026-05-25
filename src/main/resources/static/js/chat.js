@@ -867,6 +867,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 chatMessagesBox.style.boxShadow = '0 4px 20px rgb(0 0 0 / 0%)';
             }
         }
+        else{
+            const trixEditorBox= document.querySelector('#trix-editor-box');
+            trixEditorBox.style.display = 'block';
+        }
 
         // Event listeners for tab clicks to select first chat if available
         document.querySelector('#one-to-one-tab').addEventListener('click', async () => {
