@@ -886,6 +886,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 chatMessagesBox.style.verticalAlign = 'middle';
                 chatMessagesBox.style.textAlign = 'center';
                 chatMessagesBox.style.margin = 'auto';
+                chatMessagesBox.style.color = 'white'
             }
         }
     } catch (error) {
