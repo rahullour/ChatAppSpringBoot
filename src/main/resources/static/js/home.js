@@ -560,3 +560,36 @@ window.addEventListener("load", () => {
         });
     }
 });
+
+document.addEventListener('wheel', (event) => {
+    const picker = event.target.closest('.reaction-picker');
+
+    if (picker) {
+        if (event.deltaY !== 0) {
+            event.preventDefault();
+
+            // 1. Calculate the exact width of ONE item + gap
+            const firstChild = picker.firstElementChild;
+            if (!firstChild) return;
+
+            // OffsetWidth gets the item width, getComputedStyle gets the exact gap size
+            const itemWidth = firstChild.offsetWidth;
+            const gap = parseFloat(window.getComputedStyle(picker).gap) || 0;
+            const stepDistance = itemWidth + gap; // The exact size of 1 element segment
+
+            // 2. Determine scroll direction (Positive = Right, Negative = Left)
+            const direction = event.deltaY > 0 ? 1 : -1;
+
+            // 3. Scroll by exactly one element step
+            picker.scrollLeft += (stepDistance * direction);
+
+            // 4. Dynamic Blur Check
+            const maxScrollLeft = picker.scrollWidth - picker.clientWidth;
+            if (maxScrollLeft > 0 && picker.scrollLeft < maxScrollLeft - 2) {
+                picker.classList.add('has-overflow');
+            } else {
+                picker.classList.remove('has-overflow');
+            }
+        }
+    }
+}, { passive: false });

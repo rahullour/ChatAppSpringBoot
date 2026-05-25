@@ -62,7 +62,7 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <img id="profilePic" class="profile-pic me-2" src="" alt="No Profile Picture" style="border-radius: 50%;">
-                        <span th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
+                        <span id="currentUserName" th:text="${#authentication.principal instanceof T(org.springframework.security.oauth2.core.user.OAuth2User) ?
                                  (#authentication.principal.attributes['email'] ?: #authentication.principal.attributes['id'] + '@github.com') :
                                  #authentication.principal.username}"></span>
                     </a>

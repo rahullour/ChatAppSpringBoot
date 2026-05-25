@@ -1,5 +1,6 @@
 body{
     height: 100vh;
+    overflow: hidden;
 }
 
 * {
@@ -104,6 +105,7 @@ body{
 #myStatus{
     vertical-align: middle;
     margin: auto;
+    font-size: 16px;
 }
 
 .message-wrapper {
@@ -408,6 +410,8 @@ trix-editor .attachment{
 
 #single-list, #group-list{
     margin-top: 1px;
+    overflow-y: auto;
+    max-height: 85vh;
 }
 
 .modal {
@@ -930,23 +934,50 @@ trix-editor .attachment{
 }
 
 .reaction-picker {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.reaction-picker {
     position: absolute;
     width: 228px;
-    overflow-y: scroll;
+    max-width: 228px;
     bottom: 100%;
-    top: -68px;
+    margin-bottom: 8px;
     transform: translateX(-50%);
     background: white;
     padding: 5px;
-    height: fit-content;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    display: none;
     z-index: 10;
-    gap: 5px;
+
+    display: none;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
     white-space: nowrap;
-    scrollbar-color: black grey;
+
+    /* Hide scrollbars */
     scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    /* Smooth transition for the mask fade */
+    transition: mask-image 0.2s ease, -webkit-mask-image 0.2s ease;
+}
+
+.reaction-picker::-webkit-scrollbar {
+    display: none;
+}
+
+.reaction-picker.has-overflow {
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
+.reaction-picker > * {
+    flex-shrink: 0 !important;
+    display: inline-block;
+    width: 32px; 
+    height: 32px;
 }
 
 .reaction-display-left {

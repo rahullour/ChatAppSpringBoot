@@ -1081,8 +1081,12 @@ const renderReactions = async (messageWrapper, messageId) => {
             }
 
             // Show usernames on hover
-            emojiWrapper.title = usernames.join(", ");
-
+            // replace current username name with 'you'
+            const currentUserName = document.querySelector("#currentUserName").textContent;
+            const updatedUsernames = usernames.map(user =>
+                user === currentUserName.trim() ? "you" : user
+            );
+            emojiWrapper.title = updatedUsernames.join(", ");
             reactionDisplay.appendChild(emojiWrapper);
             // Check if reactionDisplay contains any <span> elements
             if (reactionDisplay.querySelector("span")) {
@@ -2609,7 +2613,7 @@ async function displayReadByUsersFromRooms(roomId) {
 }
 
 async function markMessagesAsRead(roomId) {
-    showLoadingChatNotification("Updating");
+    // showLoadingChatNotification("Updating");
     const currentUserId = await fetchCurrentUserId();
     if (!currentUserId || currentUserId === -1) return;
     const messagesContainer = document.getElementById("messages");
