@@ -101,6 +101,11 @@ body{
     }
 }
 
+#myStatus{
+    vertical-align: middle;
+    margin: auto;
+}
+
 .message-wrapper {
     display: flex;
     align-items: flex-start;

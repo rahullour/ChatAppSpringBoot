@@ -853,6 +853,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             fetchInvites('api/invites/group')
         ]);
 
+        // Handle case when no invites are available
+        if (singleInvites.length === 0 && groupInvites.length === 0) {
+            const chatMessagesBox = document.querySelector('.chat-messages');
+            $('.chat-screen').parent().css('height', '92%');
+            if (chatMessagesBox) {
+                chatMessagesBox.innerText = "You don't have any conversation, feel free to invite someone";
+                chatMessagesBox.style.verticalAlign = 'middle';
+                chatMessagesBox.style.textAlign = 'center';
+                chatMessagesBox.style.margin = 'auto';
+                chatMessagesBox.style.color = 'white'
+                chatMessagesBox.style.background = '#00000052';
+                chatMessagesBox.style.boxShadow = '0 4px 20px rgb(0 0 0 / 0%)';
+            }
+        }
+
         // Event listeners for tab clicks to select first chat if available
         document.querySelector('#one-to-one-tab').addEventListener('click', async () => {
             await displayInvites(singleInvites, 'single'); // Ensure invites are displayed before selecting
@@ -877,18 +892,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.querySelector('#group-chats-tab').click();
         }
 
-        // Handle case when no invites are available
-        if (singleInvites.length === 0 && groupInvites.length === 0) {
-            const chatMessagesBox = document.querySelector('.chat-messages');
-            $('.chat-screen').parent().css('height', '92%');
-            if (chatMessagesBox) {
-                chatMessagesBox.innerText = "You don't have any conversation, feel free to invite someone!";
-                chatMessagesBox.style.verticalAlign = 'middle';
-                chatMessagesBox.style.textAlign = 'center';
-                chatMessagesBox.style.margin = 'auto';
-                chatMessagesBox.style.color = 'white'
-            }
-        }
     } catch (error) {
         console.log('Error fetching invites:', error);
     }
