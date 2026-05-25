@@ -1169,6 +1169,7 @@ async function displayInvites(invites, type) {
                     const imgElement = document.createElement("img");
                     imgElement.src = `data:image/png;base64,${profilePicBase64}`;
                     imgElement.classList.add("profile-pic");
+                    imgElement.classList.add("invite-item-profile-pic");
                     inviteWrapper.appendChild(imgElement);
                 }
 
@@ -1177,6 +1178,7 @@ async function displayInvites(invites, type) {
                 textContainer.classList.add("text-container");
                 textContainer.style.display = "flex";
                 textContainer.style.flexDirection = "column";
+                textContainer.style.marginLeft = "5px";
 
                 // Create a span for the username
                 const usernameElement = document.createElement("span");
@@ -1247,6 +1249,7 @@ async function displayInvites(invites, type) {
                 const usernameElement = document.createElement("span");
                 usernameElement.textContent = `${userGroup.name}`;
                 usernameElement.classList.add("username");
+                usernameElement.style.margin = '6px';
 
                 inviteWrapper.appendChild(usernameElement);
                 inviteItem.appendChild(inviteWrapper);
@@ -1607,7 +1610,6 @@ async function handleNewMessages(snapshot, roomId) {
                                 editedIndicator.classList.add('edited-indicator');
                                 editedIndicator.textContent = ' (edited)';
                                 editedIndicator.style.opacity = '0.7';
-                                messageContent.querySelector('.reaction-display').style.marginTop = '32px';
                                 messageContent.appendChild(editedIndicator);
                             }
                         }
