@@ -9,6 +9,7 @@ import com.creating.chatApplication.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -30,6 +31,9 @@ public class ThemeController {
 
     @Autowired
     private ThemeService themeService;
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
 
     @GetMapping("/themes")
     public List<ThemeData> getThemes() {
@@ -75,4 +79,13 @@ public class ThemeController {
         return new ResponseEntity<>(theme.getThemeUrl(), HttpStatus.OK);
     }
 
+
+    @GetMapping("/db-check")
+    public String dbCheck() {
+        return "CURRENT DB: " + jdbcTemplate.queryForObject(
+                "SELECT current_database()", String.class) + " | CURRENT DB SCHEMA: " + jdbcTemplate.queryForObject(
+                "SELECT current_schema()",
+                String.class
+        );
+    }
 }
